@@ -6,7 +6,7 @@ Mobile spy-thriller game prototype. You are an agent with a new name, a forged p
 
 1. **Safehouse:** briefing, ₹5,00,000 budget
 2. **Forger:** pick a passport tier (Jugaad / Clean / Ghost). Cheaper means a higher chance of a machine-scan flag
-3. **Photo studio:** your beard and glasses must match your face at the airport
+3. **Photo studio:** the beard in your photo must match your face at the airport
 4. **Cover story:** memorise it in 30 seconds. It is never shown again except in quick rehearsals
 5. **Bookings:** return or one-way ticket (UAE needs onward travel), tourist or business visa (must match your purpose), hotel
 6. **Pocket litter:** visiting cards, invitation letter, receipts, cover phone line, family photo. These become evidence cards in interrogation
