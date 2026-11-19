@@ -2,18 +2,20 @@
 
 Mobile spy-thriller game prototype. You are an agent with a new name, a forged passport and a device that must reach Dubai. Every scan, camera and payment leaves a trace, and those traces come back later as evidence against you.
 
-## Current build: Chapter 1, ghar se airport (`index.html`)
+## Current build: airport sandbox missions (`index.html`)
 
-Stylized 3D with noir comic panels for story beats (three.js r160, runs in the browser, no build step):
+Stylized 3D spy sandbox at Mumbai airport with noir comic story panels (three.js r160, browser, no build step).
 
-- Noir comic briefing, then a 20-second look at your cover story
-- Walk your agent on a night-time Andheri street and book a cab (ride app = trace, kaali-peeli = cash, no record)
-- The taxi pulls up and stops, the rear kerb-side door swings open, and you get in
-- Ride to T2 with an inside view (driver, meter, nimbu-mirchi, road through the windshield) or a chase view
-- City traffic (autos, cars, a red bus), shops and billboards, a flyover jam with a choice, and driver small talk that tests your cover story
-- Drop-off at Terminal 2, pay cash or UPI, noir arrival panel, and a digital-footprint card
+- **Missions are generated:** 3 objectives (dead drop to an airside contact, steal the security-office laptop, plant a bug on a moving businessman) × 5 complications (alert-list timer, extra guards, a guard with your photo, crowd surge, longer-range CCTV), with a fresh cover story each time
+- **Guards:** view cones, suspicion meters (`?` / `!`), search, chase and radio to each other. They notice running, restricted areas, suspicious actions and a look that matches the wanted description
+- **CCTV:** sweeping cameras feed a control room that sends the nearest guard
+- **Tools:** blend into crowds, change outfit in the washroom (no cameras), buy disguises at duty free, take a staff jacket from the locker, tailgate staff through locked doors, pull a fire alarm, or answer the emigration officer from your cover story
+- **Career:** money, stars and heat persist in the browser. Heat makes guards recognise you faster; a new passport lowers it
+- Noir cold open on first play, plus caught and mission-complete panels
 
-Next: the Mumbai airport chapter in the same style.
+## Story chapter (`cab.html`)
+
+Chapter 1, ghar se airport: book a cab on a night street, ride a kaali-peeli to T2 with an inside view, a flyover jam and driver small talk.
 
 ## Earlier prototypes (`prototypes/`)
 
