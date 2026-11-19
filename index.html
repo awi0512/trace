@@ -471,7 +471,6 @@ function comic(name){return new Promise(res=>{const c=$('#comic');const full=PAN
   c.hidden=false;show();let ready=false;setTimeout(()=>ready=true,500);
   const go=()=>{if(!ready)return;k++;if(k<views.length){ready=false;show();setTimeout(()=>ready=true,450);return;}c.removeEventListener('pointerdown',go);c.hidden=true;res();};
   c.addEventListener('pointerdown',go);});}
-  const go=()=>{c.removeEventListener('pointerdown',go);c.hidden=true;res();};setTimeout(()=>c.addEventListener('pointerdown',go),600);});}
 
 /* ===================== sheets ===================== */
 function sheet(html){const s=$('#sheet');s.innerHTML=`<div class="card">${html}</div>`;s.hidden=false;return s.firstElementChild;}
