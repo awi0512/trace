@@ -582,7 +582,7 @@ INTER.push({label:'Cab mein baitho',r:1.6,on:()=>S.phase==='doorOpen',pos:()=>{c
     await choose([{label:'"Airport. Terminal 2, departures."'}]);
     driver.look=0;await say('Driver','T2. Chalo, raat hai, 40-45 minute mein pahuncha dunga.');closeDlg();
     S.phase='drive';camMode='inside';P.g.visible=false;$('#camBtn').hidden=false;$('#camBtn').textContent='Bahar se dekho';setObj('Airport ja rahe ho. "Bahar se dekho" se camera badlo.');
-    locked=true;taxi.target=15;radio(true);toast(`FM 93.5 · ${SONGS[R.song].name} (Raag ${SONGS[R.song].raag})`,'info');driveScript();
+    locked=true;taxi.target=15;driveScript();
   }});
 
 async function legendQ(key,who,q){
