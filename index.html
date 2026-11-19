@@ -624,12 +624,12 @@ function updatePlayer(dt,t){
 }
 function updateTaxi(dt,t){
   const c=taxi.car;
-  if(S.phase==='cabWait'){const stopX=P.pos.x+1.2;const d=stopX-c.position.x;taxi.speed=clamp(d*.55,0,12);if(d<.15&&taxi.speed<.3){taxi.speed=0;S.phase='opening';sfx.horn(1.2);(async()=>{await sleep(400);await openDoor();S.phase='doorOpen';setObj('Peeche ka darwaza khula hai. Cab mein baitho.');})();}}
+  if(S.phase==='cabWait'){const stopX=P.pos.x+1.2;const d=stopX-c.position.x;taxi.speed=d>0?Math.min(12,Math.sqrt(2*5*d)):0;if(d<.25){c.position.x=stopX;taxi.speed=0;S.phase='opening';sfx.horn(1.2);(async()=>{await sleep(400);await openDoor();S.phase='doorOpen';setObj('Peeche ka darwaza khula hai. Cab mein baitho.');})();}}
   else if(S.phase==='drive'||S.phase==='leaving'){
     let target=taxi.target;
     for(const v of TRAFFIC){if(v.dir<0||!v.o.visible||Math.abs(v.o.position.z-c.position.z)>1.3)continue;const dx=v.o.position.x-c.position.x;if(dx>0&&dx<26){target=Math.min(target,clamp((dx-v.half-2.1-1.6)*1.1,0,99)+v.cur);}}
     taxi.speed+=clamp(target-taxi.speed,-6*dt,3.2*dt);
-  } else if(S.phase==='arrive'){const d=taxi.stopAt-c.position.x;taxi.speed=clamp(d*.45,0,15);if(d<.2&&taxi.speed<.25){taxi.speed=0;arrival();}}
+  } else if(S.phase==='arrive'){const d=taxi.stopAt-c.position.x;taxi.speed=d>0?Math.min(taxi.speed+3*dt,15,Math.sqrt(2*4.5*d)):0;if(d<.3){c.position.x=taxi.stopAt;taxi.speed=0;arrival();}}
   else if(S.phase!=='cabWait')taxi.speed=Math.max(0,taxi.speed-8*dt);
   c.position.x+=taxi.speed*dt;taxi.dist=c.position.x;
   if(taxi.laneTarget!=null){c.position.z+=clamp(taxi.laneTarget-c.position.z,-1.6*dt,1.6*dt);taxi.lane=Math.abs(c.position.z+1.5)<.3?-1.5:c.position.z;c.rotation.y=-(taxi.laneTarget-c.position.z)*.08;if(Math.abs(taxi.laneTarget-c.position.z)<.01){c.rotation.y=0;}}
@@ -670,7 +670,7 @@ P=chibi(AGENT);P.pos.set(0,.25,-8);P.yaw=Math.PI*.5;P.g.rotation.y=P.yaw;
 camera.position.set(-6,3,-2);
 const clock=new T.Clock();
 function frame(){
-  const dt=Math.min(.05,clock.getDelta()),t=clock.elapsedTime;
+  const dt=Math.min(window.__dtcap||.05,clock.getDelta()),t=clock.elapsedTime;
   runTweens(dt);updatePlayer(dt,t);updateTaxi(dt,t);
   const fx=(S.phase==='drive'||S.phase==='arrive'||S.phase==='arrived'||S.phase==='leaving')?taxi.car.position.x:P.pos.x;
   updateTraffic(dt,fx,taxi.car.position.x);recycle(fx);
