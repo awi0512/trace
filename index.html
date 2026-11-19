@@ -1,0 +1,1095 @@
+<title>Trace</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+<style>
+/* Layout: one-screen phone app. HUD strip on top, cinematic scene window, subtitle panel with choices below.
+   Look: night-time airport. Wayfinding-sign yellow on charcoal, passport navy, stamp-ink red. */
+:root{
+  --ink:#0d1218; --panel:#141c25; --panel2:#1b2632; --line:#2a3645; --text:#e8ebee; --dim:#8f9bab;
+  --sign:#f5b82e; --signInk:#15181c; --stamp:#c8443c; --ok:#55b386; --cover:#1c2b52;
+  --paper:#eee8d8; --paperInk:#26282b; --gold:#d7b46a;
+  --display:'Barlow Condensed','Arial Narrow',Arial,sans-serif;
+  --body:'IBM Plex Sans',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --mono:'IBM Plex Mono',ui-monospace,Menlo,Consolas,monospace;
+  color-scheme:dark;
+}
+*,*::before,*::after{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{height:100%}
+body{margin:0;background:var(--ink);color:var(--text);font-family:var(--body);font-size:15px;line-height:1.45;overflow:hidden;-webkit-tap-highlight-color:transparent}
+button{font:inherit;color:inherit}
+#app{height:100%;max-width:560px;margin:0 auto;display:flex;flex-direction:column;gap:10px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:10px}
+
+/* HUD */
+#hud{display:flex;align-items:center;gap:10px 12px;flex-wrap:wrap;font-family:var(--mono);font-size:12.5px;color:var(--dim)}
+#hud b{color:var(--text);font-weight:600;font-variant-numeric:tabular-nums;font-size:14px}
+.hud-i{display:flex;align-items:baseline;gap:5px}
+.hud-sp{flex:1}
+.heart{width:14px;height:14px;fill:var(--stamp);align-self:center;animation:beat var(--beat,0.85s) infinite}
+@keyframes beat{0%,100%{transform:scale(1)}12%{transform:scale(1.25)}24%{transform:scale(1)}36%{transform:scale(1.15)}}
+.hbtn{background:var(--panel2);border:1px solid var(--line);border-radius:6px;padding:4px 9px;font-family:var(--mono);font-size:12px;cursor:pointer}
+.hbtn:focus-visible,.choice:focus-visible,.btn:focus-visible{outline:2px solid var(--sign);outline-offset:2px}
+
+/* Scene window */
+#art{position:relative;flex:0 0 auto;height:clamp(190px,40%,330px);border-radius:10px;overflow:hidden;background:#111821;border:1px solid var(--line)}
+.art{position:absolute;inset:0;overflow:hidden}
+.art .floor{position:absolute;left:0;right:0;bottom:0;height:28%;background:linear-gradient(#1f2833,#141a21)}
+.art .caption{position:absolute;left:10px;bottom:8px;font-family:var(--mono);font-size:11px;color:#c9d1da;background:rgba(10,14,19,.72);padding:3px 7px;border-radius:4px;letter-spacing:.04em}
+.sign{position:absolute;top:0;left:0;right:0;background:var(--sign);color:var(--signInk);font-family:var(--display);font-weight:700;font-size:20px;letter-spacing:.04em;text-transform:uppercase;padding:5px 12px;display:flex;align-items:center;gap:10px;white-space:nowrap;overflow:hidden}
+.sign small{font-family:var(--body);font-weight:600;font-size:13px;text-transform:none;letter-spacing:0;opacity:.85}
+.sign svg{width:20px;height:20px;flex:none}
+.person{position:absolute;bottom:22%;left:50%;transform:translateX(-50%);height:62%;filter:drop-shadow(0 8px 14px rgba(0,0,0,.5))}
+.desk{position:absolute;left:8%;right:8%;bottom:0;height:30%;background:linear-gradient(#3a4654,#262f3a);border-top:3px solid #56677a}
+.desk::after{content:"";position:absolute;left:12%;top:18%;width:22%;height:30%;background:#0f151c;border-radius:3px;box-shadow:0 0 12px rgba(120,190,255,.25) inset}
+.silh{position:absolute;bottom:20%;width:34px;height:88px;background:#0b1016;border-radius:17px 17px 4px 4px;opacity:.85}
+.silh::before{content:"";position:absolute;left:7px;top:-22px;width:20px;height:22px;border-radius:50%;background:#0b1016}
+
+/* individual scenes */
+.a-safehouse{background:radial-gradient(circle at 70% 35%,rgba(245,184,46,.35),transparent 45%),linear-gradient(#1a1714,#0e0d0c)}
+.a-safehouse .map{position:absolute;left:8%;top:12%;width:44%;height:52%;background:repeating-linear-gradient(0deg,rgba(255,255,255,.05) 0 1px,transparent 1px 18px),repeating-linear-gradient(90deg,rgba(255,255,255,.05) 0 1px,transparent 1px 18px),#2c3a33;border:2px solid #4a4237;transform:rotate(-2deg)}
+.a-safehouse .map i{position:absolute;width:9px;height:9px;border-radius:50%;background:var(--stamp);box-shadow:0 0 0 3px rgba(200,68,60,.3)}
+.a-safehouse .map b{position:absolute;height:2px;background:var(--stamp);transform-origin:left center;opacity:.8}
+.a-safehouse .lamp{position:absolute;right:16%;top:18%;width:60px;height:34px;background:#3b3329;border-radius:30px 30px 4px 4px}
+.a-safehouse .table{position:absolute;left:0;right:0;bottom:0;height:24%;background:linear-gradient(#3a2c20,#21180f)}
+.a-forger{background:radial-gradient(circle at 50% 30%,rgba(255,236,190,.28),transparent 50%),linear-gradient(#18140f,#0b0a08)}
+.a-forger .bench{position:absolute;left:0;right:0;bottom:0;height:30%;background:linear-gradient(#2d2419,#17110b)}
+.a-forger .doc{position:absolute;bottom:18%;width:70px;height:96px;border-radius:4px;background:var(--cover);box-shadow:0 6px 12px rgba(0,0,0,.5)}
+.a-forger .doc::after{content:"";position:absolute;left:24px;top:30px;width:22px;height:22px;border-radius:50%;border:2px solid var(--gold);opacity:.8}
+.a-studio{background:linear-gradient(#e9ecef,#cfd5db)}
+.a-studio .face{position:absolute;left:50%;bottom:0;transform:translateX(-50%);height:88%}
+.a-studio .flash{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none}
+.a-studio .flash.go{animation:flash .5s ease-out}
+@keyframes flash{0%{opacity:1}100%{opacity:0}}
+.a-street{background:linear-gradient(#0b1220,#141c2b 60%,#0d0f13)}
+.a-street .road{position:absolute;left:0;right:0;bottom:0;height:40%;background:linear-gradient(#22252b,#111317)}
+.a-street .streak{position:absolute;height:3px;border-radius:2px;filter:blur(1px);animation:streak linear infinite}
+@keyframes streak{from{transform:translateX(110vw)}to{transform:translateX(-60vw)}}
+.a-street .sky{position:absolute;left:0;right:0;top:12%;height:40%;background:repeating-linear-gradient(90deg,transparent 0 22px,rgba(245,184,46,.18) 22px 26px,transparent 26px 60px);mask-image:linear-gradient(transparent,#000 60%,transparent)}
+.a-terminal{background:linear-gradient(#1c2632,#121922)}
+.a-terminal .person{left:30%}
+.a-terminal .glass{position:absolute;left:0;right:0;top:36px;height:46%;background:repeating-linear-gradient(90deg,rgba(150,190,230,.10) 0 2px,transparent 2px 70px),linear-gradient(#0d1a2a,#16283c)}
+.board{position:absolute;right:10px;top:46px;width:min(62%,300px);background:#07090c;border:2px solid #2b333d;border-radius:4px;font-family:var(--mono);font-size:10px;color:#ffd166;padding:5px 6px;display:grid;grid-template-columns:auto auto 1fr auto auto;gap:2px 8px;white-space:nowrap}
+.board .hd{color:#7f8b98;font-size:9px}
+.board .me{color:#fff;background:#18222e}
+.board .st-ok{color:#6fdc9a}.board .st-warn{color:#ff7b6b}
+.a-counter{background:linear-gradient(#1d2733,#141b24)}
+.a-counter .wall{position:absolute;left:0;right:0;top:36px;bottom:30%;background:repeating-linear-gradient(90deg,#1f2a37 0 60px,#1b2531 60px 120px)}
+.a-xray{background:linear-gradient(#1a222c,#10151b)}
+.a-xray .machine{position:absolute;left:30%;bottom:18%;width:40%;height:46%;background:linear-gradient(#5b6773,#3a434d);border-radius:8px 8px 0 0}
+.a-xray .machine::before{content:"";position:absolute;left:12%;right:12%;bottom:0;height:56%;background:repeating-linear-gradient(90deg,#111 0 6px,#1b1b1b 6px 10px)}
+.a-xray .belt{position:absolute;left:0;right:0;bottom:12%;height:7%;background:repeating-linear-gradient(90deg,#2b2f35 0 14px,#222 14px 16px);animation:belt 1s linear infinite}
+@keyframes belt{to{background-position:-16px 0}}
+.a-xray .bag{position:absolute;bottom:19%;width:68px;height:44px;border-radius:7px;background:#5a3b2a;animation:bagmove 7s linear infinite}
+@keyframes bagmove{from{left:-80px}to{left:110%}}
+.a-xray .screen{position:absolute;right:6%;top:48px;width:30%;height:38%;background:#0b1a24;border:3px solid #39444f;border-radius:4px;overflow:hidden}
+.a-xray .screen::before{content:"";position:absolute;inset:18% 22%;border-radius:6px;background:radial-gradient(circle at 40% 50%,rgba(255,150,40,.85) 0 14%,transparent 15%),radial-gradient(circle at 65% 45%,rgba(60,140,255,.8) 0 18%,transparent 19%),rgba(90,200,120,.35)}
+.a-xray .screen.alert{border-color:var(--stamp);box-shadow:0 0 18px rgba(200,68,60,.6)}
+.a-gate{background:linear-gradient(#1a2430,#111821)}
+.a-gate .window{position:absolute;left:0;right:0;top:36px;height:52%;background:linear-gradient(#0a1424,#1d3350 70%,#2a3442)}
+.a-gate .plane{position:absolute;left:10%;top:calc(36px + 22%);width:62%;opacity:.95}
+.a-gate .gateno{position:absolute;left:10px;top:44px;background:var(--sign);color:var(--signInk);font-family:var(--display);font-weight:700;font-size:28px;padding:0 10px;border-radius:3px}
+.a-cabin{background:linear-gradient(#2a2e33,#1a1d21)}
+.a-cabin .seat{position:absolute;bottom:0;width:22%;height:62%;background:linear-gradient(#304160,#1f2b40);border-radius:16px 16px 0 0;box-shadow:inset 0 10px 0 rgba(255,255,255,.06)}
+.a-cabin .win{position:absolute;right:6%;top:14%;width:56px;height:76px;border-radius:26px;background:linear-gradient(#ffb36b,#4b6aa1 60%,#1c2c4a);border:6px solid #ccd2d8}
+.a-cabin.night .win{background:linear-gradient(#0a1428,#1c2c4a)}
+.a-dxb{background:linear-gradient(#2a2418,#17140e)}
+.a-dxb .sign{background:#d9b25a}
+.a-dxb .arches{position:absolute;left:0;right:0;top:36px;height:50%;background:radial-gradient(ellipse at 50% 100%,transparent 40%,rgba(217,178,90,.12) 41% 44%,transparent 45%) 0 0/120px 100%,linear-gradient(#3b301d,#1e1910)}
+.a-room{background:radial-gradient(circle at 50% 18%,rgba(255,244,214,.35),transparent 42%),linear-gradient(#141414,#0a0a0a)}
+.a-room .bulb{position:absolute;left:50%;top:0;width:2px;height:16%;background:#555}
+.a-room .bulb::after{content:"";position:absolute;left:-9px;bottom:-12px;width:20px;height:16px;border-radius:0 0 10px 10px;background:#ffeab3;box-shadow:0 0 40px 10px rgba(255,230,170,.4)}
+.a-room .table{position:absolute;left:10%;right:10%;bottom:0;height:26%;background:linear-gradient(#3b3a37,#1f1e1c)}
+.a-room .mirror{position:absolute;left:4%;top:20%;width:26%;height:36%;background:linear-gradient(135deg,#202a33,#0e1318 60%,#1b232b);border:3px solid #333}
+.a-title{background:radial-gradient(circle at 50% 40%,#1c2b52,#0d1218 70%)}
+.a-title .logo{position:absolute;inset:0;display:grid;place-content:center;text-align:center;gap:6px}
+.a-title .logo h1{margin:0;font-family:var(--display);font-weight:700;font-size:clamp(64px,22vw,120px);letter-spacing:.18em;line-height:.9;color:var(--paper);text-indent:.18em}
+.a-title .logo .route{font-family:var(--mono);font-size:13px;color:var(--sign);letter-spacing:.2em}
+.a-title .stamp{position:absolute;right:8%;top:14%}
+
+/* Stamps */
+.stampmark{display:inline-block;border:3px double var(--stamp);color:var(--stamp);font-family:var(--display);font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:4px 10px;border-radius:6px;transform:rotate(-9deg);opacity:.9;font-size:15px;line-height:1.1;text-align:center}
+.stampmark small{display:block;font-family:var(--mono);font-size:10px;font-weight:500}
+.stampmark.big{font-size:22px}
+.stampmark.ok{border-color:var(--ok);color:var(--ok)}
+.stamp-drop{position:absolute;left:50%;top:40%;transform:translate(-50%,-50%) rotate(-9deg) scale(1);animation:stampin .35s cubic-bezier(.2,1.6,.4,1)}
+@keyframes stampin{from{transform:translate(-50%,-50%) rotate(-9deg) scale(2.4);opacity:0}}
+
+/* Panel */
+#panel{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;gap:10px;overflow-y:auto;padding-bottom:4px}
+#dialog{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 14px;cursor:pointer;min-height:84px;position:relative}
+#who{font-family:var(--display);font-weight:600;font-size:15px;letter-spacing:.08em;text-transform:uppercase;color:var(--sign);min-height:1.2em}
+#who.narr{color:var(--dim)}
+#line{font-size:16px;margin-top:2px;white-space:pre-line}
+#line.narr{font-style:italic;color:#c3ccd6}
+#next{position:absolute;right:12px;bottom:8px;font-family:var(--mono);font-size:11px;color:var(--dim);animation:blink 1.2s infinite}
+@keyframes blink{50%{opacity:.3}}
+#timer{height:4px;border-radius:2px;background:var(--line);overflow:hidden}
+#timer i{display:block;height:100%;width:100%;background:var(--sign);transform-origin:left}
+#choices{display:flex;flex-direction:column;gap:8px}
+.choice{display:flex;flex-direction:column;align-items:flex-start;text-align:left;gap:2px;background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:10px 12px;cursor:pointer;transition:border-color .15s,background .15s}
+.choice:hover{border-color:var(--sign)}
+.choice:disabled{opacity:.45;cursor:not-allowed}
+.choice .lab{font-weight:600}
+.choice .sub{font-size:13px;color:var(--dim)}
+.choice .tag{font-family:var(--mono);font-size:12px;color:var(--sign)}
+.choice.on{border-color:var(--ok);background:#18302a}
+.row{display:flex;gap:8px;flex-wrap:wrap}
+.row .choice{flex:1 1 140px}
+
+/* Overlay sheets */
+#overlay{position:fixed;inset:0;background:rgba(8,11,15,.97);display:grid;place-items:center;z-index:20;
+  padding:max(16px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) max(16px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));overflow-y:auto}
+.sheet{width:min(100%,460px);display:flex;flex-direction:column;gap:12px}
+.sheet h2{margin:0;font-family:var(--display);font-size:24px;letter-spacing:.06em;text-transform:uppercase;color:var(--sign);text-wrap:balance}
+.btn{background:var(--sign);color:var(--signInk);border:0;border-radius:8px;padding:11px 14px;font-weight:700;cursor:pointer;font-family:var(--display);font-size:18px;letter-spacing:.06em;text-transform:uppercase}
+.btn.ghost{background:transparent;color:var(--text);border:1px solid var(--line)}
+
+/* Passport bio page */
+.pp{background:linear-gradient(135deg,#efe8d6,#e3dcc9);color:var(--paperInk);border-radius:8px;padding:12px;font-family:var(--mono);font-size:11px;box-shadow:0 10px 30px rgba(0,0,0,.5);position:relative;overflow:hidden}
+.pp::before{content:"";position:absolute;inset:0;background:repeating-radial-gradient(circle at 70% 40%,rgba(28,43,82,.06) 0 2px,transparent 2px 9px);pointer-events:none}
+.pp-head{display:flex;justify-content:space-between;font-family:var(--body);font-weight:600;font-size:12px;color:var(--cover);border-bottom:1px solid rgba(28,43,82,.3);padding-bottom:5px;margin-bottom:8px;gap:8px;flex-wrap:wrap}
+.pp-body{display:flex;gap:12px}
+.pp-photo{flex:0 0 84px;height:104px;background:#dfe4e8;border-radius:3px;overflow:hidden}
+.pp-photo svg{width:100%;height:100%}
+.pp dl{margin:0;display:grid;grid-template-columns:1fr 1fr;gap:4px 10px;flex:1;min-width:0}
+.pp dt{font-size:8.5px;color:#6a6458;text-transform:uppercase}
+.pp dd{margin:0;font-weight:600;font-size:11.5px;overflow-wrap:anywhere}
+.pp .mrz{margin-top:10px;font-size:10.5px;letter-spacing:.06em;word-break:break-all;line-height:1.35;color:#1c1c1c}
+.pp.sloppy dd{font-family:'Courier New',monospace;letter-spacing:.02em}
+.pp.sloppy .mrz{transform:rotate(-.6deg);letter-spacing:.1em}
+.pp-stamps{display:flex;gap:14px;flex-wrap:wrap;padding:10px;min-height:60px;background:#e6dfcc;border-radius:8px;align-items:center}
+.pp-stamps .empty{font-family:var(--mono);font-size:11px;color:#77705f}
+.bp{background:#f4f6f8;color:#1b2430;border-radius:8px;display:grid;grid-template-columns:1fr auto;overflow:hidden;font-family:var(--mono);font-size:11px}
+.bp .main{padding:10px 12px;display:grid;grid-template-columns:repeat(3,auto);gap:4px 14px}
+.bp .main .big{font-family:var(--display);font-size:26px;font-weight:700;grid-column:1/-1;letter-spacing:.04em}
+.bp .stub{background:#1c2b52;color:#fff;padding:10px;writing-mode:vertical-rl;text-align:center;font-family:var(--display);letter-spacing:.2em;font-size:14px}
+.bp span{display:block;font-size:8.5px;color:#6b7684;text-transform:uppercase}
+.dossier{background:var(--paper);color:var(--paperInk);border-radius:8px;padding:14px 16px;font-family:var(--mono);font-size:13px;position:relative}
+.dossier h3{margin:0 0 8px;font-family:var(--display);font-size:20px;letter-spacing:.08em;color:var(--stamp);text-transform:uppercase}
+.dossier dl{margin:0;display:grid;grid-template-columns:auto 1fr;gap:5px 12px}
+.dossier dt{color:#776f60;font-size:11px;text-transform:uppercase;padding-top:2px}
+.dossier dd{margin:0;font-weight:600}
+.countdown{font-family:var(--mono);color:var(--sign);font-size:13px}
+
+/* Breathing */
+.breath{display:grid;place-items:center;gap:14px;text-align:center}
+.ring{width:200px;height:200px;border-radius:50%;display:grid;place-items:center;position:relative;touch-action:none;user-select:none;-webkit-user-select:none;cursor:pointer}
+.ring .guide{position:absolute;inset:0;border-radius:50%;border:2px dashed rgba(245,184,46,.5);transform:scale(.45)}
+.ring .core{width:120px;height:120px;border-radius:50%;background:radial-gradient(circle,#2c3e56,#1a2638);border:2px solid var(--line);display:grid;place-items:center;font-family:var(--display);font-size:18px;letter-spacing:.08em;text-transform:uppercase}
+.ring.held .core{border-color:var(--ok)}
+.meter{width:100%;height:8px;border-radius:4px;background:var(--line);overflow:hidden}
+.meter i{display:block;height:100%;background:var(--ok);width:0}
+
+/* Report */
+.report{display:flex;flex-direction:column;gap:12px}
+.report .verdict{font-family:var(--display);font-size:34px;font-weight:700;letter-spacing:.04em;line-height:1;text-transform:uppercase;text-wrap:balance}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.stat{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:8px 10px}
+.stat span{display:block;font-family:var(--mono);font-size:10.5px;color:var(--dim);text-transform:uppercase;letter-spacing:.06em}
+.stat b{font-family:var(--mono);font-size:16px;font-variant-numeric:tabular-nums}
+.traces{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px;font-family:var(--mono);font-size:12px}
+.traces li{background:var(--panel);border-left:3px solid var(--stamp);padding:6px 9px;border-radius:0 6px 6px 0}
+.traces li.none{border-left-color:var(--ok)}
+.muted{color:var(--dim);font-size:13px}
+
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+
+<div id="app">
+  <header id="hud">
+    <div class="hud-i"><b id="clock">22:30</b><span id="tz">IST</span></div>
+    <div class="hud-i"><b id="money">₹5,00,000</b></div>
+    <div class="hud-i" title="Dhadkan"><svg class="heart" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-7.5-4.6-10-9.3C.3 8.4 2.2 4 6.1 4c2.3 0 3.9 1.4 5.9 3.6C14 5.4 15.6 4 17.9 4c3.9 0 5.8 4.4 4.1 7.7C19.5 16.4 12 21 12 21z"/></svg><b id="bpm">72</b></div>
+    <div class="hud-sp"></div>
+    <button class="hbtn" id="docsBtn" type="button">Docs</button>
+    <button class="hbtn" id="muteBtn" type="button">Mute</button>
+  </header>
+  <section id="art" aria-hidden="true"></section>
+  <section id="panel">
+    <div id="dialog" role="status" aria-live="polite"><div id="who"></div><div id="line"></div><div id="next" hidden>tap ▸</div></div>
+    <div id="timer" hidden><i></i></div>
+    <div id="choices"></div>
+  </section>
+</div>
+<div id="overlay" hidden></div>
+
+<script>
+(() => {
+'use strict';
+/* ---------- helpers ---------- */
+const $ = s => document.querySelector(s);
+const rnd = (a,b) => a + Math.random()*(b-a);
+const ri = (a,b) => Math.floor(rnd(a,b+1));
+const pick = a => a[Math.floor(Math.random()*a.length)];
+const chance = p => Math.random() < p;
+const shuffle = a => { a = a.slice(); for (let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; };
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const inr = n => '₹' + Math.round(n).toLocaleString('en-IN');
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const TIMEOUT = Symbol('timeout');
+class GameOver extends Error { constructor(kind, title, text){ super(title); this.kind=kind; this.title=title; this.text=text; } }
+
+/* ---------- data ---------- */
+const NAMES = [['Kabir','Sethi'],['Nikhil','Arora'],['Varun','Joshi'],['Sameer','Khanna'],['Aditya','Rao'],['Rehan','Mirza'],['Ishaan','Bhatt']];
+const REAL = ['Aman Verma','Rahul Saxena','Deepak Nair','Manav Gill'];
+const CITIES = ['Indore','Pune','Lucknow','Jaipur','Surat','Nagpur','Bhopal'];
+const JOBS = [
+  {title:'Sales manager', co:'Kiran Textiles'},
+  {title:'Software tester', co:'Bluewave Systems'},
+  {title:'Purchase executive', co:'Shree Spices Exports'},
+  {title:'Hotel supplies distributor', co:'Annapurna Traders'},
+  {title:'Logistics coordinator', co:'Seabird Freight'}];
+const PURPOSES = [
+  {text:'Supplier se meeting', type:'business'},
+  {text:'Trade expo attend karna', type:'business'},
+  {text:'Cousin ki shaadi', type:'tourist'},
+  {text:'Family ke saath chhutti', type:'tourist'}];
+const HOTELS = ['Al Noor Residency, Deira','Creekside Inn, Bur Dubai','Marina Pearl Hotel','Palm Gate Suites, Al Barsha'];
+const DAYS = ['3 din','4 din','5 din','6 din','7 din'];
+
+const QB = {
+  city:    {qs:['Aap kahan se ho?','Rehte kahan ho aap?'], ans:L=>L.city, pool:CITIES},
+  job:     {qs:['Kya kaam karte ho?','Profession kya hai aapka?'], ans:L=>L.job.title, pool:JOBS.map(j=>j.title)},
+  company: {qs:['Kis company mein ho?','Company ka naam?'], ans:L=>L.job.co, pool:JOBS.map(j=>j.co)},
+  purpose: {qs:['Dubai kis kaam se ja rahe ho?','Purpose of visit?'], ans:L=>L.purpose.text, pool:PURPOSES.map(p=>p.text)},
+  days:    {qs:['Kitne din ka trip hai?','Wapas kab aa rahe ho?'], ans:L=>L.days, pool:DAYS},
+  hotel:   {qs:['Dubai mein kahan ruk rahe ho?','Hotel ka naam?'], ans:L=>L.hotel, pool:HOTELS},
+  dob:     {qs:['Date of birth batao.','Janam tithi?'], ans:L=>L.dob, pool:null},
+};
+const DOUBT_LABEL = {city:'shehar', job:'kaam', company:'company', purpose:'safar ka maqsad', days:'trip ki lambai', hotel:'hotel', dob:'date of birth', passport:'passport', face:'chehra', gadget:'bag mein device', visa:'visa'};
+
+const TIERS = [
+  {name:'Jugaad', price:40000, flag:.38, sub:'Purane passport pe naya page. MRZ ka check digit galat ho sakta hai. Machine scan pe khatra.'},
+  {name:'Clean', price:150000, flag:.12, sub:'Asli blank booklet, haath se print. Zyaatar scan nikal jaata hai.'},
+  {name:'Ghost', price:300000, flag:.03, sub:'Chip waala, database mein entry ke saath. Lagbhag perfect.'}];
+
+const LITTER = [
+  {id:'cards', name:'Visiting cards', price:3000, supports:['job','company'], sub:'Company ke naam ke 50 cards. Kaam ka saboot.'},
+  {id:'letter', name:'Invitation letter', price:12000, supports:['purpose','visa'], sub:'Dubai se aaya letter ya shaadi ka card. Safar ka maqsad saabit karta hai.'},
+  {id:'receipts', name:'Local receipts + bus pass', price:1500, supports:['city'], sub:'Apne shehar ki chai-dukaan ki parchiyaan. Shehar ka saboot.'},
+  {id:'line', name:'Cover phone line', price:25000, supports:['job','company','purpose','days'], sub:'Ek number jahan "boss" phone uthakar tumhari kahani confirm karega.'},
+  {id:'photo', name:'Family photo (wallet)', price:500, supports:[], sub:'Nakli family. Officer ko insaan lagoge, aur tumhe sukoon milega.'}];
+
+/* ---------- state ---------- */
+let S;
+function resetState(){
+  const n = pick(NAMES);
+  const y = ri(1987,1996), m = ri(1,12), d = ri(1,28);
+  S = {
+    t: 22*60+30, tz:'IST', money: 500000, nerve: 8, heat: 0,
+    L: { given:n[0], surname:n[1], city:pick(CITIES), job:pick(JOBS), purpose:pick(PURPOSES), hotel:pick(HOTELS), days:pick(DAYS),
+         dob:`${String(d).padStart(2,'0')}/${String(m).padStart(2,'0')}/${y}`, d, m, y },
+    realName: pick(REAL), ppNo: pick('JKLMRTVZ'.split('')) + ri(1000000,9999999),
+    tier: null, photoLook:{beard:'stubble', glasses:false}, look:null,
+    ticket:null, hotelBooked:false, visa:null, litter:new Set(), used:new Set(), spot:null, hasDevice:true,
+    traces:[], stamps:[], bp:null, inconsist:[], neighbourAgent:false, neighbourNote:false, bagHold:false,
+    secondaryCount:0, start: Date.now()
+  };
+}
+function trace(text){ S.traces.push({t:clockStr(), text}); }
+function clockStr(){ const off = S.tz==='GST' ? -90 : 0; let m = ((S.t+off)%1440+1440)%1440; return String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0'); }
+function addTime(mins){ S.t += mins; hud(); }
+function spend(n){ S.money -= n; hud(); }
+function bpm(){ return Math.round(66 + S.nerve*0.95); }
+function nerve(d){ S.nerve = Math.max(0, Math.min(100, S.nerve + d)); hud(); }
+function hud(){
+  $('#clock').textContent = clockStr(); $('#tz').textContent = S.tz;
+  $('#money').textContent = inr(S.money);
+  $('#bpm').textContent = bpm();
+  document.querySelector('.heart').style.setProperty('--beat', (60/bpm()).toFixed(2)+'s');
+}
+
+/* ---------- audio (all synthesized) ---------- */
+const AU = {ctx:null, on:true};
+function auInit(){
+  if (AU.ctx) return;
+  try {
+    const C = window.AudioContext || window.webkitAudioContext; AU.ctx = new C();
+    AU.master = AU.ctx.createGain(); AU.master.gain.value = .8; AU.master.connect(AU.ctx.destination);
+    const len = AU.ctx.sampleRate*3, buf = AU.ctx.createBuffer(1,len,AU.ctx.sampleRate), ch = buf.getChannelData(0);
+    let last = 0; for (let i=0;i<len;i++){ const w=Math.random()*2-1; last=(last+.02*w)/1.02; ch[i]=last*3.5; }
+    AU.noise = buf;
+    const src = AU.ctx.createBufferSource(); src.buffer = buf; src.loop = true;
+    AU.ambF = AU.ctx.createBiquadFilter(); AU.ambF.type='lowpass'; AU.ambF.frequency.value=500;
+    AU.amb = AU.ctx.createGain(); AU.amb.gain.value = 0;
+    src.connect(AU.ambF).connect(AU.amb).connect(AU.master); src.start();
+    heartLoop();
+  } catch(e){ AU.ctx = null; }
+}
+function ambient(level, freq){ if(!AU.ctx) return; const t=AU.ctx.currentTime; AU.amb.gain.cancelScheduledValues(t); AU.amb.gain.linearRampToValueAtTime(level,t+1.5); if(freq) AU.ambF.frequency.linearRampToValueAtTime(freq,t+1.5); }
+function tone(f, dur, type='sine', vol=.2, when=0){
+  if(!AU.ctx || !AU.on) return;
+  const t = AU.ctx.currentTime + when, o = AU.ctx.createOscillator(), g = AU.ctx.createGain();
+  o.type = type; o.frequency.value = f; g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(vol,t+.01); g.gain.exponentialRampToValueAtTime(.0001,t+dur);
+  o.connect(g).connect(AU.master); o.start(t); o.stop(t+dur+.05);
+}
+function burst(dur, freq, vol=.5, type='lowpass'){
+  if(!AU.ctx || !AU.on) return;
+  const t = AU.ctx.currentTime, s = AU.ctx.createBufferSource(), f = AU.ctx.createBiquadFilter(), g = AU.ctx.createGain();
+  s.buffer = AU.noise; f.type = type; f.frequency.value = freq; g.gain.setValueAtTime(vol,t); g.gain.exponentialRampToValueAtTime(.0001,t+dur);
+  s.connect(f).connect(g).connect(AU.master); s.start(t, Math.random()); s.stop(t+dur+.05);
+}
+const sfx = {
+  chime(){ tone(784,1.3,'sine',.15); tone(659,1.3,'sine',.15,.4); tone(523,1.6,'sine',.15,.8); },
+  stamp(){ burst(.12,900,.9); tone(70,.2,'sine',.5); },
+  beep(ok=true){ tone(ok?1480:420,.16,'square',.07); if(!ok) tone(420,.16,'square',.07,.22); },
+  shutter(){ burst(.06,4000,.5,'highpass'); burst(.05,3000,.4,'highpass'); },
+  tick(){ tone(1800,.03,'square',.03); },
+  thrill(){ tone(110,1.6,'sawtooth',.05); tone(116,1.6,'sawtooth',.05); }
+};
+function heartLoop(){
+  const step = () => {
+    if (S && AU.on && S.nerve > 22){ const v = Math.min(.4,(S.nerve-15)/140); tone(58,.13,'sine',v); tone(52,.13,'sine',v*.75,.17); }
+    setTimeout(step, 60000/(S?bpm():70));
+  }; step();
+}
+
+/* ---------- drawing ---------- */
+function person(o={}){
+  const skin=o.skin||'#a8744f', top=o.top||'#2b3a55', hair=o.hair||'#1d1a18';
+  const k = o.kandura;
+  let s = `<svg class="person" viewBox="0 0 200 230" aria-hidden="true">`;
+  if (o.ghutra) s += `<path d="M48 78 Q100 6 152 78 L168 230 L32 230 Z" fill="#f3f2ee"/>`;
+  if (o.scarf) s += `<path d="M52 80 Q100 10 148 80 L156 175 L44 175 Z" fill="${o.scarf}"/>`;
+  s += `<path d="M24 230 Q26 160 100 148 Q174 160 176 230 Z" fill="${k?'#f4f3ef':top}"/>`;
+  if (!k && o.collar!==false) s += `<path d="M78 152 L100 182 L122 152 Z" fill="${o.shirt||'#dfe5ec'}"/>`;
+  if (o.tie) s += `<path d="M96 160 L104 160 L107 196 L100 204 L93 196 Z" fill="${o.tie}"/>`;
+  if (o.badge) s += `<rect x="128" y="176" width="22" height="14" rx="2" fill="${o.badge}"/>`;
+  s += `<rect x="86" y="122" width="28" height="32" fill="${skin}"/>`;
+  s += `<ellipse cx="100" cy="90" rx="37" ry="45" fill="${skin}"/>`;
+  if (!o.ghutra && !o.scarf) s += `<path d="M63 82 Q62 40 100 38 Q140 38 138 84 Q130 58 100 58 Q72 58 63 82 Z" fill="${hair}"/>`;
+  if (o.cap) s += `<path d="M60 70 Q100 30 140 70 Z" fill="${o.cap}"/><rect x="56" y="66" width="88" height="8" rx="3" fill="#111"/><circle cx="100" cy="56" r="5" fill="${o.capBadge||'#d7b46a'}"/>`;
+  if (o.ghutra) s += `<path d="M60 74 Q100 44 140 74 L140 64 Q100 30 60 64 Z" fill="#fafaf8"/><rect x="62" y="56" width="76" height="7" rx="3.5" fill="#151515"/>`;
+  s += `<path d="M78 80 L92 78" stroke="#2a1d14" stroke-width="3" stroke-linecap="round"/><path d="M108 78 L122 80" stroke="#2a1d14" stroke-width="3" stroke-linecap="round"/>`;
+  s += `<ellipse cx="86" cy="90" rx="4" ry="${o.squint?2:3.4}" fill="#1a1410"/><ellipse cx="114" cy="90" rx="4" ry="${o.squint?2:3.4}" fill="#1a1410"/>`;
+  s += `<path d="M100 92 L96 108 L102 109" stroke="rgba(0,0,0,.25)" stroke-width="2" fill="none"/>`;
+  if (o.beard==='stubble') s += `<path d="M66 100 Q70 136 100 138 Q130 136 134 100 Q128 124 100 126 Q72 124 66 100 Z" fill="rgba(25,18,14,.35)"/>`;
+  if (o.beard==='full') s += `<path d="M64 96 Q66 142 100 144 Q134 142 136 96 Q130 122 112 120 L88 120 Q70 122 64 96 Z" fill="${hair}"/>`;
+  if (o.mustache || o.beard==='full') s += `<path d="M86 115 Q100 109 114 115 Q100 119 86 115 Z" fill="${hair}"/>`;
+  s += `<path d="M90 ${o.beard==='full'?124:122} Q100 ${o.smile?128:124} 110 ${o.beard==='full'?124:122}" stroke="#4a2c22" stroke-width="2.4" fill="none" stroke-linecap="round"/>`;
+  if (o.glasses) s += `<g fill="rgba(180,210,235,.15)" stroke="#111" stroke-width="2.6"><rect x="73" y="81" width="24" height="17" rx="5"/><rect x="103" y="81" width="24" height="17" rx="5"/></g><path d="M97 88 L103 88" stroke="#111" stroke-width="2.6"/>`;
+  return s + `</svg>`;
+}
+const planeIcon = `<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5z"/></svg>`;
+const bigPlane = `<svg class="plane" viewBox="0 0 400 120" aria-hidden="true"><path d="M10 70 Q20 50 60 50 L330 46 Q380 48 392 64 Q380 78 330 80 L60 80 Q20 80 10 70Z" fill="#cfd6de"/><path d="M180 52 L250 6 L268 6 L230 52Z" fill="#aab4bf"/><path d="M190 78 L262 116 L280 116 L238 78Z" fill="#aab4bf"/><path d="M40 52 L22 18 L42 18 L70 50Z" fill="#1c2b52"/><g fill="#28384d">${Array.from({length:18},(_,i)=>`<rect x="${90+i*13}" y="58" width="7" height="7" rx="2"/>`).join('')}</g></svg>`;
+
+function board(status){
+  const rows = [['03:50','EK 2210','DUBAI','61','Boarding','st-ok'],['04:05','QR 557','DOHA','68','On time',''],
+                ['04:15','ZR 501','DUBAI', S.bp?S.bp.gate:'--', status, status==='Delayed'||status==='Last call'?'st-warn':'st-ok'],
+                ['04:40','UK 233','MUSCAT','76','On time','']];
+  return `<div class="board"><span class="hd">TIME</span><span class="hd">FLIGHT</span><span class="hd">TO</span><span class="hd">GATE</span><span class="hd">STATUS</span>` +
+    rows.map(r => { const me = r[1]==='ZR 501'?' me':''; return `<span class="${me}">${r[0]}</span><span class="${me}">${r[1]}</span><span class="${me}">${r[2]}</span><span class="${me}">${r[3]}</span><span class="${me} ${r[5]}">${r[4]}</span>`; }).join('') + `</div>`;
+}
+function crowd(n){ let s=''; for(let i=0;i<n;i++){ const l = 4 + i*(88/n) + rnd(-3,3); const sc = rnd(.75,1.05); s += `<div class="silh" style="left:${l}%;transform:scale(${sc.toFixed(2)});opacity:${rnd(.5,.85).toFixed(2)}"></div>`; } return s; }
+
+function art(kind, o={}){
+  let h = '';
+  switch(kind){
+    case 'title': h = `<div class="art a-title"><div class="logo"><h1>TRACE</h1><div class="route">BOM ── ✕ ── DXB</div></div></div>`; break;
+    case 'safehouse': h = `<div class="art a-safehouse"><div class="map"><i style="left:30%;top:58%"></i><i style="left:12%;top:30%"></i><b style="left:31%;top:60%;width:70px;transform:rotate(-155deg)"></b></div><div class="lamp"></div><div class="table"></div>${o.person?person(o.person):''}<div class="caption">${esc(o.cap||'Safehouse · Andheri East, Mumbai')}</div></div>`; break;
+    case 'forger': h = `<div class="art a-forger"><div class="bench"></div>${person({top:'#4a3a2a',hair:'#bbb',beard:'full',glasses:true,shirt:'#6b5b4a',skin:'#9c6a46'})}<div class="doc" style="left:10%;transform:rotate(-8deg)"></div><div class="doc" style="right:10%;transform:rotate(7deg)"></div><div class="caption">Bashir ki dukaan · Mohammed Ali Road</div></div>`; break;
+    case 'studio': h = `<div class="art a-studio"><div class="face">${person(Object.assign({top:'#2d2f36'},o.look||{})).replace('class="person"','class="person" style="position:static;transform:none;height:100%"')}</div><div class="flash"></div><div class="caption">Photo studio · 35×45 mm, white background</div></div>`; break;
+    case 'street': { let st=''; for(let i=0;i<9;i++){ st += `<div class="streak" style="top:${55+rnd(0,35)}%;width:${ri(60,180)}px;background:${pick(['#ffcf73','#ff5a4e','#fff3d1'])};animation-duration:${rnd(.8,2.2).toFixed(2)}s;animation-delay:-${rnd(0,2).toFixed(2)}s"></div>`; }
+      h = `<div class="art a-street"><div class="sky"></div><div class="road"></div>${st}<div class="caption">${esc(o.cap||'Western Express Highway · raat')}</div></div>`; } break;
+    case 'terminal': h = `<div class="art a-terminal"><div class="sign">${planeIcon}${esc(o.sign||'International Departures')} <small>${esc(o.hi||'अंतरराष्ट्रीय प्रस्थान')}</small></div><div class="glass"></div>${board(o.status||'Check-in')}<div class="floor"></div>${crowd(o.crowd??6)}${o.person?person(o.person):''}<div class="caption">${esc(o.cap||'Terminal 2 · Chhatrapati Shivaji Maharaj Intl')}</div></div>`; break;
+    case 'counter': h = `<div class="art a-counter${o.dxb?' a-dxb':''}"><div class="sign">${o.dxb?'':planeIcon}${esc(o.sign)} <small>${esc(o.hi||'')}</small></div>${o.dxb?'<div class="arches"></div>':'<div class="wall"></div>'}${person(o.person||{})}<div class="desk"></div><div class="caption">${esc(o.cap||'')}</div>${o.stamp?`<div class="stamp-drop">${o.stamp}</div>`:''}</div>`; break;
+    case 'xray': h = `<div class="art a-xray"><div class="sign">${planeIcon}Security Check <small>सुरक्षा जांच</small></div><div class="machine"></div><div class="belt"></div><div class="bag"></div><div class="screen${o.alert?' alert':''}"></div>${o.person?person(Object.assign({},o.person)).replace('class="person"','class="person" style="left:18%;height:56%"'):''}<div class="caption">Security · Lane ${o.lane||4}</div></div>`; break;
+    case 'gate': h = `<div class="art a-gate"><div class="sign">${planeIcon}Gates 61–86 <small>द्वार</small></div><div class="window"></div>${bigPlane}<div class="gateno">${esc(S.bp?S.bp.gate:'72')}</div><div class="floor"></div>${crowd(o.crowd??5)}${o.person?person(o.person):''}<div class="caption">${esc(o.cap||'Boarding gate')}</div></div>`; break;
+    case 'cabin': h = `<div class="art a-cabin${o.night?' night':''}"><div class="win"></div><div class="seat" style="left:4%"></div><div class="seat" style="left:28%"></div>${o.person?person(o.person).replace('class="person"','class="person" style="left:62%;height:60%;bottom:8%"'):''}<div class="caption">${esc(o.cap||'ZR 501 · Seat '+(S.bp?S.bp.seat:'23A'))}</div></div>`; break;
+    case 'dxb': h = `<div class="art a-dxb"><div class="sign">${esc(o.sign||'Arrivals')} <small>${esc(o.ar||'الوصول')}</small></div><div class="arches"></div><div class="floor"></div>${crowd(o.crowd??6)}${o.person?person(o.person):''}<div class="caption">${esc(o.cap||'Dubai International · Terminal 1')}</div></div>`; break;
+    case 'room': h = `<div class="art a-room"><div class="bulb"></div><div class="mirror"></div>${person(o.person||{})}<div class="table"></div><div class="caption">${esc(o.cap||'Secondary inspection room')}</div></div>`; break;
+  }
+  $('#art').innerHTML = h;
+}
+const OFF = {
+  cisf:   {top:'#5d5a3c', cap:'#4d4a30', capBadge:'#c9a94a', mustache:true, skin:'#9a6844', shirt:'#6e6a48', badge:'#c9a94a'},
+  airline:{top:'#7a2338', scarf:null, hair:'#2a1a12', skin:'#c08a64', shirt:'#f0e6e0', smile:true, tie:'#d7b46a'},
+  bom:    {top:'#1f2d4a', shirt:'#e7edf3', tie:'#1c2b52', glasses:true, skin:'#8f5f3d', mustache:true, badge:'#d7b46a'},
+  sec:    {top:'#5d5a3c', cap:'#4d4a30', capBadge:'#c9a94a', skin:'#b07a52', shirt:'#6e6a48', squint:true},
+  dxbA:   {kandura:true, ghutra:true, beard:'full', hair:'#2b2622', skin:'#b88a62'},
+  dxbB:   {kandura:true, ghutra:true, beard:'stubble', skin:'#c79a70', squint:true},
+  dxbC:   {kandura:true, ghutra:true, mustache:true, skin:'#a87a54', smile:true},
+  cust:   {top:'#3c4a3a', shirt:'#d9dfd2', skin:'#b88a62', beard:'stubble', badge:'#d7b46a'},
+  neighbour:{top:'#6b3f5c', scarf:'#3b2a45', skin:'#c79670', smile:true, collar:false},
+  handler:{top:'#22262c', shirt:'#3a3f47', hair:'#555', skin:'#9c6a46', glasses:true},
+  stranger:{top:'#3d4a5a', skin:'#a8744f', smile:true}
+};
+
+/* ---------- dialogue engine ---------- */
+let advance = null;
+const dlg = $('#dialog'), whoEl = $('#who'), lineEl = $('#line'), nextEl = $('#next'), choicesEl = $('#choices'), timerEl = $('#timer');
+dlg.addEventListener('click', () => advance && advance());
+document.addEventListener('keydown', e => { if ((e.key===' '||e.key==='Enter') && advance && document.activeElement===document.body){ e.preventDefault(); advance(); } });
+
+function setLine(who, text, narr){
+  whoEl.textContent = who || ''; whoEl.className = narr ? 'narr' : '';
+  lineEl.className = narr ? 'narr' : ''; lineEl.textContent = '';
+  return text;
+}
+function say(who, text, narr=false){
+  choicesEl.innerHTML = ''; timerEl.hidden = true;
+  setLine(who, text, narr);
+  return new Promise(res => {
+    let i = 0, typing = true;
+    const speed = 16;
+    const iv = setInterval(() => { i += 2; lineEl.textContent = text.slice(0,i); if (i >= text.length){ clearInterval(iv); typing=false; nextEl.hidden=false; } }, speed);
+    nextEl.hidden = true;
+    advance = () => {
+      if (typing){ clearInterval(iv); lineEl.textContent = text; typing=false; nextEl.hidden=false; return; }
+      advance = null; nextEl.hidden = true; res();
+    };
+  });
+}
+const narr = text => say('', text, true);
+function choose(opts, {timer=0, keep=false}={}){
+  nextEl.hidden = true; advance = null;
+  choicesEl.innerHTML = '';
+  return new Promise(res => {
+    let to = null, tick = null, done = false;
+    const finish = v => { if (done) return; done = true; clearTimeout(to); clearInterval(tick); timerEl.hidden = true; if(!keep) choicesEl.innerHTML=''; res(v); };
+    opts.forEach(o => {
+      const b = document.createElement('button'); b.type='button'; b.className='choice'; b.disabled = !!o.disabled;
+      b.innerHTML = `<span class="lab">${esc(o.label)}</span>${o.tag?`<span class="tag">${esc(o.tag)}</span>`:''}${o.sub?`<span class="sub">${esc(o.sub)}</span>`:''}`;
+      b.addEventListener('click', () => finish(o.value!==undefined ? o.value : o.label));
+      choicesEl.appendChild(b);
+    });
+    if (timer){
+      timerEl.hidden = false; const bar = timerEl.firstElementChild; const t0 = performance.now();
+      bar.style.transform = 'scaleX(1)';
+      tick = setInterval(() => { const p = 1 - (performance.now()-t0)/timer; bar.style.transform = `scaleX(${Math.max(0,p)})`; if (p < .35) sfx.tick(); }, 250);
+      to = setTimeout(() => finish(TIMEOUT), timer);
+    }
+  });
+}
+
+/* ---------- overlays ---------- */
+const ov = $('#overlay');
+function openSheet(html){ ov.innerHTML = `<div class="sheet">${html}</div>`; ov.hidden = false; return ov.firstElementChild; }
+function closeSheet(){ ov.hidden = true; ov.innerHTML = ''; }
+
+function face(look){ return person({top:'#2d2f36', beard:look.beard, glasses:look.glasses}).replace('class="person"','class="person" style="position:static;transform:none;height:100%;width:100%"'); }
+function mrzVal(c){ if(c==='<') return 0; if(/[0-9]/.test(c)) return +c; return c.charCodeAt(0)-55; }
+function cd(str){ const w=[7,3,1]; let s=0; [...str].forEach((c,i)=> s += mrzVal(c)*w[i%3]); return String(s%10); }
+function passportHTML(){
+  const L = S.L, sloppy = S.tier===0;
+  const yy = String(L.y).slice(2), dob6 = yy+String(L.m).padStart(2,'0')+String(L.d).padStart(2,'0');
+  const exp6 = '33' + '08' + '14';
+  const no9 = (S.ppNo+'<<<<<<<<<').slice(0,9);
+  let l1 = ('P<IND'+L.surname.toUpperCase()+'<<'+L.given.toUpperCase()); l1 = (l1+'<'.repeat(44)).slice(0,44);
+  let ncd = cd(no9); if (sloppy) ncd = String((+ncd+3)%10);
+  const body = no9+ncd+'IND'+dob6+cd(dob6)+'M'+exp6+cd(exp6)+'<'.repeat(14)+'0';
+  const l2 = (body + cd(no9+ncd+dob6+cd(dob6)+exp6+cd(exp6)+'<'.repeat(14)+'0')).slice(0,44);
+  return `<div class="pp${sloppy?' sloppy':''}">
+    <div class="pp-head"><span>REPUBLIC OF INDIA</span><span lang="hi">भारत गणराज्य</span></div>
+    <div class="pp-body"><div class="pp-photo">${face(S.photoLook)}</div>
+    <dl><div><dt>Type / Code</dt><dd>P / IND</dd></div><div><dt>Passport No.</dt><dd>${S.ppNo}</dd></div>
+      <div><dt>Surname</dt><dd>${esc(L.surname.toUpperCase())}</dd></div><div><dt>Given name</dt><dd>${esc(L.given.toUpperCase())}</dd></div>
+      <div><dt>Date of birth</dt><dd>${L.dob}</dd></div><div><dt>Sex</dt><dd>M</dd></div>
+      <div><dt>Place of birth</dt><dd>${esc(L.city.toUpperCase())}</dd></div><div><dt>Date of expiry</dt><dd>14/08/2033</dd></div></dl></div>
+    <div class="mrz">${l1.replace(/</g,'&lt;')}<br>${l2.replace(/</g,'&lt;')}</div></div>`;
+}
+function showDocs(){
+  if (!S || !S.tier && S.tier!==0){ const sh=openSheet(`<h2>Documents</h2><p class="muted">Abhi tumhare paas koi document nahi hai. Pehle forger se passport banwao.</p><button class="btn" id="cl">Band karo</button>`); sh.querySelector('#cl').onclick=closeSheet; return; }
+  const stamps = S.stamps.length ? S.stamps.map(s=>`<span class="stampmark${s.ok?' ok':''}">${esc(s.a)}<small>${esc(s.b)}</small></span>`).join('') : `<span class="empty">Page 3 · koi stamp nahi</span>`;
+  const bp = S.bp ? `<div class="bp"><div class="main"><div class="big">BOM → DXB</div><div><span>Passenger</span>${esc(S.L.surname.toUpperCase())}/${esc(S.L.given.toUpperCase())}</div><div><span>Flight</span>ZR 501</div><div><span>Seat</span>${S.bp.seat}</div><div><span>Gate</span>${S.bp.gate}</div><div><span>Boarding</span>03:45</div><div><span>Group</span>3</div></div><div class="stub">ZEPHYR AIR</div></div>` : '';
+  const visa = S.visa ? `<div class="muted">UAE e-Visa: <b>${S.visa==='business'?'Business (sponsored)':'Tourist 30 days'}</b> · Ticket: <b>${S.ticket==='return'?'Return':'One-way'}</b> · Hotel: <b>${S.hotelBooked?esc(S.L.hotel):'Booking nahi'}</b></div>` : '';
+  const sh = openSheet(`<h2>Documents</h2>${passportHTML()}<div class="pp-stamps">${stamps}</div>${bp}${visa}<p class="muted">Cover story yahan nahi milegi. Wo tumhare dimaag mein hai.</p><button class="btn" id="cl">Band karo</button>`);
+  sh.querySelector('#cl').onclick = closeSheet;
+}
+$('#docsBtn').onclick = showDocs;
+$('#muteBtn').onclick = () => { AU.on = !AU.on; if (AU.master) AU.master.gain.value = AU.on ? .8 : 0; $('#muteBtn').textContent = AU.on ? 'Mute' : 'Unmute'; };
+
+function legendHTML(){
+  const L = S.L;
+  return `<div class="dossier"><h3>Cover · Eyes only</h3><dl>
+    <dt>Naam</dt><dd>${esc(L.given)} ${esc(L.surname)}</dd><dt>Janam</dt><dd>${L.dob}</dd><dt>Shehar</dt><dd>${esc(L.city)}</dd>
+    <dt>Kaam</dt><dd>${esc(L.job.title)}</dd><dt>Company</dt><dd>${esc(L.job.co)}</dd><dt>Maqsad</dt><dd>${esc(L.purpose.text)}</dd>
+    <dt>Trip</dt><dd>${esc(L.days)}</dd><dt>Hotel</dt><dd>${esc(L.hotel)}</dd></dl></div>`;
+}
+function legendCard(secs, quick){
+  return new Promise(res => {
+    const sh = openSheet(`<h2>${quick?'Mann mein dohrao':'Apni nayi zindagi yaad karo'}</h2>${legendHTML()}<div class="countdown" id="cdn"></div><button class="btn" id="ok">${quick?'Theek hai':'Yaad ho gaya'}</button>`);
+    let left = secs; const c = sh.querySelector('#cdn');
+    const upd = () => c.textContent = `Ye kaagaz ${left} second mein jal jaayega.`;
+    upd(); const iv = setInterval(() => { left--; upd(); if (left<=0) done(); }, 1000);
+    function done(){ clearInterval(iv); closeSheet(); res(); }
+    sh.querySelector('#ok').onclick = done;
+  });
+}
+function breathe(){
+  return new Promise(res => {
+    const sh = openSheet(`<h2>Saans control karo</h2><p class="muted">Gola bada ho to daba ke rakho (saans andar). Chhota ho to chhod do (saans bahar). Teen baar.</p>
+      <div class="breath"><div class="ring" id="ring"><div class="guide" id="guide"></div><div class="core" id="core">Ready</div></div><div class="meter"><i id="mfill"></i></div></div>`);
+    const ring = sh.querySelector('#ring'), guide = sh.querySelector('#guide'), core = sh.querySelector('#core'), mfill = sh.querySelector('#mfill');
+    let held = false, good = 0, total = 0;
+    const down = e => { e.preventDefault(); held = true; ring.classList.add('held'); };
+    const up = () => { held = false; ring.classList.remove('held'); };
+    ring.addEventListener('pointerdown', down); window.addEventListener('pointerup', up); ring.addEventListener('pointerleave', up);
+    const onKey = e => { if (e.key===' '){ e.preventDefault(); if (e.type==='keydown') held=true; else held=false; ring.classList.toggle('held', held);} };
+    window.addEventListener('keydown', onKey); window.addEventListener('keyup', onKey);
+    const cycle = 6000, cycles = 3, t0 = performance.now() + 900;
+    const loop = now => {
+      const el = now - t0;
+      if (el < 0){ requestAnimationFrame(loop); return; }
+      const ph = (el % cycle)/cycle, inhale = ph < .5;
+      const sc = inhale ? .45 + .55*(ph/.5) : 1 - .55*((ph-.5)/.5);
+      guide.style.transform = `scale(${sc})`;
+      core.textContent = inhale ? 'Andar' : 'Bahar';
+      total++; if (held === inhale) good++;
+      mfill.style.width = Math.round(100*good/total) + '%';
+      if (el < cycle*cycles) requestAnimationFrame(loop);
+      else {
+        window.removeEventListener('pointerup', up); window.removeEventListener('keydown', onKey); window.removeEventListener('keyup', onKey);
+        const score = good/total; closeSheet(); res(score);
+      }
+    };
+    requestAnimationFrame(loop);
+  }).then(async score => {
+    const drop = Math.round(8 + score*26);
+    nerve(-drop);
+    await narr(score > .75 ? `Saans ek lay mein aa gayi. Dhadkan ${bpm()} pe.` : score > .45 ? `Thoda sambhle. Dhadkan ${bpm()} pe.` : `Saans atak-atak ke aayi. Dhadkan ${bpm()} pe.`);
+    return score;
+  });
+}
+
+/* ---------- shared mechanics ---------- */
+const answerTime = () => Math.max(4200, 9500 - S.nerve*50);
+function dobOptions(){
+  const L = S.L, f = (d,m,y) => `${String(d).padStart(2,'0')}/${String(m).padStart(2,'0')}/${y}`;
+  const a = f(L.d, L.m, L.y+ (chance(.5)?1:-1)), b = f(L.m<=12&&L.d<=12&&L.d!==L.m?L.m:((L.d%28)+1), L.m<=12&&L.d<=12&&L.d!==L.m?L.d:L.m, L.y);
+  const out = [a, b===L.dob? f(L.d, (L.m%12)+1, L.y) : b];
+  return out;
+}
+function newCp(place){ return {place, susp:0, doubts:new Set()}; }
+async function askLegend(key, who, cp, scrut=1){
+  const q = QB[key];
+  await say(who, pick(q.qs));
+  const correct = q.ans(S.L);
+  const wrong = key==='dob' ? dobOptions() : shuffle(q.pool.filter(x => x!==correct)).slice(0,2);
+  const opts = shuffle([correct, ...wrong]);
+  const r = await choose(opts.map(o => ({label:o, value:o})), {timer:answerTime()});
+  if (r === TIMEOUT){ nerve(10); cp.susp += 12*scrut; cp.doubts.add(key); await narr('Tum ek pal ruk gaye. Officer ne notice kiya.'); return false; }
+  if (r === correct){
+    nerve(-2);
+    if (S.nerve > 68){ cp.susp += 6*scrut; await narr('Jawab sahi tha, par aawaaz kaanp gayi.'); }
+    return true;
+  }
+  nerve(14); cp.susp += 24*scrut; cp.doubts.add(key); S.inconsist.push(key);
+  await say(who, pick(['Hmm. Pakka?','Achha... (kuch note karta hai)','Interesting.']));
+  return false;
+}
+async function queue(label, mins){
+  addTime(mins);
+  const ahead = Math.max(1, Math.round(mins/4));
+  await narr(`${label}. Line mein tumse aage ${ahead} log hain.`);
+  let breathed = false, rehearsed = false;
+  while (true){
+    const r = await choose([
+      {label:'Saans control karo', sub:`Dhadkan abhi ${bpm()} bpm hai`, value:'b', disabled:breathed},
+      {label:'Cover story mann mein dohrao', sub:'5 second ke liye apni kahani dekho', value:'r', disabled:rehearsed},
+      {label:'Aage badho', value:'go'}]);
+    if (r==='b'){ breathed = true; await breathe(); }
+    else if (r==='r'){ rehearsed = true; await legendCard(5, true); }
+    else break;
+  }
+}
+function faceMismatch(){ return S.look.beard !== S.photoLook.beard; }
+function passportFlag(mult=1){ return chance(TIERS[S.tier].flag * mult); }
+
+async function secondary(cp, place){
+  S.secondaryCount++;
+  const dxb = place==='DXB';
+  const off = dxb ? {kandura:true, ghutra:true, beard:'full', squint:true, skin:'#a87a54', hair:'#1a1a1a'} : {top:'#1f2d4a', glasses:true, mustache:true, skin:'#8a5a3a', tie:'#1c2b52'};
+  const who = dxb ? 'Senior officer' : 'Immigration supervisor';
+  art('room', {person:off, cap: dxb ? 'Secondary inspection · DXB Terminal 1' : 'Back office · BOM Emigration'});
+  ambient(.05, 260); sfx.thrill(); nerve(14);
+  await narr('Ek officer tumhara passport lekar aage chalta hai. "Mere saath aaiye." Ek chhota kamra. Ek bulb. Ek shisha jiske peeche koi aur bhi ho sakta hai.');
+  addTime(ri(20,35));
+  const doubts = [...cp.doubts];
+  if (!doubts.length) doubts.push('purpose');
+  cp.doubts = new Set(doubts);
+  await say(who, `Hume kuch cheezein samajh nahi aa rahi: ${doubts.map(d=>DOUBT_LABEL[d]||d).join(', ')}. Samjhaiye.`);
+  let susp = Math.max(cp.susp, 45);
+  for (let round = 1; round <= 3 && susp >= 30; round++){
+    const opts = [];
+    LITTER.filter(it => S.litter.has(it.id) && !S.used.has(it.id)).forEach(it => opts.push({label:`Dikhao: ${it.name}`, sub: it.supports.length ? `Saboot: ${it.supports.map(s=>DOUBT_LABEL[s]).join(', ')}` : 'Insaani touch', value:'item:'+it.id}));
+    const legendDoubts = [...cp.doubts].filter(d => QB[d]);
+    if (legendDoubts.length) opts.push({label:'Apni kahani dobara, dhang se samjhao', sub:`Officer ${DOUBT_LABEL[legendDoubts[0]]} ke baare mein dobara puchega`, value:'retell'});
+    if (cp.doubts.has('face')) opts.push({label:'"Sir, daadhi kal hi banayi thi"', sub:'Sach bolo, chehra wahi hai', value:'face'});
+    if (cp.doubts.has('passport')) opts.push({label:'Passport dobara scan karne ko bolo', sub:`Passport ki quality pe depend karta hai (${TIERS[S.tier].name})`, value:'rescan'});
+    if (cp.doubts.has('gadget')) opts.push({label:'Device ka kaam samjhao', sub:'"Portable WiFi router hai, business ke liye"', value:'gadget'});
+    opts.push({label:'Chup raho, shaant dikho', sub:'Saans control karo', value:'calm'});
+    await narr(`Round ${round} / 3. Officer tumhe dekh raha hai.`);
+    const r = await choose(opts);
+    if (r.startsWith && r.startsWith('item:')){
+      const it = LITTER.find(x => 'item:'+x.id===r); S.used.add(it.id);
+      const hits = it.supports.filter(s => cp.doubts.has(s));
+      if (it.id==='line'){
+        await narr('Officer number milata hai. Teesri ghanti pe ek bhaari aawaaz: "Haan ji, ' + S.L.given + ' hamari company mein hai. Kya hua?"');
+      }
+      if (hits.length){ hits.forEach(h => cp.doubts.delete(h)); susp -= 22*hits.length; await say(who, 'Hmm. Theek hai, ye match karta hai.'); }
+      else if (it.id==='photo'){ susp -= 8; nerve(-10); await say(who, '(Photo dekhta hai) Family hai? Achha.'); }
+      else { susp -= 4; await say(who, 'Iska is baat se kya lena-dena?'); }
+    } else if (r==='retell'){
+      const k = legendDoubts[0];
+      const ok = await askLegend(k, who, {susp:0, doubts:new Set()}, 1);
+      if (ok){ cp.doubts.delete(k); susp -= 20; await say(who, 'Hmm. Ab theek lag raha hai.'); } else { susp += 15; await say(who, 'Pehle kuch aur bola tha aapne.'); }
+    } else if (r==='face'){ cp.doubts.delete('face'); susp -= 18; await say(who, 'Photo mein daadhi thi... haan, jaw line same hai.'); }
+    else if (r==='rescan'){
+      const okp = [.3,.7,.95][S.tier];
+      if (chance(okp)){ cp.doubts.delete('passport'); susp -= 25; sfx.beep(true); await narr('Machine dobara padhti hai. Is baar hari batti.'); }
+      else { susp += 12; sfx.beep(false); await narr('Phir se laal batti. Officer ka chehra sakht ho gaya.'); }
+    } else if (r==='gadget'){
+      if (chance(.5)){ cp.doubts.delete('gadget'); susp -= 15; await say(who, 'Router? Chalu karke dikhao. ... Theek hai.'); }
+      else { susp += 10; await say(who, 'Router mein itne antenna? Ye hum rakh lete hain jaanch ke liye.'); S.hasDevice = false; trace(`${place}: device jaanch ke liye zabt`); }
+    } else if (r==='calm'){
+      const sc = await breathe(); susp -= S.nerve < 40 ? 10 : 3;
+    }
+    if (S.nerve > 75) susp += 6;
+  }
+  trace(`${place}: secondary inspection ka record bana (${S.L.given} ${S.L.surname})`);
+  if (susp >= 30){
+    throw new GameOver('burned', 'Burned', dxb
+      ? 'Dubai ke officers ne tumhe aage nahi jaane diya. Passport zabt hai aur agla flight wapas Mumbai ka hai. Agency ab tumhe nahi jaanti.'
+      : 'Emigration ne tumhe roak liya. Tumhara nakli naam ab ek file mein hai. Agency ab tumhe nahi jaanti.');
+  }
+  await say(who, 'Theek hai. Jaa sakte ho. Agli baar dhyan rakhna.');
+  nerve(-6); S.heat += 10;
+  return true;
+}
+function checkMissed(limit, what){
+  if (S.t > limit) throw new GameOver('missed', 'Flight chhoot gayi', `${what} Tum ${clockStr()} pe pahunche. ZR 501 tumhare bina Dubai chali gayi. Mission cancel.`);
+}
+
+/* ---------- scenes ---------- */
+async function sTitle(){
+  art('title'); hud();
+  await say('', 'Ek naya naam. Ek nakli passport. Ek device jo pakda gaya to tum gaye.\nMumbai se Dubai ka safar. Har kadam ek nishaan chhodta hai.', true);
+  await choose([{label:'Mission shuru karo', sub:'Headphones lagao. Awaaz is game ka hissa hai.', value:1}]);
+  auInit(); if (AU.ctx && AU.ctx.state==='suspended') AU.ctx.resume();
+}
+async function sBriefing(){
+  art('safehouse', {person:OFF.handler}); ambient(.04, 300);
+  await say('Handler', 'Kal subah 04:15 ki flight hai. ZR 501, Mumbai se Dubai.');
+  await say('Handler', 'Tumhe naya naam milega, naya passport aur ek poori kahani. Saath mein ek device le jaana hai: signal cloner. Dubai mein kaam aayega.');
+  await say('Handler', `Budget ${inr(S.money)}. Passport, ticket, hotel, sab isi mein. Jo bachega wo tumhara.`);
+  await say('Handler', 'Pakde gaye to hum tumhe nahi jaante. Har jagah nishaan chhootenge: scan, camera, payment. Kam se kam chhodna.');
+  await narr('Handler phone uthata hai aur chala jaata hai. Table pe ek pata likha hai: Mohammed Ali Road.');
+}
+async function sForger(){
+  art('forger'); addTime(10);
+  await say('Bashir', 'Teen tarah ka maal hai. Jitna paisa, utni neend.');
+  const r = await choose(TIERS.map((t,i) => ({label:t.name, tag:inr(t.price), sub:t.sub, value:i})));
+  S.tier = r; spend(TIERS[r].price);
+  await say('Bashir', r===0 ? 'Sasta hai, par chalega. Bas machine se door rehna, haha.' : r===1 ? 'Achha choice. Ab photo khinchwa ke aao.' : 'Is passport pe toh main khud bhi Dubai chala jaaun.');
+  trace('Mohammed Ali Road: forger ke paas cash payment');
+}
+async function sPhoto(){
+  art('studio', {look:{beard:S.photoLook.beard}});
+  await say('Photographer', 'Seedha baitho. Smile nahi. Passport photo hai.');
+  await say('Photographer', 'Daadhi kaisi rakhni hai photo mein?');
+  const b = await choose([{label:'Clean shave', value:'clean'},{label:'Halki daadhi', value:'stubble'},{label:'Poori daadhi', value:'full'}]);
+  S.photoLook.beard = b; art('studio', {look:{beard:b}});
+  await say('Photographer', 'Chashma?');
+  const g = await choose([{label:'Nahi', value:false},{label:'Haan, chashma pehno', value:true}]);
+  S.photoLook.glasses = g; art('studio', {look:S.photoLook});
+  sfx.shutter(); const fl = document.querySelector('.flash'); if (fl){ fl.classList.add('go'); }
+  await sleep(300);
+  S.look = {beard:S.photoLook.beard, glasses:S.photoLook.glasses};
+  await narr('Flash. Yaad rakhna: airport pe camera tumhara chehra isi photo se milaayega.');
+  addTime(30);
+}
+async function sLegend(){
+  art('safehouse', {cap:'Safehouse · raat 23:05'});
+  await narr('Wapas safehouse. Table pe ek lifafa. Andar tumhari nayi zindagi.');
+  await legendCard(30, false);
+  await narr('Kaagaz ab raakh hai. Ab ye kahani sirf tumhare dimaag mein hai. Documents mein bhi nahi milegi.');
+}
+async function sBookings(){
+  await say('Handler (call)', 'Ticket, visa aur hotel khud book karo. Kahani ke hisaab se.');
+  const t = await choose([{label:'Return ticket', tag:inr(38000), sub:'Aane-jaane ka', value:'return'},{label:'One-way ticket', tag:inr(21000), sub:'Sasta. Wapsi baad mein dekh lenge', value:'oneway'}]);
+  S.ticket = t; spend(t==='return'?38000:21000); trace(`Online booking: ZR 501 ticket (${t==='return'?'return':'one-way'})`);
+  await narr('Visa kaunsa lagaoge? Kahani mein safar ka maqsad kya tha?');
+  const v = await choose([{label:'Tourist visa', tag:inr(9500), sub:'30 din, online', value:'tourist'},{label:'Business visa', tag:inr(24000), sub:'Company sponsor ke through', value:'business'}]);
+  S.visa = v; spend(v==='tourist'?9500:24000);
+  const h = await choose([{label:`Hotel book karo`, tag:inr(42000), sub:'Kahani wala hotel, card se payment', value:true},{label:'Booking mat karo', sub:'Wahan jaake dekh lenge. Paisa bhi bachega', value:false}]);
+  S.hotelBooked = h; if (h){ spend(42000); trace(`Hotel booking: ${S.L.hotel}`); }
+  addTime(15);
+}
+async function sLitter(){
+  await narr('Asli jasoos jeb mein chhoti-chhoti cheezein rakhte hain jo identity ko asli banati hain. Ise "pocket litter" kehte hain. Kya loge?');
+  while (true){
+    const opts = LITTER.map(it => ({label:(S.litter.has(it.id)?'✓ ':'')+it.name, tag:inr(it.price), sub:it.sub, value:it.id, disabled: !S.litter.has(it.id) && S.money < it.price}));
+    opts.push({label:'Bas, aage chalo', value:'done'});
+    const r = await choose(opts);
+    if (r==='done') break;
+    const it = LITTER.find(x => x.id===r);
+    if (S.litter.has(r)){ S.litter.delete(r); spend(-it.price); } else { S.litter.add(r); spend(it.price); }
+  }
+}
+async function sPacking(){
+  await narr('Ab sabse bada sawaal: signal cloner kahan rakhoge? Ek chhota black box hai, antennas ke saath.');
+  const r = await choose([
+    {label:'Cabin bag mein, kapdon ke beech', sub:'Free. Par security X-ray mein seedha dikhega', value:'cabin'},
+    {label:'Laptop ki battery ki jagah fit karwao', tag:inr(35000), sub:'Mod karwana padega. X-ray mein laptop jaisa dikhega', value:'laptop', disabled:S.money<35000},
+    {label:'Check-in suitcase mein', sub:'Tumhare saath nahi rahega. Hold baggage scan mein pakda ja sakta hai', value:'checkin'},
+    {label:'Mat le jao', sub:'Safe. Par Dubai mein mission mushkil ho jaayega', value:'none'}]);
+  S.spot = r; if (r==='laptop') spend(35000); if (r==='none') S.hasDevice = false;
+  addTime(20);
+}
+async function sMorning(){
+  art('safehouse', {cap:'Safehouse · raat 23:50'});
+  await narr('Nikalne se pehle aaine mein khud ko dekhte ho.');
+  if (S.photoLook.beard !== 'clean'){
+    const r = await choose([{label:'Shave karke fresh dikho', sub:'Saaf chehra, kam shak?', value:'shave'},{label:'Jaisa hai waisa rehne do', value:'keep'}]);
+    if (r==='shave'){ S.look.beard = 'clean'; await narr('Chikna chehra. Achha lag raha hai.'); }
+  } else {
+    await narr('Chehra waisa hi hai jaisa photo mein. Achha hai.');
+  }
+  const r2 = await choose([{label:'Kahani ek baar dohrao', sub:'8 second', value:'r'},{label:'Thodi der let jao', sub:'Dhadkan thodi kam hogi', value:'rest'}]);
+  if (r2==='r') await legendCard(8, true); else nerve(-6);
+}
+async function sTransport(){
+  art('street');
+  await narr('Airport kaise jaoge, aur kab niklo ge? Check-in 03:15 pe band hota hai.');
+  const r = await choose([
+    {label:'Abhi niklo, app cab', tag:inr(950), sub:'Jaldi pahunchoge. App mein pickup address save hoga', value:'app'},
+    {label:'Abhi niklo, kaali-peeli taxi', tag:inr(700), sub:'Cash. Koi record nahi. Meter pe bahas ho sakti hai', value:'cab'},
+    {label:'00:45 tak aaram, phir app cab', tag:inr(950), sub:'Fresh rahoge. Par traffic hua to?', value:'late'}]);
+  let dep = S.t;
+  if (r==='late'){ S.t = 24*60+45; nerve(-10); }
+  const travel = r==='cab' ? ri(55,100) : ri(40,95);
+  spend(r==='cab'?700:950);
+  if (r!=='cab') trace('Ride app: pickup Andheri East → T2 Departures');
+  ambient(.06, 380);
+  if (chance(.5)){
+    await say('Driver', 'Dubai ja rahe ho saab? Kaam ke liye ya ghoomne?');
+    const cp = newCp('Cab');
+    await askLegend('purpose', 'Driver', cp, .5);
+    if (cp.doubts.size){ S.inconsist.push('driver'); }
+    await say('Driver', 'Badhiya. Wahan bahut garmi hogi.');
+  } else {
+    await narr('Driver radio pe purane gaane chala raha hai. Highway khaali hai, phir ek jagah ruk jaata hai.');
+  }
+  addTime(travel);
+  if (travel > 80){ nerve(8); await narr(`Andheri flyover pe jaam. Gaadi ${travel} minute baad terminal pe pahunchi.`); }
+  else await narr(`Gaadi ${travel} minute mein Terminal 2 ke bahar ruki.`);
+}
+async function sCISF(){
+  art('terminal', {sign:'Departure · Gate 3', person:OFF.cisf, status:'Check-in'}); ambient(.1, 650); sfx.chime();
+  addTime(ri(8,18));
+  await say('CISF jawan', 'Passport, ticket.');
+  await choose([{label:'Passport aur e-ticket aage karo', value:1}]);
+  await sleep(300);
+  if (faceMismatch() && chance(.4)){
+    await say('CISF jawan', '(Photo aur chehre ko dekhta hai) Ye aap hi ho?');
+    const r = await choose([{label:'"Haan sir, daadhi bana li hai"', value:'ok'},{label:'"Ji... haan, kyun?"', value:'nerv'}], {timer:6000});
+    if (r!=='ok'){ nerve(8); }
+    await say('CISF jawan', 'Hmm. Jaiye.');
+  } else await say('CISF jawan', 'Jaiye.');
+  trace('T2 Gate 3: CCTV entry footage');
+}
+async function sCheckin(){
+  art('counter', {sign:'Zephyr Air · Check-in Row D', hi:'चेक-इन', person:OFF.airline, cap:'Counter D14'});
+  let q = ri(20,40);
+  if (S.t + q > 3*60+1440-20){
+    await narr(`Ghadi ${clockStr()} dikha rahi hai. Line lambi hai aur check-in 03:15 pe band ho jaayega.`);
+    const r = await choose([{label:'Staff ko bolo, flight ja rahi hai', sub:'Line skip. Sab tumhe dekhenge', value:'rush'},{label:'Line mein ruko', value:'wait'}]);
+    if (r==='rush'){ q = 6; nerve(10); trace('Check-in: queue skip request, staff yaad rakhega'); }
+  }
+  await queue('Check-in counter', q);
+  checkMissed(1440+3*60+15, 'Check-in band ho chuka tha.');
+  const cp = newCp('Check-in');
+  await say('Staff', `Good morning sir! Passport please. Dubai ja rahe hain?`);
+  if (S.ticket==='oneway'){
+    await say('Staff', 'Sir, aapka one-way ticket hai. UAE entry ke liye return ya onward ticket zaroori hai. Iske bina main check-in nahi kar sakti.');
+    nerve(12);
+    const opts = [{label:'Abhi return ticket kharido', tag:inr(46000), sub:'Card se, counter pe hi', value:'buy', disabled:S.money<46000},
+                  {label:'Handler ko call karo', sub:'Wo book karega. 20-25 minute lagenge', value:'call'}];
+    const r = await choose(opts);
+    if (r==='buy'){ spend(46000); trace('Check-in counter: last-minute return ticket, card payment'); }
+    else { addTime(ri(18,28)); trace('Call log: airport se ek unknown number pe 4 min call'); checkMissed(1440+3*60+15, 'Return ticket aane tak check-in band ho gaya.'); }
+    S.ticket = 'return';
+  }
+  const over = S.spot==='checkin' ? chance(.45) : chance(.2);
+  await narr('Suitcase belt pe rakha. Scale ki screen pe number aata hai.');
+  if (over){
+    const kg = ri(26,29);
+    await say('Staff', `Sir, ${kg} kilo hai. Allowance 25 ka hai. Extra baggage charge lagega.`);
+    const r = await choose([{label:'Charge bharo', tag:inr(6500), value:'pay'},{label:'Kuch saaman cabin bag mein daalo', sub:'Sabke saamne bag kholna padega', value:'move'}]);
+    if (r==='pay'){ spend(6500); }
+    else { nerve(6); if (S.spot==='checkin'){ await narr('Bag kholte waqt device ka kona dikh jaata hai. Tum jaldi se kapda upar daalte ho. Kisi ne dekha?'); nerve(8); if (chance(.3)) cp.susp+=10; } }
+  } else await say('Staff', '23 kilo. Perfect.');
+  await say('Staff', 'Ye bag aapne khud pack kiya hai? Kisi ne kuch diya to nahi le jaane ke liye?');
+  const r = await choose([{label:'"Haan, maine khud pack kiya"', value:'ok'},{label:'"Ek dost ne kuch saaman diya tha..."', value:'bad'},{label:'"Kyun? Koi problem hai?"', value:'def'}], {timer:answerTime()});
+  if (r==='bad'){ cp.susp += 25; nerve(10); await say('Staff', 'Sir, aapko pata hona chahiye bag mein kya hai. Main note kar rahi hoon.'); trace('Check-in: "kisi ne saaman diya" note'); }
+  else if (r==='def' || r===TIMEOUT){ nerve(6); await say('Staff', 'Routine sawaal hai sir.'); }
+  await say('Staff', 'Window ya aisle?');
+  const seat = await choose([{label:'Window', value:'A'},{label:'Aisle', value:'C'}]);
+  S.bp = {seat: ri(18,31)+seat, gate: String(pick([64,68,72,76]))};
+  S.heat += cp.susp/2;
+  await say('Staff', `Ye raha boarding pass. Gate ${S.bp.gate}, boarding 03:45. Have a nice flight!`);
+  trace(`Check-in D14: passport scan, seat ${S.bp.seat}`);
+  if (S.spot==='checkin' && chance(.22)) S.bagHold = true;
+}
+async function sEmigration(){
+  art('counter', {sign:'Emigration', hi:'उत्प्रवास', person:OFF.bom, cap:'Bureau of Immigration · Counter 14'}); ambient(.08, 500);
+  await queue('Emigration hall', ri(15,40));
+  const cp = newCp('BOM');
+  await say('Officer', 'Passport. Boarding pass.');
+  await choose([{label:'Dono aage karo', value:1}]);
+  await narr('Officer passport machine pe rakhta hai. Ek second. Do second.');
+  if (passportFlag()){ sfx.beep(false); cp.susp += 30; cp.doubts.add('passport'); nerve(15); await say('Officer', 'Ek minute... (dobara scan karta hai)'); }
+  else { sfx.beep(true); }
+  if (faceMismatch() && chance(.5)){ cp.susp += 15; cp.doubts.add('face'); await say('Officer', 'Photo mein daadhi hai. Abhi nahi hai?'); nerve(8); }
+  await askLegend('purpose', 'Officer', cp);
+  await askLegend(pick(['days','job','city']), 'Officer', cp);
+  if (S.nerve > 70){ cp.susp += 8; await narr('Officer ki nazar tumhare maathe ke paseene pe ruk gayi.'); }
+  if (cp.susp >= 50) await secondary(cp, 'BOM');
+  sfx.stamp(); S.stamps.push({a:'Departure · BOM', b:clockStr()+' IST'});
+  art('counter', {sign:'Emigration', hi:'उत्प्रवास', person:OFF.bom, cap:'Bureau of Immigration · Counter 14', stamp:`<span class="stampmark big">Departed<small>MUMBAI ${clockStr()}</small></span>`});
+  await say('Officer', 'Jaiye.');
+  S.heat += cp.susp/2;
+  trace(`BOM Emigration counter 14: passport entry ${S.ppNo}`);
+}
+async function sSecurity(){
+  art('xray', {person:OFF.sec}); ambient(.1, 700);
+  await queue('Security check', ri(12,28));
+  await say('Security', 'Laptop bahar nikalo. Belt, phone, wallet sab tray mein.');
+  await choose([{label:'Sab tray mein daalo', value:1}]);
+  await narr('Tumhara bag belt pe X-ray machine ke andar ja raha hai...');
+  await sleep(900);
+  const p = {cabin:.75, laptop:.25, checkin:0, none:0}[S.spot];
+  const cp = newCp('Security');
+  if (chance(p)){
+    art('xray', {person:OFF.sec, alert:true}); sfx.beep(false); nerve(18);
+    await say('Security', 'Ye bag kiska hai? Idhar aaiye. Ye kya hai andar?');
+    const r = await choose([
+      {label:'"Portable WiFi router hai sir"', sub:'Business trip ke liye', value:'router'},
+      {label:'"Medical device hai"', sub:'Koi document nahi hai', value:'med'},
+      {label:'"Pata nahi, mera nahi hai"', value:'deny'}], {timer:answerTime()});
+    if (r==='router'){ if (chance(.6)){ await say('Security', 'Router? ... Chalo theek hai, jaao.'); cp.susp += 5; } else { await say('Security', 'Isme itne antenna kyun hain? (supervisor ko bulata hai)'); cp.susp += 25; nerve(10); await narr('Supervisor 2 minute dekhta hai, phir kandhe uchkata hai. "Electronic hai, allowed hai. Jaane do."'); } }
+    else if (r==='med'){ cp.susp += 25; await say('Security', 'Prescription hai? Nahi? (lamba dekhta hai) ... Jaao, agli baar paper rakhna.'); }
+    else { cp.susp += 40; nerve(10); await say('Security', 'Aapke bag mein hai aur aapka nahi hai? (radio pe kuch bolta hai)'); trace('Security: "bag mera nahi" bayaan, supervisor ko report'); }
+    trace('Security lane 4: bag search, CCTV close-up');
+  } else {
+    sfx.beep(true);
+    await say('Security', 'Next.');
+  }
+  S.heat += cp.susp/2;
+  addTime(6);
+}
+async function sGate(){
+  const late = S.t > 1440+3*60+45;
+  art('gate', {cap:`Gate ${S.bp.gate} · ZR 501`}); ambient(.08, 450);
+  if (late){
+    sfx.chime(); nerve(12);
+    await say('Announcement', `Last call for Zephyr Air flight ZR 501 to Dubai. Passenger ${S.L.surname.toUpperCase()} please proceed to gate ${S.bp.gate} immediately.`);
+    await narr('Tumhara naam poore terminal mein goonja. Tum bhaagte ho.');
+    trace('PA announcement: tumhara cover naam last call mein');
+    addTime(ri(4,9));
+    checkMissed(1440+3*60+58, 'Gate band ho chuka tha.');
+  } else {
+    await narr(`Gate ${S.bp.gate}. Boarding mein ${Math.max(5, 1440+3*60+45-S.t)} minute.`);
+  }
+  if (S.bagHold){
+    sfx.chime();
+    await say('Announcement', `Passenger ${S.L.given.toUpperCase()} ${S.L.surname.toUpperCase()}, please report to the baggage screening room near gate ${S.bp.gate}.`);
+    nerve(20);
+    const r = await choose([{label:'Baggage room jao', sub:'Suitcase unke saamne kholna padega', value:'go'},{label:'Ignore karo, board karo', sub:'Bag offload ho jaayega, device bhi', value:'ignore'}]);
+    if (r==='go'){
+      art('room', {person:OFF.sec, cap:'Hold baggage screening'});
+      await say('Security', 'Is bag mein ek electronic item hai. Kholiye.');
+      const e = await choose([{label:'"Portable WiFi router hai"', value:'router'},{label:'"Spare power bank hai"', value:'pb'}], {timer:answerTime()});
+      if (e==='router' && chance(.6)){ await say('Security', 'Theek hai. Lithium battery hai to agli baar cabin mein rakhna.'); S.heat += 10; }
+      else { await say('Security', 'Ye power bank nahi hai. Ye hum rakh rahe hain. Aap jaa sakte ho.'); S.hasDevice = false; S.heat += 20; nerve(10); }
+      trace('Hold baggage room: suitcase khola gaya, tumhara signature');
+      addTime(12);
+    } else { S.hasDevice = false; S.heat += 15; trace('ZR 501: passenger ka bag offload, "unattended bag" report'); await narr('Tumhara suitcase Mumbai mein hi reh jaayega. Device bhi.'); }
+    return;
+  }
+  const ev = late ? null : pick(['recognize','watcher','delay']);
+  if (ev==='recognize'){
+    art('gate', {person:OFF.stranger, cap:`Gate ${S.bp.gate}`});
+    await say('Ajnabi', `Arre! ${S.realName.split(' ')[0]}? ${S.realName}! College wala! Kitne saal baad!`);
+    nerve(15);
+    const r = await choose([
+      {label:`"Sorry, aap galat samjhe. Main ${S.L.given} hoon."`, sub:'Shaant aawaaz mein', value:'deny'},
+      {label:'"Arre yaar! Kaise ho?"', sub:'Purana dost hai...', value:'hug'},
+      {label:'Bina kuch bole chal do', value:'walk'}], {timer:6000});
+    if (r==='deny'){ await say('Ajnabi', 'Oh... sorry bhai. Bilkul ek jaise lagte ho.'); nerve(-4); }
+    else if (r==='hug'){ await say('Ajnabi', 'Chal ek selfie! Group mein daalta hoon, sab pagal ho jaayenge!'); S.heat += 15; trace(`Selfie: "${S.realName} at Mumbai airport" ek WhatsApp group mein`); }
+    else { S.heat += 8; trace(`Gate ${S.bp.gate}: ek aadmi ne tumhe asli naam se bulaya, tum bhaage`); await narr('Wo tumhe ghoorta reh gaya. Kuch log mud ke dekhne lage.'); }
+  } else if (ev==='watcher'){
+    await narr('Ek grey jacket wala aadmi teesri baar tumhe dekh raha hai. Haath mein akhbaar, par panna palta nahi.');
+    const r = await choose([{label:'Washroom jao, dekho wo peechhe aata hai ya nahi', value:'test'},{label:'Ignore karo, phone mein dekho', value:'ignore'}]);
+    if (r==='test'){ addTime(6); if (chance(.5)){ await narr('Wo nahi aaya. Shayad sirf bore ho raha tha.'); nerve(-5); } else { await narr('Shishe mein dikhta hai, wo darwaaze ke bahar khada hai. Jab tum nikle, wo phone pe kisi ko kuch bol raha tha.'); nerve(10); S.heat += 6; } }
+    else nerve(5);
+  } else if (ev==='delay'){
+    art('gate', {cap:`Gate ${S.bp.gate}`}); sfx.chime();
+    await say('Announcement', 'Zephyr Air regrets to announce a delay of 35 minutes for flight ZR 501 to Dubai.');
+    addTime(35); nerve(6);
+    await narr('35 minute aur. Har guzarta second jaise koi file khol raha ho.');
+    await choose([{label:'Saans control karo', value:'b'},{label:'Chup-chaap baithe raho', value:'w'}]).then(r => r==='b' ? breathe() : null);
+  }
+  sfx.beep(true);
+  await narr('Boarding pass scanner pe. Hari batti. Tum jet bridge pe ho.');
+  addTime(15);
+}
+async function sFlight(){
+  art('cabin', {night:true, person:OFF.neighbour}); ambient(.18, 220);
+  S.neighbourAgent = chance(.3);
+  await narr('Engine ki garaj. Plane hawa mein. Mumbai ki roshniyan neeche chhoti hoti jaa rahi hain.');
+  addTime(25);
+  await say('Bagal wali seat', 'Pehli baar Dubai? Main toh har mahine jaati hoon, kaam se.');
+  const cp = newCp('Flight');
+  for (const k of shuffle(['job','city','hotel']).slice(0,2)){
+    await say('Bagal wali seat', ({job:'Aap kya karte ho?', city:'Waise aap kahan se ho?', hotel:'Kahan ruk rahe ho wahan?'})[k]);
+    const correct = QB[k].ans(S.L);
+    const wrong = shuffle(QB[k].pool.filter(x => x!==correct)).slice(0,1);
+    const opts = shuffle([correct, ...wrong]).map(o => ({label:o, value:o}));
+    opts.push({label:'"Maaf kijiye, thodi neend aa rahi hai"', value:'sleep'});
+    const r = await choose(opts, {timer:answerTime()+1500});
+    if (r==='sleep'){ await say('Bagal wali seat', 'Oh, of course.'); trace(`Seat ${S.bp.seat}: bagal wali yaatri ne note kiya, "baat se bach raha tha"`); if (S.neighbourAgent) S.neighbourNote = true; break; }
+    if (r!==correct){ nerve(8); S.inconsist.push('flight-'+k); if (S.neighbourAgent) S.neighbourNote = true; trace(`Seat ${S.bp.seat}: tumne bataya "${r===TIMEOUT?'(chup)':r}"`); }
+    await say('Bagal wali seat', pick(['Achha! Nice.','Hmm, interesting.','Oh achha.']));
+  }
+  await say('Cabin crew', 'Sir, veg ya non-veg?');
+  await choose([{label:'Veg', value:1},{label:'Non-veg', value:2}]);
+  await narr('Tum aankhein band karte ho. Neend nahi aati. Dimaag mein officer ke sawaal ghoom rahe hain.');
+  const r = await choose([{label:'Kahani ek baar dohrao', value:'r'},{label:'Saans control karo', value:'b'}]);
+  if (r==='r') await legendCard(6, true); else await breathe();
+  addTime(195);
+  S.tz = 'GST'; hud();
+  art('cabin', {person:OFF.neighbour, cap:'Descent · Dubai'}); sfx.chime();
+  await say('Captain', 'Ladies and gentlemen, we have started our descent into Dubai. Local time is ' + clockStr() + '.');
+  if (S.neighbourAgent) await narr('Landing ke baad bagal wali aurat sabse pehle utarti hai. Uske haath mein phone hai, aur wo kisi ko message kar rahi hai.');
+}
+async function sDubai(){
+  art('dxb', {sign:'Passport Control', ar:'جوازات', cap:'DXB Terminal 1 · Immigration hall'}); ambient(.12, 600);
+  await narr('Ek lambi hall. Teen counter khule hain. Kis line mein lagoge?');
+  const line = await choose([
+    {label:'Counter 3: thaka hua senior officer', sub:'Line lambi. Kam sawaal puchta hai', value:'A'},
+    {label:'Counter 5: jawaan, sakht officer', sub:'Line chhoti. Har panna palat-ta hai', value:'B'},
+    {label:'Counter 7: muskurata officer', sub:'Line medium. Baatein bahut karta hai', value:'C'}]);
+  const cfg = {A:{p:OFF.dxbA, q:ri(30,45), n:1, scrut:.7}, B:{p:OFF.dxbB, q:ri(10,18), n:3, scrut:1.25}, C:{p:OFF.dxbC, q:ri(18,28), n:2, scrut:1}}[line];
+  art('counter', {dxb:true, sign:'Passport Control', hi:'جوازات', person:cfg.p, cap:'DXB · Immigration counter'});
+  await queue('Immigration line', cfg.q);
+  const cp = newCp('DXB');
+  await say('Officer', 'As-salaam alaikum. Passport.');
+  await choose([{label:'Passport aage karo', value:1}]);
+  await say('Officer', 'Camera mein dekho. Chashma utaro.');
+  await narr('Ek chhota camera tumhara chehra scan karta hai. Screen pe do photo aamne-saamne: passport waali aur abhi waali.');
+  if (faceMismatch()){ cp.susp += 25*cfg.scrut; cp.doubts.add('face'); sfx.beep(false); await say('Officer', 'Face match low aa raha hai. Photo mein daadhi... (tumhe dekhta hai)'); nerve(12); }
+  else sfx.beep(true);
+  if (passportFlag(1.2*cfg.scrut)){ cp.susp += 32; cp.doubts.add('passport'); nerve(14); await say('Officer', 'Hmm. Is passport mein kuch... (dobara scan karta hai)'); }
+  const visaMatch = S.visa === S.L.purpose.type;
+  if (!visaMatch){
+    await say('Officer', `Aapka ${S.visa} visa hai. Aur aap kehte ho...`);
+    cp.susp += 12*cfg.scrut;
+  }
+  const keys = shuffle(['purpose','hotel','days','job','company']).slice(0, cfg.n);
+  if (!visaMatch && !keys.includes('purpose')) keys[0] = 'purpose';
+  for (const k of keys){
+    const ok = await askLegend(k, 'Officer', cp, cfg.scrut);
+    if (k==='purpose' && ok && !visaMatch){ cp.susp += 18; cp.doubts.add('visa'); await say('Officer', `${S.L.purpose.text}, aur visa ${S.visa}? Ye match nahi karta.`); nerve(10); }
+    if (k==='hotel' && !S.hotelBooked){ cp.susp += 10*cfg.scrut; await say('Officer', 'Is hotel mein aapki booking nahi dikh rahi.'); nerve(6); }
+  }
+  if (line==='C'){ await say('Officer', 'Pehli baar Dubai? Burj Khalifa zaroor dekhna!'); }
+  if (S.neighbourNote){ cp.susp += 18; await narr('Officer ki screen pe ek naya message chamakta hai. Wo use padhta hai, phir tumhe.'); }
+  cp.susp += S.heat * .25;
+  if (S.nerve > 70){ cp.susp += 8*cfg.scrut; await narr('Hall ke AC mein bhi tumhe paseena aa raha hai. Officer ne dekh liya.'); }
+  if (cp.susp >= 45) await secondary(cp, 'DXB');
+  sfx.stamp(); S.stamps.push({a:'Entry · Dubai', b:clockStr()+' GST', ok:true});
+  art('counter', {dxb:true, sign:'Passport Control', hi:'جوازات', person:cfg.p, cap:'DXB · Immigration counter', stamp:`<span class="stampmark big ok">Entry<small>DXB ${clockStr()}</small></span>`});
+  await say('Officer', 'Welcome to Dubai.');
+  S.heat += cp.susp/3;
+  trace(`DXB immigration: biometric photo + iris scan, ${S.L.given} ${S.L.surname}`);
+}
+async function sCustoms(){
+  art('dxb', {sign:'Customs', ar:'الجمارك', person:OFF.cust, cap:'Baggage hall · Customs'}); ambient(.1, 550);
+  addTime(ri(15,30));
+  await narr('Belt pe tumhara suitcase aata hai. Saamne do raaste: hara (kuch declare nahi karna) aur laal (declare karna hai).');
+  const r = await choose([{label:'Green channel', sub:'Seedha bahar. Random check ho sakta hai', value:'g'},{label:'Red channel', sub:'Device ko "WiFi router" bata ke declare karo. Record banega', value:'r'}]);
+  const carrying = S.hasDevice && S.spot!=='none';
+  if (r==='r'){
+    await say('Customs', 'Kya declare karna hai?');
+    if (carrying){ if (chance(.75)){ await say('Customs', 'Router. Personal use? Theek hai, jaiye.'); } else { await say('Customs', 'Ye hum jaanch ke liye rakhenge. Receipt le lijiye.'); S.hasDevice=false; } trace('DXB customs: device declare kiya, record mein entry'); }
+    else await say('Customs', 'Kuch nahi hai? Toh green se jaate. Jaiye.');
+    return;
+  }
+  const p = !carrying ? .08 : S.spot==='checkin' ? .35 : S.spot==='cabin' ? .25 : .12;
+  if (chance(p)){
+    nerve(14);
+    await say('Customs', 'Excuse me sir. Bag scanner pe rakhiye.');
+    if (!carrying){ await narr('Bag scan hota hai. Kuch nahi milta.'); await say('Customs', 'Shukriya. Jaiye.'); return; }
+    sfx.beep(false);
+    const e = await choose([{label:'"Portable WiFi router hai"', value:'router'},{label:'"Mujhe nahi pata ye kaise aaya"', value:'deny'}], {timer:answerTime()});
+    if (e==='router' && chance(.55)){ await say('Customs', 'Isko declare karna chahiye tha. Theek hai, agli baar.'); S.heat += 8; }
+    else { await say('Customs', 'Ye zabt hai. Aapka naam aur hotel likhwaiye.'); S.hasDevice = false; S.heat += 18; trace('DXB customs: undeclared device zabt, naam aur hotel record mein'); }
+  } else { await narr('Koi nahi rokta. Sliding door khulta hai.'); }
+}
+async function sArrival(){
+  art('dxb', {sign:'Arrivals · Taxi', ar:'الوصول', crowd:8, cap:'DXB Arrivals hall'}); ambient(.12, 700);
+  await narr('Dubai. Subah ki halki roshni. Garmi ka pehla jhonka.');
+  const r = await choose([{label:'Airport pe SIM card kharido', tag:inr(2500), sub:'Passport scan hota hai', value:'sim'},{label:'SIM nahi, hotel WiFi use karna', sub:'Koi record nahi. Par raste mein offline', value:'wifi'}]);
+  if (r==='sim'){ spend(2500); trace('DXB arrivals: SIM card, passport copy telecom ke paas'); }
+  await narr('Taxi. Sheikh Zayed Road. Shishe ki imaaratein.');
+  addTime(30);
+  art('dxb', {sign:esc(S.L.hotel), ar:'فندق', person:{top:'#2c2c2c', shirt:'#f0f0f0', tie:'#8a1f2a', smile:true, skin:'#c79a70'}, cap:'Hotel reception'});
+  if (S.hotelBooked){ await say('Reception', `Welcome Mr. ${S.L.surname}. Aapki booking ready hai. Passport copy le loon?`); trace(`${S.L.hotel}: passport copy reception pe`); }
+  else {
+    await say('Reception', 'Booking nahi hai? Walk-in rate lagega. Aur passport copy chahiye.');
+    spend(55000); S.heat += 5; trace(`${S.L.hotel}: walk-in, cash, receptionist ne yaad rakha`);
+  }
+  await narr('Kamre ka darwaaza band. Tum bistar pe baith jaate ho. Pehli baar is raat mein, dil normal dhadak raha hai.');
+  nerve(-30);
+}
+
+/* ---------- report ---------- */
+function report(result){
+  const success = !result;
+  const nTr = S.traces.length;
+  let stars = 0;
+  if (success){ stars = 1; if (S.heat < 40 && nTr <= 11) stars = 2; if (S.heat < 18 && nTr <= 9 && S.hasDevice) stars = 3; }
+  const verdict = success ? (stars===3 ? 'Ghost. Saaf entry.' : stars===2 ? 'Andar ho. Par nishaan chhoote.' : 'Andar ho. Par log tumhe dhoondh rahe hain.') : result.title;
+  const text = success
+    ? (S.hasDevice ? 'Signal cloner tumhare saath hai. Phase 2 (Dubai mein mission) yahin se shuru hoga, aur ye saare nishaan wahan tumhara peechha karenge.'
+                   : 'Tum pahunch gaye, par device nahi. Dubai mein mission ke liye naya jugaad karna padega.')
+    : result.text;
+  const mins = Math.round((Date.now()-S.start)/60000);
+  const sh = openSheet(`<div class="report">
+    <div class="countdown">${success?'Mission report · Phase 1':'Mission khatam'}</div>
+    <div class="verdict" style="color:${success?'var(--ok)':'var(--stamp)'}">${esc(verdict)}</div>
+    ${success?`<div class="stampmark" style="align-self:flex-start">${'★'.repeat(stars)}${'☆'.repeat(3-stars)}<small>Rating</small></div>`:''}
+    <p>${esc(text)}</p>
+    <div class="stats"><div class="stat"><span>Paisa bacha</span><b>${inr(S.money)}</b></div><div class="stat"><span>Nishaan</span><b>${nTr}</b></div><div class="stat"><span>Device</span><b>${S.hasDevice?'Saath':'Gaya'}</b></div></div>
+    <h2>Tumhara digital footprint</h2>
+    <p class="muted">Har line ek saboot hai jo agle phase mein koi officer tumhare saamne rakh sakta hai.</p>
+    <ul class="traces">${S.traces.map(t=>`<li>${esc(t.t)} · ${esc(t.text)}</li>`).join('') || '<li class="none">Koi nishaan nahi</li>'}</ul>
+    <p class="muted">Khelne ka time: ${mins} min</p>
+    <button class="btn" id="again">Dobara khelo</button></div>`);
+  sh.querySelector('#again').onclick = () => { closeSheet(); run(); };
+}
+
+/* ---------- main ---------- */
+async function run(){
+  resetState(); hud(); ambient(0);
+  try {
+    await sTitle();
+    await sBriefing(); await sForger(); await sPhoto(); await sLegend(); await sBookings(); await sLitter(); await sPacking();
+    await sMorning(); await sTransport(); await sCISF(); await sCheckin(); await sEmigration(); await sSecurity();
+    await sGate(); await sFlight(); await sDubai(); await sCustoms(); await sArrival();
+    report(null);
+  } catch (e){
+    if (e instanceof GameOver){ sfx.thrill(); ambient(.03,200); report(e); }
+    else { console.error(e); narr('Kuch gadbad ho gayi. Page reload karo.'); }
+  }
+}
+window.__trace = { get state(){ return S; } };
+run();
+})();
+</script>
