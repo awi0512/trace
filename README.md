@@ -2,7 +2,24 @@
 
 Mobile spy-thriller game prototype. You are an agent with a new name, a forged passport and a device that must reach Dubai. Every scan, camera and payment leaves a trace, and those traces come back later as evidence against you.
 
-## Current build: 3D Mumbai airport (`index.html`)
+## Current build: Chapter 1, ghar se airport (`index.html`)
+
+Stylized 3D with noir comic panels for story beats (three.js r160, runs in the browser, no build step):
+
+- Noir comic briefing, then a 20-second look at your cover story
+- Walk your agent on a night-time Andheri street and book a cab (ride app = trace, kaali-peeli = cash, no record)
+- The taxi pulls up and stops, the rear kerb-side door swings open, and you get in
+- Ride to T2 with an inside view (driver, meter, nimbu-mirchi, road through the windshield) or a chase view
+- City traffic (autos, cars, a red bus), shops and billboards, a flyover jam with a choice, and driver small talk that tests your cover story
+- Drop-off at Terminal 2, pay cash or UPI, noir arrival panel, and a digital-footprint card
+
+Next: the Mumbai airport chapter in the same style.
+
+## Earlier prototypes (`prototypes/`)
+
+- `v2-realistic.html`: walkable airport with Mixamo characters and HDRI lighting (uses `assets/`)
+
+## v2: 3D Mumbai airport (`prototypes/v2-realistic.html`)
 
 Walk a third-person character through a 3D Terminal 2 at night (three.js, runs in the browser):
 
