@@ -163,6 +163,9 @@ import {UnrealBloomPass} from 'three/addons/postprocessing/UnrealBloomPass.js';
 import {OutputPass} from 'three/addons/postprocessing/OutputPass.js';
 import lobbyEXR from './assets/lobby.exr.js';
 import nightEXR from './assets/night.exr.js';
+import soldierGLB from './assets/Soldier.glb.js';
+import michelleGLB from './assets/Michelle.glb.js';
+import xbotGLB from './assets/Xbot.glb.js';
 const $ = s => document.querySelector(s);
 /* ================= helpers ================= */
 const rnd=(a,b)=>a+Math.random()*(b-a), ri=(a,b)=>Math.floor(rnd(a,b+1)), pick=a=>a[Math.floor(Math.random()*a.length)], chance=p=>Math.random()<p;
@@ -438,7 +441,8 @@ const CH={};const G={};
 const PAX_TINTS=[0xffffff,0xf2d6d6,0xd6e4f2,0xe6f0d8,0xf0e2c8,0xe0d6f0,0xcfd8dc,0xf5e6e0];
 async function loadAssets(){
   const gl=new GLTFLoader();const lt=$('#loading');let n=0;const step=()=>{n++;lt.textContent=`Airport load ho raha hai… ${Math.round(n/3*100)}%`;};
-  const [sol,mic,xb]=await Promise.all(['assets/Soldier.glb','assets/Michelle.glb','assets/Xbot.glb'].map(u=>gl.loadAsync(u).then(r=>{step();return r;})));
+  const b64buf=b=>{const s=atob(b),u=new Uint8Array(s.length);for(let i=0;i<s.length;i++)u[i]=s.charCodeAt(i);return u.buffer;};
+  const [sol,mic,xb]=await Promise.all([soldierGLB,michelleGLB,xbotGLB].map(b=>gl.parseAsync(b64buf(b),'').then(r=>{step();return r;})));
   const by=Object.fromEntries(xb.animations.map(a=>[a.name.toLowerCase(),a]));
   const sb=Object.fromEntries(sol.animations.map(a=>[a.name.toLowerCase(),a]));
   CH.clips={
