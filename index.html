@@ -37,6 +37,7 @@ button{font:inherit;color:inherit}
 .pad{border:0;border-radius:999px;cursor:pointer;font-family:var(--display);font-weight:700;box-shadow:0 8px 20px rgba(0,0,0,.3);touch-action:none}
 #act{background:var(--accent);color:#1d1a10;padding:14px 20px;font-size:17px;max-width:64vw}
 #camBtn{background:#fff;color:var(--panelInk);padding:12px 16px;font-size:14px}
+body.talking #pads{visibility:hidden}
 #hint{position:fixed;z-index:3;left:max(18px,env(safe-area-inset-left,0px));bottom:calc(env(safe-area-inset-bottom,0px) + 22px);max-width:46vw;font-size:12px;opacity:.75;pointer-events:none}
 
 #dlg{position:fixed;z-index:8;left:0;right:0;bottom:0;padding:10px max(16px,env(safe-area-inset-right,0px)) calc(env(safe-area-inset-bottom,0px) + 16px) max(16px,env(safe-area-inset-left,0px));display:flex;justify-content:center}
@@ -316,8 +317,9 @@ function makeTaxi(){
   mesh(rb(.08,.1,.32,.03),m(0x222222),1.0,2.08,0,body);
   const charm=new T.Group();charm.position.set(.98,2.02,0);body.add(charm);
   mesh(new T.CylinderGeometry(.006,.006,.28,4),m(0xffffff),0,-.14,0,charm,{cast:false});mesh(new T.SphereGeometry(.05,10,8),m(0xf2d22e,{roughness:.5}),0,-.3,0,charm);
-  for(let i=0;i<4;i++){const ch=mesh(new T.CapsuleGeometry(.018,.09,3,6),m(0x2f9e3f),0,-.4-i*.07,0,charm);}
-  mesh(new T.SphereGeometry(.03,8,6),m(0x111111),0,-.7,0,charm);
+  mesh(new T.CylinderGeometry(.004,.004,.16,4),m(0xffffff),0,-.42,0,charm,{cast:false});
+  for(let i=0;i<5;i++){const a=(i-2)*.32;const ch=mesh(new T.CapsuleGeometry(.016,.11,3,6),m(0x2f9e3f,{roughness:.4}),Math.sin(a)*.06,-.5-Math.abs(i-2)*.01,Math.cos(a)*.02,charm);ch.rotation.z=a*.6;}
+  mesh(new T.SphereGeometry(.035,8,6),m(0x111111),0,-.6,0,charm);
   // rear-left door (hinged at B pillar)
   const door=new T.Group();door.position.set(-.15,0,-.95);body.add(door);
   mesh(rb(1.2,.62,.07,.04),black,-.6,.62,0,door);mesh(new T.BoxGeometry(1.2,.06,.07),yellow,-.6,2.2,0,door);mesh(new T.BoxGeometry(.08,1.3,.07),yellow,-1.18,1.58,0,door);
@@ -418,15 +420,15 @@ addEventListener('keyup',e=>input.keys[e.code]=false);
 /* ===================== dialogue ===================== */
 let advance=null;const dlg=$('#dlg'),whoEl=$('#who'),lineEl=$('#line'),nextEl=$('#next'),chEl=$('#choices'),tmEl=$('#timer');
 $('#dbox').addEventListener('pointerdown',e=>{e.stopPropagation();advance&&advance();});
-function say(who,text,narr=false){dlg.hidden=false;chEl.innerHTML='';tmEl.hidden=true;whoEl.textContent=who||'';whoEl.className=narr?'narr':'';lineEl.className=narr?'narr':'';lineEl.textContent='';nextEl.hidden=true;
+function say(who,text,narr=false){dlg.hidden=false;document.body.classList.add('talking');chEl.innerHTML='';tmEl.hidden=true;whoEl.textContent=who||'';whoEl.className=narr?'narr':'';lineEl.className=narr?'narr':'';lineEl.textContent='';nextEl.hidden=true;
   return new Promise(res=>{let i=0,typing=true;const iv=setInterval(()=>{i+=2;lineEl.textContent=text.slice(0,i);if(i>=text.length){clearInterval(iv);typing=false;nextEl.hidden=false;}},16);
     advance=()=>{if(typing){clearInterval(iv);lineEl.textContent=text;typing=false;nextEl.hidden=false;return;}advance=null;nextEl.hidden=true;res();};});}
 const narr=t=>say('',t,true);
-function choose(opts,{timer=0}={}){dlg.hidden=false;nextEl.hidden=true;advance=null;chEl.innerHTML='';
+function choose(opts,{timer=0}={}){dlg.hidden=false;document.body.classList.add('talking');nextEl.hidden=true;advance=null;chEl.innerHTML='';
   return new Promise(res=>{let to,tk,done=false;const fin=v=>{if(done)return;done=true;clearTimeout(to);clearInterval(tk);tmEl.hidden=true;chEl.innerHTML='';res(v);};
     opts.forEach(o=>{const b=document.createElement('button');b.type='button';b.className='choice';b.innerHTML=`<span class="lab">${esc(o.label)}</span>${o.tag?`<span class="tag">${esc(o.tag)}</span>`:''}${o.sub?`<span class="sub">${esc(o.sub)}</span>`:''}`;b.onclick=()=>fin(o.value??o.label);chEl.appendChild(b);});
     if(timer){tmEl.hidden=false;const bar=tmEl.firstElementChild,t0=performance.now();tk=setInterval(()=>{const p=1-(performance.now()-t0)/timer;bar.style.transform=`scaleX(${Math.max(0,p)})`;if(p<.35)sfx.tick();},200);to=setTimeout(()=>fin(TIMEOUT),timer);}});}
-const closeDlg=()=>{dlg.hidden=true;advance=null;chEl.innerHTML='';};
+const closeDlg=()=>{dlg.hidden=true;document.body.classList.remove('talking');advance=null;chEl.innerHTML='';};
 
 /* ===================== noir comic panels ===================== */
 const NOIR_DEFS=`<defs><pattern id="h1" width="7" height="7" patternUnits="userSpaceOnUse"><circle cx="3.5" cy="3.5" r="1.3" fill="#111"/></pattern><pattern id="h2" width="7" height="7" patternUnits="userSpaceOnUse"><circle cx="3.5" cy="3.5" r="2.4" fill="#111"/></pattern><pattern id="hr" width="9" height="9" patternUnits="userSpaceOnUse" patternTransform="rotate(30)"><circle cx="4.5" cy="4.5" r="2.2" fill="#e0242b"/></pattern><pattern id="hatch" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(-35)"><rect width="8" height="2.2" fill="#111"/></pattern></defs>`;
