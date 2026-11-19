@@ -279,7 +279,7 @@ function lamp(){const g=new T.Group();mesh(new T.CylinderGeometry(.08,.12,7,8),m
 // pools along both sides
 const SIDE=[];const POOL=34, SPAN=POOL*11;
 for(const s of [-1,1])for(let i=0;i<POOL;i++){const b=building();b.position.set(-SPAN/2+i*11,0,s*(15+rnd(0,3)));b.rotation.y=s<0?0:Math.PI;SIDE.push({o:b,step:11,len:SPAN,side:s,kind:'b'});}
-for(const s of [-1,1])for(let i=0;i<14;i++){const l=lamp();l.position.set(-14*7+i*14+(s>0?7:0),0,s*6.6);l.rotation.y=s<0?0:Math.PI;SIDE.push({o:l,step:14,len:14*14,side:s,kind:'l'});}
+for(const s of [-1,1])for(let i=0;i<14;i++){const l=lamp();l.position.set(-14*7+i*14+(s>0?7:5),0,s*6.6);l.rotation.y=s<0?0:Math.PI;SIDE.push({o:l,step:14,len:14*14,side:s,kind:'l'});}
 for(const s of [-1,1])for(let i=0;i<12;i++){const t=tree();t.position.set(-12*8+i*16+rnd(-2,2),0,s*8.6);SIDE.push({o:t,step:16,len:12*16,side:s,kind:'t'});}
 const lampLights=[0,1,2].map(()=>{const p=new T.PointLight(0xffb45a,18,14,1.6);p.castShadow=false;scene.add(p);return p;});
 function recycle(fx){
