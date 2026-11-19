@@ -416,7 +416,7 @@ function camSees(c,x,z){if(region(x,z)==='WASH')return false;const dx=x-c.x,dz=z
 /* ===================== player ===================== */
 let P;
 const LOOKS={coat:{body:0xd9c3a0,coat:true,scarf:0xe0242b,legs:0x2c2c36},tourist:{body:0x3d6fd6,legs:0x2c3150,capColor:0xf5f5f5},staff:{body:0x2d4a8a,vest:0xf28b0f,legs:0x1f2430,capColor:0xf28b0f}};
-function buildPlayer(){const pos=P?P.pos.clone():new T.Vector3(0,0,21.5),yaw=P?P.yaw:Math.PI;if(P){scene.remove(P.g);}
+function buildPlayer(){const pos=P?P.pos.clone():new T.Vector3(-1.5,0,15.5),yaw=P?P.yaw:Math.PI;if(P){scene.remove(P.g);}
   const L=LOOKS[S.look.outfit];const o=Object.assign({skin:0xc68b5e,hair:0x1a1a1a,longHair:true,shadow:true,bag:S.look.outfit==='staff'?null:0x2b2f3a},L);
   if(S.look.hat){if(S.look.outfit==='coat')o.hat=0x2b2b35;else{o.cap=L.capColor;o.capPeak=0x222222;}}
   o.glasses=S.look.glasses;P=chibi(o);P.pos.copy(pos);P.yaw=yaw;P.g.rotation.y=yaw;
