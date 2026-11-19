@@ -655,7 +655,7 @@ function updateCamera(dt){
     camera.position.lerp(pos,Math.min(1,dt*3));camera.lookAt(look);return;
   }
   if((S.phase==='opening'||S.phase==='doorOpen'||S.phase==='boarding')&&!cineDone){
-    const c=taxi.car.position;pos=new T.Vector3(c.x-4.5,2.6,c.z+5.5);look=new T.Vector3(c.x-.6,1.1,c.z-1.6);
+    const c=taxi.car.position;pos=new T.Vector3(c.x-5.2,4.3,c.z-5.6);look=new T.Vector3(c.x-.4,.9,c.z-1.2);
     camera.position.lerp(pos,Math.min(1,dt*2.5));camera.lookAt(look);return;}
   const tx=P.pos.x,tz=P.pos.z,ty=1.2;
   pos=new T.Vector3(tx-Math.sin(camYaw)*camDist*Math.cos(camPitch),ty+camDist*Math.sin(camPitch),tz-Math.cos(camYaw)*camDist*Math.cos(camPitch));
