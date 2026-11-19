@@ -2,7 +2,21 @@
 
 Mobile spy-thriller game prototype. You are an agent with a new name, a forged passport and a device that must reach Dubai. Every scan, camera and payment leaves a trace, and those traces come back later as evidence against you.
 
-## Phase 1: Mumbai → Dubai (playable)
+## Current build: 3D Mumbai airport (`index.html`)
+
+Walk a third-person character through a 3D Terminal 2 at night (three.js, runs in the browser):
+
+- **Door:** a CISF jawan checks your documents
+- **Contact:** a cleaner with a yellow trolley hands you the device. Do it out of CCTV view (the washroom has no cameras)
+- **Check-in:** queue behind other passengers at Zephyr Air Row D. Cutting the line gets you noticed
+- **Optional:** sit on a bench and hide the device inside your laptop, away from cameras
+- **Emigration:** pick counter 11 (relaxed) or 14 (strict) and answer from your cover story
+- **Security:** bag on the belt, walk through the detector, collect the bag
+- **Gate 72:** board before 03:55
+
+Every CCTV camera that sees you is counted. Suspicious acts on camera, police stops for running, and secondary checks all become traces in the end report. Controls: left-side drag to walk and right-side drag for the camera on phones; WASD, Shift, mouse drag and E on desktop.
+
+## Earlier prototype: text story (`prototypes/v1-story.html`)
 
 1. **Safehouse:** briefing, ₹5,00,000 budget
 2. **Forger:** pick a passport tier (Jugaad / Clean / Ghost). Cheaper means a higher chance of a machine-scan flag
@@ -19,4 +33,4 @@ Systems: real-time clock (check-in closes 03:15), heart-rate/nerve meter with a 
 
 ## Run
 
-Open `index.html` in a browser (phone-sized works best). Single file, no build step. Sound is synthesised in the browser. Use headphones.
+Open `index.html` in a browser (needs internet for three.js from jsDelivr). Single file, no build step. Sound is synthesised in the browser. Use headphones.
