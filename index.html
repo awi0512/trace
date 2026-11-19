@@ -65,7 +65,8 @@ button{font:inherit;color:inherit}
 /* noir comic overlay */
 #comic{position:fixed;inset:0;z-index:20;background:var(--noir);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;
   padding:max(16px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) max(16px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));cursor:pointer}
-#comic svg{width:min(100%,900px);max-height:78vh;height:auto;display:block}
+#comic svg{width:min(100%,900px);max-height:80vh;height:auto;display:block}
+#comic .pop{display:flex;justify-content:center;max-width:100%}
 #comic .tap{font-family:var(--type);color:var(--paper);opacity:.7;font-size:13px}
 #comic .pop{animation:pop .35s cubic-bezier(.2,1.5,.4,1)}
 @keyframes pop{from{transform:scale(.94);opacity:0}}
@@ -398,10 +399,10 @@ gantry(260,'WESTERN EXP HWY ↑');gantry(END-240,'AIRPORT  T2  →  1 km');
 
 /* ===================== cast ===================== */
 const AGENT={body:0xd9c3a0,coat:true,skin:0xc68b5e,hair:0x1a1a1a,hat:0x2b2b35,scarf:0xe0242b,bag:0x2b2f3a,legs:0x2c2c36,longHair:true};
-let P,taxi,driver;
+let P,taxi,driver,cineDone=false;
 
 /* ===================== camera & input ===================== */
-let camYaw=Math.PI-.55,camPitch=.32,camDist=6.5,camMode='follow',locked=true;
+let camYaw=Math.PI-.55,camPitch=.4,camDist=8.5,camMode='follow',locked=true;
 const input={x:0,y:0,keys:{}};
 const joy=$('#joy'),knob=joy.firstElementChild;let joyId=null,joyO=null,lookId=null,lookLast=null;
 canvas.addEventListener('pointerdown',e=>{if(locked&&S.phase!=='drive')return;
@@ -430,7 +431,8 @@ const closeDlg=()=>{dlg.hidden=true;advance=null;chEl.innerHTML='';};
 /* ===================== noir comic panels ===================== */
 const NOIR_DEFS=`<defs><pattern id="h1" width="7" height="7" patternUnits="userSpaceOnUse"><circle cx="3.5" cy="3.5" r="1.3" fill="#111"/></pattern><pattern id="h2" width="7" height="7" patternUnits="userSpaceOnUse"><circle cx="3.5" cy="3.5" r="2.4" fill="#111"/></pattern><pattern id="hr" width="9" height="9" patternUnits="userSpaceOnUse" patternTransform="rotate(30)"><circle cx="4.5" cy="4.5" r="2.2" fill="#e0242b"/></pattern><pattern id="hatch" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(-35)"><rect width="8" height="2.2" fill="#111"/></pattern></defs>`;
 const cap=(x,y,w,lines,size=16)=>`<g><rect x="${x}" y="${y}" width="${w}" height="${lines.length*size*1.35+16}" fill="#f5e9b8" stroke="#111" stroke-width="3"/>${lines.map((l,i)=>`<text x="${x+12}" y="${y+12+size+i*size*1.35}" class="typ" font-size="${size}" fill="#111">${esc(l)}</text>`).join('')}</g>`;
-const bubble=(x,y,w,lines,size=17,tail='left')=>{const h=lines.length*size*1.35+22;const tx=tail==='left'?x+40:x+w-60;return `<g><path d="M${x+16} ${y} h${w-32} a16 16 0 0 1 16 16 v${h-32} a16 16 0 0 1 -16 16 h${-(x+w-16-tx-30)} l-24 26 l4 -26 h${-(tx-x-16-6)} a16 16 0 0 1 -16 -16 v${-(h-32)} a16 16 0 0 1 16 -16z" fill="#fff" stroke="#111" stroke-width="3"/>${lines.map((l,i)=>`<text x="${x+16}" y="${y+14+size+i*size*1.35}" class="typ" font-size="${size}" fill="#111">${esc(l)}</text>`).join('')}</g>`;};
+const bubble=(x,y,w,lines,size=17,tail='left')=>{const h=lines.length*size*1.35+22,tx=tail==='left'?x+34:x+w-54;return `<g><polygon points="${tx},${y+h-4} ${tx+26},${y+h-4} ${tx-6},${y+h+26}" fill="#fff" stroke="#111" stroke-width="3" stroke-linejoin="round"/><rect x="${x}" y="${y}" width="${w}" height="${h}" rx="18" fill="#fff" stroke="#111" stroke-width="3"/><rect x="${tx+2}" y="${y+h-8}" width="22" height="8" fill="#fff"/>${lines.map((l,i)=>`<text x="${x+16}" y="${y+14+size+i*size*1.35}" class="typ" font-size="${size}" fill="#111">${esc(l)}</text>`).join('')}</g>`;};
+const CROPS={brief:['14 14 520 492','548 14 338 240','548 268 338 238'],arrive:['14 14 872 392']};
 const PANELS={
   brief:()=>`<svg viewBox="0 0 900 520">${NOIR_DEFS}<rect width="900" height="520" fill="#0d0d0d"/>
     <g><clipPath id="a1"><rect x="14" y="14" width="520" height="492"/></clipPath><g clip-path="url(#a1)"><rect x="14" y="14" width="520" height="492" fill="#111"/>
@@ -439,7 +441,7 @@ const PANELS={
       <g fill="#111"><circle cx="274" cy="250" r="44"/><path d="M190 330 Q274 280 358 330 L380 506 L168 506Z"/><path d="M218 214 h112 l-8 -14 h-96z"/><path d="M240 200 q34 -50 68 0z"/></g>
       <rect x="150" y="400" width="250" height="18" fill="#111"/><rect x="190" y="388" width="60" height="14" fill="#f1ece1" transform="rotate(-8 220 395)"/>
       ${cap(30,30,300,['MUMBAI. RAAT 12:40.','ANDHERI KA EK SAFEHOUSE.'])}
-      ${bubble(300,300,220,['Kal 04:15 ki','flight. Dubai.'],17,'left')}</g></g>
+      ${bubble(306,296,214,['Kal 04:15 ki','flight. Dubai.'],18,'left')}</g></g>
     <rect x="14" y="14" width="520" height="492" fill="none" stroke="#f1ece1" stroke-width="5"/>
     <g><clipPath id="a2"><rect x="548" y="14" width="338" height="240"/></clipPath><g clip-path="url(#a2)"><rect x="548" y="14" width="338" height="240" fill="#f1ece1"/><rect x="548" y="14" width="338" height="240" fill="url(#h1)" opacity=".5"/>
       <g transform="translate(610 50) rotate(-6)"><rect width="200" height="150" fill="#111"/><rect x="8" y="8" width="184" height="134" fill="#f1ece1"/><rect x="20" y="24" width="60" height="70" fill="#111"/><g fill="#111" opacity=".7"><rect x="92" y="28" width="86" height="6"/><rect x="92" y="44" width="70" height="5"/><rect x="92" y="58" width="80" height="5"/><rect x="20" y="108" width="160" height="5"/><rect x="20" y="120" width="160" height="5"/></g><text x="96" y="90" class="sfx" font-size="22" fill="#e0242b">NAYA NAAM</text></g></g></g>
@@ -461,7 +463,12 @@ const PANELS={
       <text x="720" y="140" class="sfx" font-size="34" fill="#e0242b" transform="rotate(8 720 140)">KLIK.</text></g></g>
     <rect x="14" y="14" width="872" height="392" fill="none" stroke="#f1ece1" stroke-width="5"/></svg>`
 };
-function comic(name){return new Promise(res=>{const c=$('#comic');c.innerHTML=`<div class="pop">${PANELS[name]()}</div><div class="tap">tap karo ▸</div>`;c.hidden=false;sfx.thak();
+function comic(name){return new Promise(res=>{const c=$('#comic');const full=PANELS[name]();const portrait=innerHeight>innerWidth*1.15;
+  const views=portrait?CROPS[name]:[null];let k=0;
+  const show=()=>{const vb=views[k];const svg=vb?full.replace(/viewBox="[^"]*"/,`viewBox="${vb}"`):full;c.innerHTML=`<div class="pop">${svg}</div><div class="tap">${k<views.length-1?'tap: agla panel ▸':'tap karo ▸'}</div>`;sfx.thak();};
+  c.hidden=false;show();let ready=false;setTimeout(()=>ready=true,500);
+  const go=()=>{if(!ready)return;k++;if(k<views.length){ready=false;show();setTimeout(()=>ready=true,450);return;}c.removeEventListener('pointerdown',go);c.hidden=true;res();};
+  c.addEventListener('pointerdown',go);});}
   const go=()=>{c.removeEventListener('pointerdown',go);c.hidden=true;res();};setTimeout(()=>c.addEventListener('pointerdown',go),600);});}
 
 /* ===================== sheets ===================== */
@@ -607,7 +614,7 @@ function updatePlayer(dt,t){
   let ix=input.x,iy=input.y;if(input.keys.KeyW||input.keys.ArrowUp)iy+=1;if(input.keys.KeyS||input.keys.ArrowDown)iy-=1;if(input.keys.KeyA||input.keys.ArrowLeft)ix-=1;if(input.keys.KeyD||input.keys.ArrowRight)ix+=1;
   const mag=Math.min(1,Math.hypot(ix,iy));
   if(locked||mag<.08){animChibi(P,dt,0,t);return;}
-  const spd=2.6*mag,fx=Math.sin(camYaw),fz=Math.cos(camYaw),rx=-Math.cos(camYaw),rz=Math.sin(camYaw);let vx=fx*iy+rx*ix,vz=fz*iy+rz*ix;const l=Math.hypot(vx,vz);vx/=l;vz/=l;
+  camera.getWorldDirection(tmpV);const cy=Math.atan2(tmpV.x,tmpV.z);const spd=2.6*mag,fx=Math.sin(cy),fz=Math.cos(cy),rx=-Math.cos(cy),rz=Math.sin(cy);let vx=fx*iy+rx*ix,vz=fz*iy+rz*ix;const l=Math.hypot(vx,vz);vx/=l;vz/=l;
   P.pos.x=clamp(P.pos.x+vx*spd*dt,-14,24);P.pos.z=clamp(P.pos.z+vz*spd*dt,-8.6,-5.4);
   P.pos.y=P.pos.z>-6?.0:.25;
   if(Math.hypot(P.pos.x+6,P.pos.z+7.6)<1.8){const a=Math.atan2(P.pos.x+6,P.pos.z+7.6);P.pos.x=-6+Math.sin(a)*1.8;P.pos.z=-7.6+Math.cos(a)*1.8;}
@@ -645,6 +652,9 @@ function updateCamera(dt){
     pos=new T.Vector3(tgt.x-Math.sin(yaw)*9,3.6,tgt.z-Math.cos(yaw)*9);look=new T.Vector3(tgt.x+4,1.2,tgt.z);
     camera.position.lerp(pos,Math.min(1,dt*3));camera.lookAt(look);return;
   }
+  if((S.phase==='opening'||S.phase==='doorOpen'||S.phase==='boarding')&&!cineDone){
+    const c=taxi.car.position;pos=new T.Vector3(c.x-4.5,2.6,c.z+5.5);look=new T.Vector3(c.x-.6,1.1,c.z-1.6);
+    camera.position.lerp(pos,Math.min(1,dt*2.5));camera.lookAt(look);return;}
   const tx=P.pos.x,tz=P.pos.z,ty=1.2;
   pos=new T.Vector3(tx-Math.sin(camYaw)*camDist*Math.cos(camPitch),ty+camDist*Math.sin(camPitch),tz-Math.cos(camYaw)*camDist*Math.cos(camPitch));
   camera.position.lerp(pos,Math.min(1,dt*8));camera.lookAt(tx,ty,tz);
