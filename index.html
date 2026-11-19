@@ -232,7 +232,7 @@ function building(){
 function tree(){const g=new T.Group();mesh(new T.CylinderGeometry(.18,.25,2.4,8),m(0x6b4a32),0,1.2,0,g);const c=mesh(new T.IcosahedronGeometry(1.5,1),m(pick([0x3f8f4f,0x4fa35c,0x2f7a46]),{flatShading:true}),0,3.2,0,g);c.scale.y=1.15;scene.add(g);return g;}
 function lamp(){const g=new T.Group();mesh(new T.CylinderGeometry(.08,.12,7,8),m(0x4a5263,{metalness:.5,roughness:.4}),0,3.5,0,g);mesh(new T.BoxGeometry(.12,.12,2.2),m(0x4a5263),0,6.95,1.05,g);
   mesh(rb(.5,.18,.8,.06),m(0x4a5263),0,6.85,2.05,g);mesh(new T.BoxGeometry(.38,.05,.6),glow(0xffc46b,3),0,6.75,2.05,g,{cast:false});
-  const pool=mesh(new T.CircleGeometry(3.2,24),new T.MeshBasicMaterial({color:0xffb45a,transparent:true,opacity:.13,depthWrite:false,toneMapped:false}),0,.27,2.6,g,{cast:false,recv:false});pool.rotation.x=-Math.PI/2;scene.add(g);return g;}
+  scene.add(g);return g;}
 // pools along both sides
 const SIDE=[];const POOL=34, SPAN=POOL*11;
 for(const s of [-1,1])for(let i=0;i<POOL;i++){const b=building();b.position.set(-SPAN/2+i*11,0,s*(15+rnd(0,3)));b.rotation.y=s<0?0:Math.PI;SIDE.push({o:b,step:11,len:SPAN,side:s,kind:'b'});}
