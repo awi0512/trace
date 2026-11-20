@@ -74,7 +74,7 @@ function runStart(){if(!RUN)return;RT.on=true;RT.lastLook=lookKey();
   if(mods.includes('patrol')&&G.length){const g=pick(G.filter(o=>o.route&&o.route.length>1&&!o.smell))||G[0];g.name='Inspector Rana';g.knows=true;g.walk=(g.walk||1.1)*1.25;g.range*=1.15;}
   if(mods.includes('traitor'))RT.traitorAt=rnd(35,80);
   if(HUNT.cam!==1&&typeof CAMS!=='undefined')CAMS.forEach(c=>{c.range*=HUNT.cam;});
-  dartUI();gunUI();
+  if(!(typeof TUT!=='undefined'&&TUT)){dartUI();gunUI();}
   const lines=[`ESCAPE · LEG ${RUN.leg} · ${ZONES[ZONE_ID].name.toUpperCase()}`];
   mods.forEach(k=>lines.push('⚠ '+MODS[k].name+': '+MODS[k].d));
   (RUN.counters||[]).forEach(k=>lines.push('RANA: "Wo '+HABITS[k].t+'." → '+HABITS[k].c));

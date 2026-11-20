@@ -233,7 +233,7 @@ function runStart(){if(!RUN)return;RT.on=true;RT.lastLook=lookKey();
   if(mods.includes('patrol')&&G.length){const g=pick(G.filter(o=>o.route&&o.route.length>1&&!o.smell))||G[0];g.name='Inspector Rana';g.knows=true;g.walk=(g.walk||1.1)*1.25;g.range*=1.15;}
   if(mods.includes('traitor'))RT.traitorAt=rnd(35,80);
   if(HUNT.cam!==1&&typeof CAMS!=='undefined')CAMS.forEach(c=>{c.range*=HUNT.cam;});
-  dartUI();gunUI();
+  if(!(typeof TUT!=='undefined'&&TUT)){dartUI();gunUI();}
   const lines=[`ESCAPE · LEG ${RUN.leg} · ${ZONES[ZONE_ID].name.toUpperCase()}`];
   mods.forEach(k=>lines.push('⚠ '+MODS[k].name+': '+MODS[k].d));
   (RUN.counters||[]).forEach(k=>lines.push('RANA: "Wo '+HABITS[k].t+'." → '+HABITS[k].c));
@@ -366,7 +366,7 @@ const COMPS={
   face:{t:'Pehchaana chehra',d:'Ek CISF jawan (laal armband) ke paas tumhari photo hai. Uske saamne look badal ke jao.'},
   crowd:{t:'Flight delay',d:'Do flights late hain. Bheed zyaada hai, chhupna aasaan.'},
   cams:{t:'Naye camere',d:'CCTV ki range badha di gayi hai.'}};
-let M;const INTRO_V=2;const TUT=!(CAREER.tutV>=INTRO_V)&&location.hash!=='#bhaag';
+let M;const INTRO_V=2;const TUT=!(CAREER.tutV>=INTRO_V);
 function newMission(){
   const n=pick(NAMES);let type=pick(Object.keys(OBJ).filter(k=>k!==CAREER.lastType));
   let comps=shuffle(Object.keys(COMPS)).slice(0,chance(.5)?2:1);if(TUT){type='steal';comps=[];}
@@ -954,27 +954,19 @@ function routeCard(route){const C=getC();const bus=route==='bus';
     <p style="opacity:.75;font-size:13px">Kam nishaan chhodogi to agli baar doosra raasta khulega.</p>
     <a class="btn" href="${bus?'bus.html':'train.html'}" style="background:${bus?'#d35400':'#1f4f9a'}">Chapter 3: ${bus?'Highway ki Bus':'Raat ki Gaadi'} →</a>`);}
 /* ===================== hub ===================== */
-function hub(){$('#loading').hidden=true;const h=Math.round(CAREER.heat);
+function hub(){$('#loading').hidden=true;const h=Math.round(CAREER.heat);const H=getHunter();const r=getRun();const up=CAREER.dartUp||0;const act=r&&r.active;
   const c=sheet(`<h1>TRACE</h1><p class="eyebrow">EVERY STEP LEAVES A TRACE</p>
-    <p>Every mistake leaves a trace, and traces follow you.</p>
-    <div class="stats"><div class="stat"><span>Missions</span><b>${CAREER.wins}/${CAREER.missions}</b></div><div class="stat"><span>Cash</span><b>${inr(CAREER.money)}</b></div><div class="stat"><span>Best</span><b>${'★'.repeat(CAREER.best)||'–'}</b></div></div>
-    <p class="eyebrow">HEAT ${h}/100</p><div class="heat"><i style="width:${h}%"></i></div>
-    ${runBtns()}
-    ${storyBtns()}
-    <button class="btn" id="go" type="button">Quick mission (airport)</button>
+    <p>Run across India with Inspector Rana on your tail. He remembers how you play. Every run is different.</p>
+    <div class="stats"><div class="stat"><span>Best run</span><b>${H.best||0} legs</b></div><div class="stat"><span>Cash</span><b>${inr(CAREER.money)}</b></div><div class="stat"><span>Rana</span><b>${H.runs||0} runs</b></div></div>
+    <button class="btn" id="play" type="button" style="background:#e0242b;font-size:26px;padding:18px">${act?`CONTINUE · LEG ${r.leg}`:'PLAY'}</button>
+    ${act?`<button class="btn alt" id="newrun" type="button">Abandon run, start new</button>`:''}
+    <p class="eyebrow" style="margin-top:6px">UPGRADES · HEAT ${h}/100</p>
+    ${up<3?`<button class="btn alt" id="dartup" type="button" ${CAREER.money<DART_COST()?'disabled':''}>+1 dart every run · ${inr(DART_COST())}</button>`:''}
     <button class="btn alt" id="pp" type="button" ${CAREER.money<100000||h<10?'disabled':''}>New passport (heat −50) · ${inr(100000)}</button>
-    <a class="btn" href="train.html" style="background:#1f4f9a">Level 2: Night Train</a>
-    <a class="btn" href="bus.html" style="background:#d35400">Level 3: Highway Bus</a>
-    <a class="btn" href="port.html" style="background:#2fa37a">Level 4: Docks</a>
-    <a class="btn alt" href="cab.html">Cab ride only (chapter 1)</a>
-    <button class="btn alt" id="replay" type="button">Replay intro + tutorial</button>
-    <p style="opacity:.7;font-size:13px">Phone: neeche-left gola se chalo, right side se camera, RUN se bhaago. Computer: WASD, Shift, mouse drag, E.</p>`);
-  c.querySelector('#go').onclick=()=>{auInit();AU.ctx&&AU.ctx.resume();start();};
-  if(c.querySelector('#contrun'))c.querySelector('#contrun').onclick=()=>{const r=getRun();location.href=ZONES[r.zone].url;if(r.zone==='airport')location.reload();};
-  c.querySelector('#newrun').onclick=()=>{auInit();startNewRun();};
+    <p style="opacity:.7;font-size:13px">Phone: left stick to move, drag right side for camera, RUN to sprint. Computer: WASD, Shift, mouse drag, E to act, F to fire, Q to switch.</p>`);
+  c.querySelector('#play').onclick=()=>{auInit();if(act){location.href=ZONES[r.zone].url;if(r.zone==='airport')location.reload();}else startNewRun();};
+  if(c.querySelector('#newrun'))c.querySelector('#newrun').onclick=()=>{auInit();startNewRun();};
   if(c.querySelector('#dartup'))c.querySelector('#dartup').onclick=()=>{CAREER.money-=DART_COST();CAREER.dartUp=(CAREER.dartUp||0)+1;saveCareer();hub();};
-  c.querySelector('#newstory').onclick=()=>{newStory();location.href='cab.html';};
-  c.querySelector('#replay').onclick=()=>{CAREER.introV=0;CAREER.tutV=0;saveCareer();location.hash='';location.reload();};
   c.querySelector('#pp').onclick=()=>{CAREER.money-=100000;CAREER.heat=Math.max(0,CAREER.heat-50);saveCareer();hub();};}
 const DART_COST=()=>150000*((CAREER.dartUp||0)+1);
 function runBtns(){const H=getHunter();const r=getRun();const up=CAREER.dartUp||0;
@@ -1043,7 +1035,7 @@ const LBL=[{t:'GUARD',c:'',p:()=>[G[0].pos.x,2.7,G[0].pos.z]},{t:'GUARD',c:'',p:
 function drawLabels(){const box=$('#lbls');if(!box.children.length)box.innerHTML=LBL.map(l=>`<div class="lbl ${l.c}">${l.t}</div>`).join('');
   [...box.children].forEach((el,i)=>{const p=LBL[i].p();tv.set(p[0],p[1],p[2]).project(camera);const on=tv.z<1&&Math.abs(tv.x)<.92&&Math.abs(tv.y)<.9;el.style.display=on?'':'none';if(on){el.style.left=((tv.x+1)/2*innerWidth)+'px';el.style.top=((1-tv.y)/2*innerHeight)+'px';}});}
 function splash(){$('#loading').hidden=true;S.phase='splash';const sp=$('#splash');sp.hidden=false;
-  sp.addEventListener('pointerdown',async()=>{sp.hidden=true;$('#lbls').innerHTML='';auInit();AU.ctx&&AU.ctx.resume();S.phase='intro';await comic('cold');CAREER.introV=INTRO_V;saveCareer();newStory();location.href='cab.html';},{once:true});}
+  sp.addEventListener('pointerdown',async()=>{sp.hidden=true;$('#lbls').innerHTML='';auInit();AU.ctx&&AU.ctx.resume();S.phase='intro';await comic('cold');CAREER.introV=INTRO_V;saveCareer();const r=newRun();r.zone='airport';r.first=true;saveRun(r);location.href='cab.html';},{once:true});}
 
 /* ===================== thriller tutorial (first mission only) ===================== */
 let TS=null;

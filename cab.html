@@ -657,14 +657,14 @@ async function arrival(){
   await comic('arrive');
   endCard();
 }
-function endCard(){const C=storyRecord(1,S.traces,[],0,'','index.html#story');const story=!!C;
+function endCard(){const RN=(()=>{try{return JSON.parse(localStorage.getItem('trace_run')||'null');}catch(e){return null;}})();const inRun=!!(RN&&RN.active&&RN.zone==='airport');const C=inRun?null:storyRecord(1,S.traces,[],0,'','index.html#story');const story=!!C;
   const kind=S.traces.length<=1?'Saaf safar':S.traces.length<=3?'Kuch nishaan chhoote':'Peechha shuru ho chuka hai';
   const c=sheet(`<h2>Chapter 1 khatam</h2>${story?'<p class="typ" style="opacity:.7">MUMBAI SE BHAAGO · 1/4</p>':''}<p class="typ" style="color:var(--accent)">${esc(kind.toUpperCase())}</p>
     <p>Tum ${clockStr()} pe Terminal 2 pahunchi. Paise bache: ${inr(S.money)}.</p>
     <p class="typ" style="color:var(--paper)">Tumhara digital footprint:</p>
     <ul class="traces">${S.traces.length?S.traces.map(t=>`<li>${esc(t.t)} · ${esc(t.text)}</li>`).join(''):'<li class="ok">Koi nishaan nahi. Ghost.</li>'}</ul>
     <p style="opacity:.8">Ab airport ke andar. Ye nishaan wahan tumhara peechha karenge.</p>
-    <a class="btn" href="${story?'index.html#story':'index.html#play'}" style="text-align:center;text-decoration:none">${story?'Chapter 2: Airport →':'Enter the airport →'}</a><button class="btn" id="again" type="button" style="background:#1d2340">Play again</button>`);
+    <a class="btn" href="${inRun?'index.html#bhaag':story?'index.html#story':'index.html#play'}" style="text-align:center;text-decoration:none">${story?'Chapter 2: Airport →':'Enter the airport →'}</a><button class="btn" id="again" type="button" style="background:#1d2340">Play again</button>`);
   try{localStorage.setItem('trace_cover',JSON.stringify({given:S.L.given,surname:S.L.surname,city:S.L.city,job:S.L.job.title,purpose:S.L.purpose,hotel:S.L.hotel,days:S.L.days}));}catch(e){}
   c.querySelector('#again').onclick=()=>location.reload();
 }
