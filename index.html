@@ -233,6 +233,7 @@ function runStart(){if(!RUN)return;RT.on=true;RT.lastLook=lookKey();
   if(mods.includes('alert'))G.forEach(g=>{g.range*=1.3;});
   if(mods.includes('patrol')&&G.length){const g=pick(G.filter(o=>o.route&&o.route.length>1&&!o.smell))||G[0];g.name='Inspector Rana';g.knows=true;g.walk=(g.walk||1.1)*1.25;g.range*=1.15;}
   if(mods.includes('traitor'))RT.traitorAt=rnd(35,80);
+  if(ZONE_ID==='airport'&&typeof GATES!=='undefined'&&Math.random()<.6)RT.gcT=rnd(50,110);
   if(HUNT.cam!==1&&typeof CAMS!=='undefined')CAMS.forEach(c=>{c.range*=HUNT.cam;});
   if(ZONE_ID==='airport'&&(RUN.counters||[]).includes('flight'))G.forEach(g=>{g.range*=1.2;});
   const sec=secLevel(ZONE_ID);if(sec>=1)G.forEach(g=>{g.range*=1+sec*.1;});if(sec>=2)G.forEach(g=>{g.walk=(g.walk||1.1)*1.1;});if(sec>=3)W.shootAt=2;
@@ -254,7 +255,9 @@ function runTick(dt){if(!RT.on||!P)return;const h=RUN.lh;
   if((RUN.mods||[]).includes('blackout')&&typeof CAMS!=='undefined'){RT.blackT+=dt;const dark=(RT.blackT%30)>21;if(dark!==RT.dark){RT.dark=dark;
     if(dark){RT.saved=CAMS.map(c=>c.range);CAMS.forEach(c=>c.range=.01);G.forEach(g=>{g._r=g.range;g.range*=.6;});hemi.intensity*=.45;sfx.thak&&sfx.thak();toast('BLACKOUT! Cameras off for 9 seconds.','info');}
     else{CAMS.forEach((c,i)=>c.range=RT.saved[i]);G.forEach(g=>{if(g._r)g.range=g._r;});hemi.intensity/=.45;}}}
-  updDarts(dt);updGun(dt);checkLock();}
+  updDarts(dt);updGun(dt);checkLock();
+  if(RT.gcT>0){RT.gcT-=dt;if(RT.gcT<=0&&S.phase==='play'){const old=MYGATE;MYGATE=pick(GATES.filter(g=>g!==old));const sw={code:MYGATE.code,dest:MYGATE.dest};Object.assign(MYGATE,{code:old.code,dest:old.dest});Object.assign(old,sw);setGateSign(old);setGateSign(MYGATE);S.gateChanged=true;drawBoard();sfx.chime();vib([60,40,60]);
+    banner(`GATE CHANGE! ${MYGATE.code} ${MYGATE.dest} now boards at Gate ${MYGATE.n}`,true);setTimeout(()=>{if(RT.on)banner(null);},6000);toast(`Announcement: "${MYGATE.code} ${MYGATE.dest} ab Gate ${MYGATE.n} se jaayegi."`,'info');}}}
 /* ---- airport: any alert, gunshot or found body locks the gates. No flight; leave by taxi (train or bus next) ---- */
 function checkLock(){if(ZONE_ID!=='airport'||RT.lock)return;if(S.alerts>0||W.stars>0||RT.body){RT.lock=true;sfx.alert();vib([120,60,120]);
   banner('AIRPORT LOCKDOWN! Gates closed. No flight now: get out via the taxi stand',true);setTimeout(()=>{if(RT.on)banner(null);},7000);toast('Announcement: "Security alert. Saari flights hold pe hain."');drawGun();}}
@@ -366,8 +369,8 @@ function recordWorld(win){const z=ZONE_ID;const kills=W.kills,shots=W.shots;cons
   const t=kills?`${place} pe goli-baari: ${kills===1?'ek jawan maara gaya':kills+' jawan maare gaye'}, hamlawar mahila faraar`:shots?`${place} pe goli chali, kai ghante tak sab band`:RT.body?`${place} pe guard behosh mila, police ko sazish ka shak`:S.alerts>=2?`${place} pe sandigdh mahila CCTV mein, talaash jaari`:null;
   if(t){WORLD.news.push({zone:z,text:t,at:Date.now()});WORLD.news=WORLD.news.slice(-8);}wjson(WKEY,WORLD);}
 /* ---- how you left a zone decides where you can go next ---- */
-const EXITS={flight:{title:'Boarding! ✈',text:'Clean exit from the airport: wanted cleared, double cash, +1 dart. But the cabin has its own eyes.',cash:2,next:['plane'],via:{plane:'Board the flight to Delhi →'}},
-  landed:{title:'Landed in Delhi',text:'Through immigration with a stamp and a straight face. New city, cold trail. +50% cash, wanted cleared.',cash:1.5,next:['train','bus','port','airport'],via:{train:'Metro to New Delhi station →',bus:'Cab to the ISBT bus stand →',port:'Connecting flight to Mumbai docks →',airport:'Back through Delhi T3 →'}},
+const EXITS={flight:{title:'Boarding! ✈',text:'Clean exit from the airport: wanted cleared, double cash, +1 dart. But the cabin has its own eyes.',cash:2,next:['plane'],via:{plane:'Board your flight →'}},
+  landed:{title:'Landed',text:'Through immigration with a stamp and a straight face. New city, cold trail. +50% cash, wanted cleared.',cash:1.5,next:['train','bus','port','airport'],via:{train:'Metro to the station →',bus:'Cab to the bus stand →',port:'Taxi to the docks →',airport:'Another airport, another gate →'}},
   jump:{title:'Jumped the train!',text:'You roll into the dark fields by the highway. Ground route only.',cash:1,next:['bus','port'],via:{bus:'Hitch to the bus stand →',port:'Hitch a truck to the docks →'}},
   station:{title:'Walked out with the crowd',text:'Clean exit at the station. Nobody looked twice. +50% cash, wanted cleared.',cash:1.5,next:['airport','bus','port'],via:{airport:'Cab to the airport →',bus:'Walk to the bus stand →',port:'Local train to the docks →'}},
   truck:{title:'Hid in a truck',text:'You skipped the police checkpost in the back of a cargo truck. It is heading for the coast.',cash:.8,next:['port','train'],via:{port:'Ride to the docks →',train:'Jump off near a station →'}},
@@ -417,7 +420,7 @@ const JOBS=['Sales manager','Software tester','Purchase executive','Logistics co
 const PURPOSES=['Supplier se meeting','Trade expo attend karna','Cousin ki shaadi','Family ke saath chhutti'];
 const HOTELS=['Al Noor Residency, Deira','Creekside Inn, Bur Dubai','Marina Pearl Hotel','Palm Gate Suites, Al Barsha'];
 const OBJ={
-  handoff:{title:'Dead drop',brief:'Signal cloner contact tak pahunchao. Contact airside (security ke paar) hai. Phir Gate 72 se flight pakdo.',exit:'gate'},
+  handoff:{title:'Dead drop',brief:'Signal cloner contact tak pahunchao. Contact airside (security ke paar) hai. Phir apne gate se flight pakdo (departure board dekho).',exit:'gate'},
   steal:{title:'Staff room ka laptop',brief:'Security office ke andar ek laptop hai jismein CCTV ka password hai. Use utha ke taxi stand se bahar niklo.',exit:'taxi'},
   bug:{title:'Bug lagao',brief:'Ek businessman ke briefcase mein tracker lagana hai, bina usse pata chale. Wo terminal mein ghoom raha hai. Phir taxi stand se niklo.',exit:'taxi'},
   tail:{title:'Peecha karo',brief:'Ek aadmi ka 50 second peecha karo. Wo palat ke dekhta hai. Door gaye to kho jaayega, paas gaye to pakde jaoge. Phir uski meeting ki photo lo.',exit:'taxi'},
@@ -499,7 +502,7 @@ floorTex.wrapS=floorTex.wrapT=T.RepeatWrapping;floorTex.repeat.set(18,13);
 const floor=mesh(new T.PlaneGeometry(72,50),m(0xffffff,{map:floorTex,roughness:.35}),0,0,-1);floor.rotation.x=-Math.PI/2;
 const carpet=mesh(new T.PlaneGeometry(46,20),m(0x5b6ee1,{roughness:.95}),13,.01,-16);carpet.rotation.x=-Math.PI/2;
 // outer walls
-box(-36.5,-36,24,-26,6,WALL2);box(36,36.5,24,-26,6,WALL2);box(-36,36,-26,-26.5,6,WALL2);
+box(-36.5,-36,24,-26,6,WALL2);box(36,36.5,24,-26,6,WALL2);box(-36,-2,-26,-26.5,6,WALL2);box(18,36,-26,-26.5,6,WALL2);
 box(-36,-3,24,24.5,6,WALL2);box(3,36,24,24.5,6,WALL2);
 // entrance glass + taxi stand sign
 for(const x of [-2,0,2]){mesh(new T.PlaneGeometry(2,4),new T.MeshStandardMaterial({color:0x9ad1ff,transparent:true,opacity:.35,roughness:.1}),x,2,24.3);}
@@ -541,32 +544,44 @@ const laptop=new T.Group();laptop.position.set(-31,.92,-23.6);scene.add(laptop);
 for(let i=0;i<3;i++){const sc=mesh(new T.PlaneGeometry(1.2,.7),glow(0x2f8f6f,1),-35.9,2.2,-20+i*1.4);sc.rotation.y=Math.PI/2;}
 sign('SECURITY OFFICE',-25,3.0,-17.75,0,4,.7,'#1d2340','#fff');
 // airside: gate 72, café, seats
-box(20,28,-23,-24.2,1.1,DESK,{cast:true});sign('GATE 72 · ZR 501 DUBAI',24,3.6,-24.3,0,8,1.1);
+/* gates: 72 on the airside wall, 73-75 in the north concourse. Flights and gates are shuffled every game. */
+const FLIGHTS=shuffle([['ZR 501','DUBAI'],['AI 863','DELHI'],['6E 211','GOA'],['UK 707','KOLKATA']]);
+const GATES=[{n:72,x:24,z:-22.2},{n:73,x:2,z:-44.2},{n:74,x:13,z:-44.2},{n:75,x:24,z:-44.2}].map((g,i)=>Object.assign(g,{code:FLIGHTS[i][0],dest:FLIGHTS[i][1]}));
+let MYGATE=RUN?pick(GATES):GATES[0];
+box(20,28,-23,-24.2,1.1,DESK,{cast:true});GATES[0].signMesh=sign(`GATE 72 · ${GATES[0].code} ${GATES[0].dest}`,24,3.6,-24.3,0,8,1.1);GATES[0].sw=8;GATES[0].sh=1.1;
+function setGateSign(g){const old=g.signMesh.material.map;g.signMesh.material.map=signTex(`GATE ${g.n} · ${g.code} ${g.dest}`,'#f5b82e','#15181c',Math.round(256*g.sw/g.sh),256,"700 120px 'Space Grotesk', sans-serif");g.signMesh.material.needsUpdate=true;old&&old.dispose();}
+// concourse: floor, walls, three more gates with desks, seats and glass
+{const cf=mesh(new T.PlaneGeometry(43,22),m(0xffffff,{map:floorTex,roughness:.35}),13,0,-37.3);cf.rotation.x=-Math.PI/2;const cc=mesh(new T.PlaneGeometry(30,6),m(0x5b6ee1,{roughness:.95}),13,.01,-36);cc.rotation.x=-Math.PI/2;}
+box(-8.6,-8.1,-26.5,-48.4,6,WALL2);box(34.4,34.9,-26.5,-48.4,6,WALL2);box(-8.6,34.9,-48,-48.4,6,WALL2);
+sign('GATES 73 – 75 →',8,4.6,-25.7,0,6,1,'#1d2340','#ffd166');
+for(const g of GATES.slice(1)){box(g.x-3.2,g.x+3.2,-45.4,-46.6,1.1,DESK,{cast:true});g.signMesh=sign(`GATE ${g.n} · ${g.code} ${g.dest}`,g.x,3.6,-47.9,0,7.6,1);g.sw=7.6;g.sh=1;
+  mesh(new T.PlaneGeometry(2,2.6),m(0x111418),g.x,1.3,-47.95);for(const dx of [-3.4,3.4])mesh(new T.PlaneGeometry(3,4.4),new T.MeshStandardMaterial({color:0x2b3a7a,emissive:0x16204f,emissiveIntensity:.7}),g.x+dx,2.9,-47.95);}
 const GATE_DOOR=mesh(new T.PlaneGeometry(2,2.6),m(0x111418),24,1.3,-26.2);
-for(let x=10;x<=34;x+=4){mesh(new T.PlaneGeometry(4,5),new T.MeshStandardMaterial({color:0x2b3a7a,emissive:0x16204f,emissiveIntensity:.7}),x,3,-26.2);}
+for(let x=22;x<=34;x+=4){mesh(new T.PlaneGeometry(4,5),new T.MeshStandardMaterial({color:0x2b3a7a,emissive:0x16204f,emissiveIntensity:.7}),x,3,-26.2);}
 function seats(x,z,n=5){box(x-n*.32,x+n*.32,z-.35,z+.35,.5,m(0x6d7ff0),{tall:false});mesh(new T.BoxGeometry(n*.64,.55,.12),m(0x5a6be0),x,.85,z-.3);}
 for(const x of [14,22,30])for(const z of [-12,-16,-20])seats(x,z);
+for(const x of [-2,6,20,28])for(const z of [-34,-39])seats(x,z);
 box(2,6,-18,-20,1.1,m(0xd35400),{cast:true});sign('CHAI · SNACKS',4,2.6,-17.9,0,4,.8,'#d35400','#fff');
 // benches landside + plants + departure board
 function plant(x,z){mesh(new T.CylinderGeometry(.42,.32,.6,16),m(0xe07a4f),x,.3,z);const b=mesh(new T.IcosahedronGeometry(.6,1),m(0x57b36a,{flatShading:true}),x,1.05,z,scene,{cast:true});b.scale.y=1.2;COL.push({x0:x-.45,x1:x+.45,z0:z-.45,z1:z+.45,on:true,tall:false});}
 [[-33,22],[33,22],[-33,-1],[33,-1],[-8,-24],[34,-9]].forEach(([x,z])=>plant(x,z));
 seats(-22,18);seats(22,18);seats(-12,21);seats(12,21);
-const boardTex=canvasTex(1024,384,()=>{});function drawBoard(){const g=boardTex._g;g.fillStyle='#10132a';g.fillRect(0,0,1024,384);g.font="700 40px 'Space Grotesk', sans-serif";[['02:50','EK 2210','DUBAI','61','BOARDING'],['03:40','ZR 501','DUBAI','72',S.timeLeft<120?'LAST CALL':'CHECK-IN'],['04:05','QR 557','DOHA','68','ON TIME'],['04:40','UK 233','MUSCAT','76','DELAYED']].forEach((r,i)=>{r.forEach((c,j)=>{g.fillStyle=j===4?(/LAST|DELAY/.test(c)?'#ff7b6b':'#6fe0a0'):(r[1]==='ZR 501'?'#ffd166':'#cfe0ff');g.fillText(c,[30,190,380,620,740][j],70+i*82);});});boardTex.needsUpdate=true;}
+const boardTex=canvasTex(1024,384,()=>{});function drawBoard(){const g=boardTex._g;g.fillStyle='#10132a';g.fillRect(0,0,1024,384);g.font="700 40px 'Space Grotesk', sans-serif";GATES.map((q,i)=>[['02:50','03:40','04:05','04:40'][i],q.code,q.dest,String(q.n),q===MYGATE&&S.gateChanged?'GATE CHANGE':q===MYGATE&&S.timeLeft<120?'LAST CALL':['BOARDING','ON TIME','ON TIME','DELAYED'][i]]).forEach((r,i)=>{r.forEach((c,j)=>{g.fillStyle=j===4?(/LAST|DELAY|CHANGE/.test(c)?'#ff7b6b':'#6fe0a0'):(r[1]===MYGATE.code?'#ffd166':'#cfe0ff');g.fillText(c,[30,190,380,620,740][j],70+i*82);});});boardTex.needsUpdate=true;}
 box(-4,4,10.6,11,4.6,m(0x1d2033),{y0:2.4,collide:false});const bp=mesh(new T.PlaneGeometry(7.6,2.85),new T.MeshBasicMaterial({map:boardTex,toneMapped:false}),0,4.7,11.02);
 for(const x of [-3.5,3.5])box(x-.1,x+.1,10.7,10.9,2.4,TRIM,{tall:false});
 // ceiling lights
-{const g=new T.BoxGeometry(5,.08,.6),n=7*6,im=new T.InstancedMesh(g,glow(0xfff3dd,1.6),n);const o=new T.Object3D();let k=0;for(let x=-30;x<=30;x+=10)for(let z=20;z>=-24;z-=9){o.position.set(x,7.9,z);o.updateMatrix();im.setMatrixAt(k++,o.matrix);}im.count=k;scene.add(im);}
+{const g=new T.BoxGeometry(5,.08,.6),n=7*9,im=new T.InstancedMesh(g,glow(0xfff3dd,1.6),n);const o=new T.Object3D();let k=0;for(let x=-30;x<=30;x+=10)for(let z=20;z>=-44;z-=9){if(z<-26&&(x<-10||x>35))continue;o.position.set(x,7.9,z);o.updateMatrix();im.setMatrixAt(k++,o.matrix);}im.count=k;scene.add(im);}
 // fire alarms
 const ALARMS=[[-35.8,4],[35.8,4],[35.8,-14]].map(([x,z])=>{const g=new T.Group();g.position.set(x,1.4,z);scene.add(g);mesh(rb(.15,.5,.4,.05),m(0xe0242b),0,0,0,g,{cast:true});mesh(new T.BoxGeometry(.06,.12,.2),glow(0xffffff,1),x<0?.09:-.09,.05,0,g);return {x:x+(x<0?1:-1),z};});
 
 /* ===================== regions & navigation ===================== */
-function region(x,z){if(z>-6){if(x<-28&&z>8&&z<20)return 'WASH';if(x>28&&z>8&&z<20)return 'DUTY';return 'HALL';}return x<-10?'STAFF':'AIR';}
-const DOORS={'HALL|WASH':[[-26.6,13.5],[-29.6,13.5]],'HALL|DUTY':[[26.5,14],[29.5,14]],'HALL|AIR':[[0,-4.4],[0,-7.8]],'HALL|STAFF':[[-15,-4.4],[-15,-7.8]],'STAFF|AIR':[[-11.6,-17],[-8.4,-17]]};
-const ADJ={HALL:['WASH','DUTY','AIR','STAFF'],WASH:['HALL'],DUTY:['HALL'],AIR:['HALL','STAFF'],STAFF:['HALL','AIR']};
+function region(x,z){if(z<-26.3&&x>-8.6)return 'CON';if(z>-6){if(x<-28&&z>8&&z<20)return 'WASH';if(x>28&&z>8&&z<20)return 'DUTY';return 'HALL';}return x<-10?'STAFF':'AIR';}
+const DOORS={'HALL|WASH':[[-26.6,13.5],[-29.6,13.5]],'HALL|DUTY':[[26.5,14],[29.5,14]],'HALL|AIR':[[0,-4.4],[0,-7.8]],'HALL|STAFF':[[-15,-4.4],[-15,-7.8]],'STAFF|AIR':[[-11.6,-17],[-8.4,-17]],'AIR|CON':[[8,-24.4],[8,-28.2]]};
+const ADJ={HALL:['WASH','DUTY','AIR','STAFF'],WASH:['HALL'],DUTY:['HALL'],AIR:['HALL','STAFF','CON'],STAFF:['HALL','AIR'],CON:['AIR']};
 function doorPts(a,b){const k=a+'|'+b,k2=b+'|'+a;if(DOORS[k])return DOORS[k];const d=DOORS[k2];return [d[1],d[0]];}
 function navPath(fx,fz,tx,tz){const a=region(fx,fz),b=region(tx,tz);if(a===b)return [[tx,tz]];const prev={[a]:null},q=[a];while(q.length){const r=q.shift();if(r===b)break;for(const n of ADJ[r])if(!(n in prev)){prev[n]=r;q.push(n);}}
   const chain=[];let r=b;while(r&&r!==a){chain.unshift(r);r=prev[r];}const pts=[];let cur=a;for(const nx of chain){const [p1,p2]=doorPts(cur,nx);pts.push(p1,p2);cur=nx;}pts.push([tx,tz]);return pts;}
-const WANDER={HALL:[[-26,26,14,22],[-27,-20,-4,0],[20,27,-4,0],[-7,7,5,9]],AIR:[[-8,34,-8,-10],[10,34,-14,-22],[-8,8,-11,-16]],STAFF:[[-34,-12,-8,-15]],DUTY:[[29,35,13,14.5]]};
+const WANDER={HALL:[[-26,26,14,22],[-27,-20,-4,0],[20,27,-4,0],[-7,7,5,9]],AIR:[[-8,34,-8,-10],[10,34,-14,-22],[-8,8,-11,-16]],STAFF:[[-34,-12,-8,-15]],DUTY:[[29,35,13,14.5]],CON:[[-6,32,-30,-32],[-6,32,-41,-43],[-6,-4,-30,-43]]};
 function randIn(reg){const r=pick(WANDER[reg]);return [rnd(r[0],r[1]),rnd(Math.min(r[2],r[3]),Math.max(r[2],r[3]))];}
 function losBlocked(ax,az,bx,bz){const dx=bx-ax,dz=bz-az;for(const c of COL){if(!c.on||!c.tall)continue;let t0=0,t1=1;
   for(const [p,d,lo,hi] of [[ax,dx,c.x0,c.x1],[az,dz,c.z0,c.z1]]){if(Math.abs(d)<1e-6){if(p<lo||p>hi){t0=2;break;}}else{let a=(lo-p)/d,b=(hi-p)/d;if(a>b)[a,b]=[b,a];t0=Math.max(t0,a);t1=Math.min(t1,b);if(t0>t1)break;}}
@@ -628,6 +643,7 @@ function setupNPC(extra){
   for(let i=0;i<14+extra;i++){const [x,z]=randIn('HALL');npc(paxOpts(),x,z,'HALL');}
   for(let i=0;i<9+Math.round(extra/2);i++){const [x,z]=randIn('AIR');npc(paxOpts(),x,z,'AIR');}
   for(let i=0;i<2;i++){const [x,z]=randIn('DUTY');npc(paxOpts(),x,z,'DUTY');}
+  for(let i=0;i<8;i++){const [x,z]=randIn('CON');npc(paxOpts(),x,z,'CON');}
   staffWalker=npc({body:0x2d4a8a,vest:0xf28b0f,skin:0x9a6644,hair:0x111111,cap:0xf28b0f},-15,2,'HALL');staffWalker.beh='route';staffWalker.special=true;staffWalker.staff=true;
   staffWalker.route=[[-15,0],[-15,-4.4],[-15,-7.8],[-30,-11],['w',5],[-15,-7.8],[-15,-4.4],[-20,-2],['w',8],[-15,-4.4],[-15,-7.8],[-11.6,-17],[-8.4,-17],[5,-15],['w',6],[-8.4,-17],[-11.6,-17],[-15,-7.8],[-15,-4.4],[-15,0],['w',6]];staffWalker.ri=0;
 }
@@ -668,7 +684,8 @@ function setupGuards(extra,knowIdx){
     {name:'CISF jawan',look:CISF,route:[[24,16],[6,19],[6,7],[24,7]]},
     {name:'Security officer',look:POLICE,route:[[3,-3]],yaw:0,range:8,fov:.8},
     {name:'Staff guard',look:Object.assign({},CISF,{vest:0xf28b0f}),route:[[-30,-9],[-14,-9],[-14,-15],[-24,-15],[-28,-21],[-34,-15]]},
-    {name:'Airside police',look:POLICE,route:[[-6,-9],[32,-9],[32,-21],[12,-21],[-6,-14]]}];
+    {name:'Airside police',look:POLICE,route:[[-6,-9],[32,-9],[32,-21],[12,-21],[-6,-14]]},
+    {name:'Gate police',look:POLICE,route:[[-5,-31],[32,-31],[32,-41],[-5,-41]]}];
   if(extra){defs.push({name:'CISF jawan',look:CISF,route:[[-26,-2],[26,-2],[26,0],[-26,0]]});defs.push({name:'Airside police',look:POLICE,route:[[10,-24],[34,-24],[34,-12],[10,-12]]});}
   defs.forEach((d,i)=>{if(i===knowIdx){d.look=Object.assign({},d.look,{band:true});d.knows=true;}guard(d);});
 }
@@ -679,7 +696,7 @@ function cctv(id,x,z,yaw,sweep,range,fov=.42){const g=new T.Group();g.position.s
   const cone=coneMesh(range,fov);cone.me.material.color.set(0xff4040);cone.me.material.opacity=.12;cone.piv.position.set(x,.025,z);
   const c={id,x,z,base:yaw,yaw,sweep,range,fov,head,led,cone,ph:rnd(0,6),cd:0};CAMS.push(c);return c;}
 function setupCams(boost){const k=boost?1.4:1;
-  cctv(1,0,23,Math.PI,.7,14*k);cctv(2,-27,6,Math.PI*.3,.45,12*k);cctv(3,17,14,Math.PI,0,12*k,.32);cctv(4,0,-5.4,0,.6,11*k);cctv(5,-12,-8,-2.3,.5,10*k);cctv(6,20,-7,Math.PI,.7,14*k);cctv(7,-30,-18.6,Math.PI,.8,7*k,.5);}
+  cctv(1,0,23,Math.PI,.7,14*k);cctv(2,-27,6,Math.PI*.3,.45,12*k);cctv(3,17,14,Math.PI,0,12*k,.32);cctv(4,0,-5.4,0,.6,11*k);cctv(5,-12,-8,-2.3,.5,10*k);cctv(6,20,-7,Math.PI,.7,14*k);cctv(7,-30,-18.6,Math.PI,.8,7*k,.5);cctv(8,13,-27.2,Math.PI,.8,14*k);}
 function camSees(c,x,z){if(S.blackUntil>clockT||region(x,z)==='WASH')return false;const dx=x-c.x,dz=z-c.z,d=Math.hypot(dx,dz);if(d>c.range)return false;if(Math.abs(angDiff(Math.atan2(dx,dz),c.yaw))>c.fov)return false;return !losBlocked(c.x,c.z,x,z);}
 
 /* ===================== player ===================== */
@@ -714,7 +731,7 @@ function nearDoor(d,x,z,r=1.8){return Math.hypot(x-d.x,z-d.z)<r;}
 
 /* ===================== suspicion system ===================== */
 function playerFlags(){const reg=region(P.pos.x,P.pos.z);const staff=S.look.outfit==='staff';
-  const illegal=(reg==='STAFF'&&!staff)||(reg==='AIR'&&!S.cleared&&!staff);
+  const illegal=(reg==='STAFF'&&!staff)||((reg==='AIR'||reg==='CON')&&!S.cleared&&!staff);
   let crowd=0;for(const n of NPC){if(Math.hypot(n.pos.x-P.pos.x,n.pos.z-P.pos.z)<2)crowd++;}
   return {reg,running:P.running,illegal,action:!!(S.hold&&S.hold.illegal),wanted:S.wanted===lookKey(),crowd,staff};}
 function canSee(g,x,z){const dx=x-g.pos.x,dz=z-g.pos.z,d=Math.hypot(dx,dz);if(d<2.2)return losBlocked(g.pos.x,g.pos.z,x,z)?0:Math.max(d,.01);if(d>g.range*(S.blackUntil>clockT?.55:1))return 0;if(Math.abs(angDiff(Math.atan2(dx,dz),g.yaw))>g.fov)return 0;return losBlocked(g.pos.x,g.pos.z,x,z)?0:d;}
@@ -908,9 +925,10 @@ inter({label:'Emigration: passport do',r:1.2,on:()=>!S.cleared,pos:()=>[0,-4.2],
   closeDlg();locked=false;}});
 // exits
 inter({label:'Taxi pakdo: bahar niklo',r:2,on:()=>S.done&&(RT.on&&M.type!=='extract'||OBJ[M.type].exit==='taxi'),pos:()=>[0,22.6],run:async()=>{RT.exit='taxi';finish(true);}});
-inter({label:'Board karo: Gate 72',r:2,on:()=>S.done&&(RT.on&&M.type!=='extract'||OBJ[M.type].exit==='gate'),pos:()=>[24,-22.2],run:async()=>{locked=true;
+for(const g of GATES)inter({label:`Board: Gate ${g.n} (${g.dest})`,r:2,on:()=>S.done&&(RT.on&&M.type!=='extract'||OBJ[M.type].exit==='gate'),pos:()=>[g.x,g.z],run:async()=>{locked=true;
+  if(g!==MYGATE){await say('Gate staff',`Ye ${g.code} ${g.dest} hai, madam. Aapki flight ${MYGATE.code} Gate ${MYGATE.n} se hai.`);closeDlg();locked=false;return;}
   if(RT.on&&!gateOpen()){await say('Gate staff','Sorry madam, security lockdown hai. Saari flights hold pe hain.');closeDlg();locked=false;toast('Gate closed. Taxi stand (south exit) is your only way out.');return;}
-  await say('Gate staff','Boarding pass please.');sfx.beep(true);closeDlg();RT.exit='flight';finish(true);}});
+  await say('Gate staff','Boarding pass please.');sfx.beep(true);closeDlg();if(RT.on){RT.exit='flight';RUN.dest=MYGATE.dest;RUN.fcode=MYGATE.code;}finish(true);}});
 
 /* ===================== mission objectives ===================== */
 let contact=null,target=null;
@@ -918,7 +936,7 @@ function setupObjective(){
   if(M.type==='handoff'){const [x,z]=randIn('AIR');contact=npc({body:0x4b4b6a,skin:0xc68b5e,hair:0x111111,scarf:0xff5fa2,paper:true,longHair:true},x,z,'AIR');contact.special=true;contact.walk=.8;
     inter({label:'Contact ko device do',r:1.6,on:()=>!S.done,pos:()=>[contact.pos.x,contact.pos.z],run:async()=>{contact.beh='hold';contact.target=null;
       const ok=await hold('Akhbaar ke andar device sarka rahi ho…',3,true,()=>Math.hypot(contact.pos.x-P.pos.x,contact.pos.z-P.pos.z)>2.2?'Contact se door chali gayi':null);contact.beh='wander';
-      if(ok){S.done=true;sfx.ok();toast('Device pahunch gaya. Ab Gate 72 se board karo.','good');}}});}
+      if(ok){S.done=true;sfx.ok();toast(`Device pahunch gaya. Ab Gate ${MYGATE.n} se board karo.`,'good');}}});}
   if(M.type==='steal'){inter({label:'Laptop uthao',r:1.5,on:()=>!S.done,pos:()=>[-31,-22.4],run:async()=>{const ok=await hold('Laptop bag mein daal rahi ho…',2.5,true);if(ok){S.done=true;laptop.visible=false;sfx.ok();toast('Laptop mil gaya. Ab taxi stand (south exit) se niklo.','good');}}});}
   if(M.type==='bug'){
     target=npc({body:0x6d7280,suit:true,tie:0xc0392b,skin:0xe2b48f,hair:0x2a1d14,case:true,mustache:true},-20,18,'HALL');target.special=true;target.beh='target';target.walk=1.05;
@@ -975,11 +993,11 @@ function objText(){if(M.type==='tail'&&!S.done)return S.tail.met?'Meeting ki pho
   if(M.type==='extract')return !S.ex.met?'Washroom mein chhupa informer dhoondho (grey kapde, chashma)':S.ex.wait?'Informer peeche reh gaya! Wapas jao.':'Informer ko taxi stand (south exit) tak le jao. Bhaagna mat.';
   if(M.type==='photos'&&!S.done)return `Saboot ki photo lo (${S.ph.done.size}/3): `+S.ph.list.filter(x=>!S.ph.done.has(x.id)).map(x=>x.name).join(', ');
   if(!S.done){if(M.type==='handoff')return 'Gulaabi dupatta wale contact ko device do (airside, security ke paar)'+(S.cleared?'':'. Pehle emigration, ya staff ka raasta.');if(M.type==='steal')return S.wardrobe.has('staff')?'Security office ka laptop uthao (staff area, hari line)':'Pehle staff jacket: staff ke peeche STAFF ONLY mein ghuso, left wall ke locker se lo';return 'Grey suit wale businessman ke peeche jaake briefcase mein bug lagao.';}
-  if(RT.on&&M.type!=='extract')return RT.lock?'LOCKDOWN: taxi stand (south exit) se niklo → Train/Bus':'Gate 72 se flight pakdo (clean exit), ya taxi stand se niklo';
-  return OBJ[M.type].exit==='gate'?'Gate 72 se board karo':'Taxi stand (south exit) se bahar niklo';}
+  if(RT.on&&M.type!=='extract')return RT.lock?'LOCKDOWN: taxi stand (south exit) se niklo → Train/Bus':`Gate ${MYGATE.n} (${MYGATE.dest}) se flight pakdo, ya taxi stand se niklo`;
+  return OBJ[M.type].exit==='gate'?`Gate ${MYGATE.n} se board karo`:'Taxi stand (south exit) se bahar niklo';}
 function objPos(){if(M.type==='extract')return S.ex.met?[0,22.6]:[inf.pos.x,inf.pos.z];
   if(M.type==='photos'&&!S.done){const r=S.ph.list.filter(x=>!S.ph.done.has(x.id)).sort((a,b)=>Math.hypot(a.pos[0]-P.pos.x,a.pos[1]-P.pos.z)-Math.hypot(b.pos[0]-P.pos.x,b.pos[1]-P.pos.z))[0];return r.pos;}
-  if(!S.done){if(M.type==='handoff')return [contact.pos.x,contact.pos.z];if(M.type==='steal')return [-31,-22.4];return [target.pos.x,target.pos.z];}if(RT.on&&M.type!=='extract')return RT.lock?[0,22.6]:[24,-22.2];return OBJ[M.type].exit==='gate'?[24,-22.2]:[0,22.6];}
+  if(!S.done){if(M.type==='handoff')return [contact.pos.x,contact.pos.z];if(M.type==='steal')return [-31,-22.4];return [target.pos.x,target.pos.z];}if(RT.on&&M.type!=='extract')return RT.lock?[0,22.6]:[MYGATE.x,MYGATE.z];return OBJ[M.type].exit==='gate'?[MYGATE.x,MYGATE.z]:[0,22.6];}
 
 /* ===================== caught & finish ===================== */
 async function caught(g){if(runNoArrest(g))return;if(S.phase!=='play')return;locked=true;S.phase='talk';
@@ -1076,7 +1094,7 @@ $('#run').addEventListener('click',e=>{e.stopPropagation();input.run=!input.run;
 $('#obj').addEventListener('click',()=>{const p=objPos();camYaw=Math.atan2(p[0]-P.pos.x,p[1]-P.pos.z);});
 
 /* ===================== minimap ===================== */
-const mc=$('#map'),mg=mc.getContext('2d');const mx=x=>(x+37)/74*236,mz=z=>(25-z)/52*168;
+const mc=$('#map'),mg=mc.getContext('2d');const mx=x=>(x+37)/74*236,mz=z=>(25-z)/74*168;
 function drawMap(){mg.clearRect(0,0,236,168);mg.fillStyle='rgba(255,255,255,.35)';for(const c of COL){if(!c.on||!c.tall)continue;mg.fillRect(mx(c.x0),mz(c.z1),Math.max(2,mx(c.x1)-mx(c.x0)),Math.max(2,mz(c.z0)-mz(c.z1)));}
   for(const g of G){mg.fillStyle=g.state==='alert'?'#ff3030':g.state==='patrol'?'#ffd166':'#ff9f1c';mg.beginPath();mg.arc(mx(g.pos.x),mz(g.pos.z),5,0,7);mg.fill();}
   if(M.type==='steal'&&!S.wardrobe.has('staff')){mg.fillStyle='#f28b0f';mg.fillRect(mx(-35.8)-1,mz(-8.5)-1,8,mz(-14)-mz(-8.5)+2);}
@@ -1121,7 +1139,7 @@ function updTutorial(dt){if(!TS||S.phase!=='play')return;TS.t+=dt;const g=G[0];
 
 /* ===================== camera & loop ===================== */
 function updCam(dt){const tx=P.pos.x,tz=P.pos.z,ty=1.1;let dist=camDist;
-  for(;dist>2.5;dist-=.5){const cx=tx-Math.sin(camYaw)*dist*Math.cos(camPitch),cz=tz-Math.cos(camYaw)*dist*Math.cos(camPitch);if(cx>-35.6&&cx<35.6&&cz>-25.6&&cz<23.6&&!losBlocked(tx,tz,cx,cz))break;}
+  for(;dist>2.5;dist-=.5){const cx=tx-Math.sin(camYaw)*dist*Math.cos(camPitch),cz=tz-Math.cos(camYaw)*dist*Math.cos(camPitch);const inB=cz<-25.6?(cx>-8&&cx<34.3&&cz>-47.6):(cx>-35.6&&cx<35.6&&cz<23.6);if(inB&&!losBlocked(tx,tz,cx,cz))break;}
   const pos=new T.Vector3(tx-Math.sin(camYaw)*dist*Math.cos(camPitch),ty+dist*Math.sin(camPitch),tz-Math.cos(camYaw)*dist*Math.cos(camPitch));
   pos.y=Math.min(pos.y,7.6);camera.position.lerp(pos,Math.min(1,dt*7));camera.lookAt(tx,ty,tz);sun.position.set(tx+10,30,tz+14);sun.target.position.set(tx,0,tz);}
 let clockT=0,boardT=0,frames=0,annT=0;
@@ -1130,7 +1148,7 @@ function frame(){
   let dt=Math.min(window.__dtcap||.05,clk.getDelta());if(slowT>0){slowT-=dt;dt*=.3;}clockT+=dt;const t=clockT;
   if(S.phase==='play'||S.phase==='talk'){
     if(S.phase==='play'){updPlayer(dt,t);updHold(dt);runTick(dt);updTutorial(dt);missionTick(dt);S.timeLeft-=dt;if(S.timeLeft<=0){finish(false);}
-      if((annT+=dt)>48){annT=0;sfx.chime();toast(pick(['Announcement: ZR 501 Dubai ki boarding Gate 72 se jaldi shuru hogi.','Announcement: Kripya apna saamaan laawaaris na chhodein.','Announcement: Passenger Kapoor, please report to Gate 61.','Announcement: Security check pe line mein rahein.']),'info');}}
+      if((annT+=dt)>48){annT=0;sfx.chime();toast(pick([`Announcement: ${MYGATE.code} ${MYGATE.dest} ki boarding Gate ${MYGATE.n} se jaldi shuru hogi.`,'Announcement: Kripya apna saamaan laawaaris na chhodein.','Announcement: Passenger Kapoor, please report to Gate 61.','Announcement: Security check pe line mein rahein.']),'info');}}
     updNPC(dt,t);updGuards(dt,t);updCams(dt);
     updDoor(staffDoor,dt,NPC.concat(G).some(n=>(n.staff||G.includes(n))&&nearDoor(staffDoor,n.pos.x,n.pos.z))||(S.look.outfit==='staff'&&nearDoor(staffDoor,P.pos.x,P.pos.z)));
     updDoor(airDoor,dt,NPC.concat(G).some(n=>(n.staff||G.includes(n))&&nearDoor(airDoor,n.pos.x,n.pos.z))||(S.look.outfit==='staff'&&nearDoor(airDoor,P.pos.x,P.pos.z)));

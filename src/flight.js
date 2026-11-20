@@ -82,6 +82,7 @@ function runStart(){if(!RUN)return;RT.on=true;RT.lastLook=lookKey();
   if(mods.includes('alert'))G.forEach(g=>{g.range*=1.3;});
   if(mods.includes('patrol')&&G.length){const g=pick(G.filter(o=>o.route&&o.route.length>1&&!o.smell))||G[0];g.name='Inspector Rana';g.knows=true;g.walk=(g.walk||1.1)*1.25;g.range*=1.15;}
   if(mods.includes('traitor'))RT.traitorAt=rnd(35,80);
+  if(ZONE_ID==='airport'&&typeof GATES!=='undefined'&&Math.random()<.6)RT.gcT=rnd(50,110);
   if(HUNT.cam!==1&&typeof CAMS!=='undefined')CAMS.forEach(c=>{c.range*=HUNT.cam;});
   if(ZONE_ID==='airport'&&(RUN.counters||[]).includes('flight'))G.forEach(g=>{g.range*=1.2;});
   const sec=secLevel(ZONE_ID);if(sec>=1)G.forEach(g=>{g.range*=1+sec*.1;});if(sec>=2)G.forEach(g=>{g.walk=(g.walk||1.1)*1.1;});if(sec>=3)W.shootAt=2;
@@ -103,7 +104,9 @@ function runTick(dt){if(!RT.on||!P)return;const h=RUN.lh;
   if((RUN.mods||[]).includes('blackout')&&typeof CAMS!=='undefined'){RT.blackT+=dt;const dark=(RT.blackT%30)>21;if(dark!==RT.dark){RT.dark=dark;
     if(dark){RT.saved=CAMS.map(c=>c.range);CAMS.forEach(c=>c.range=.01);G.forEach(g=>{g._r=g.range;g.range*=.6;});hemi.intensity*=.45;sfx.thak&&sfx.thak();toast('BLACKOUT! Cameras off for 9 seconds.','info');}
     else{CAMS.forEach((c,i)=>c.range=RT.saved[i]);G.forEach(g=>{if(g._r)g.range=g._r;});hemi.intensity/=.45;}}}
-  updDarts(dt);updGun(dt);checkLock();}
+  updDarts(dt);updGun(dt);checkLock();
+  if(RT.gcT>0){RT.gcT-=dt;if(RT.gcT<=0&&S.phase==='play'){const old=MYGATE;MYGATE=pick(GATES.filter(g=>g!==old));const sw={code:MYGATE.code,dest:MYGATE.dest};Object.assign(MYGATE,{code:old.code,dest:old.dest});Object.assign(old,sw);setGateSign(old);setGateSign(MYGATE);S.gateChanged=true;drawBoard();sfx.chime();vib([60,40,60]);
+    banner(`GATE CHANGE! ${MYGATE.code} ${MYGATE.dest} now boards at Gate ${MYGATE.n}`,true);setTimeout(()=>{if(RT.on)banner(null);},6000);toast(`Announcement: "${MYGATE.code} ${MYGATE.dest} ab Gate ${MYGATE.n} se jaayegi."`,'info');}}}
 /* ---- airport: any alert, gunshot or found body locks the gates. No flight; leave by taxi (train or bus next) ---- */
 function checkLock(){if(ZONE_ID!=='airport'||RT.lock)return;if(S.alerts>0||W.stars>0||RT.body){RT.lock=true;sfx.alert();vib([120,60,120]);
   banner('AIRPORT LOCKDOWN! Gates closed. No flight now: get out via the taxi stand',true);setTimeout(()=>{if(RT.on)banner(null);},7000);toast('Announcement: "Security alert. Saari flights hold pe hain."');drawGun();}}
@@ -215,8 +218,8 @@ function recordWorld(win){const z=ZONE_ID;const kills=W.kills,shots=W.shots;cons
   const t=kills?`${place} pe goli-baari: ${kills===1?'ek jawan maara gaya':kills+' jawan maare gaye'}, hamlawar mahila faraar`:shots?`${place} pe goli chali, kai ghante tak sab band`:RT.body?`${place} pe guard behosh mila, police ko sazish ka shak`:S.alerts>=2?`${place} pe sandigdh mahila CCTV mein, talaash jaari`:null;
   if(t){WORLD.news.push({zone:z,text:t,at:Date.now()});WORLD.news=WORLD.news.slice(-8);}wjson(WKEY,WORLD);}
 /* ---- how you left a zone decides where you can go next ---- */
-const EXITS={flight:{title:'Boarding! ✈',text:'Clean exit from the airport: wanted cleared, double cash, +1 dart. But the cabin has its own eyes.',cash:2,next:['plane'],via:{plane:'Board the flight to Delhi →'}},
-  landed:{title:'Landed in Delhi',text:'Through immigration with a stamp and a straight face. New city, cold trail. +50% cash, wanted cleared.',cash:1.5,next:['train','bus','port','airport'],via:{train:'Metro to New Delhi station →',bus:'Cab to the ISBT bus stand →',port:'Connecting flight to Mumbai docks →',airport:'Back through Delhi T3 →'}},
+const EXITS={flight:{title:'Boarding! ✈',text:'Clean exit from the airport: wanted cleared, double cash, +1 dart. But the cabin has its own eyes.',cash:2,next:['plane'],via:{plane:'Board your flight →'}},
+  landed:{title:'Landed',text:'Through immigration with a stamp and a straight face. New city, cold trail. +50% cash, wanted cleared.',cash:1.5,next:['train','bus','port','airport'],via:{train:'Metro to the station →',bus:'Cab to the bus stand →',port:'Taxi to the docks →',airport:'Another airport, another gate →'}},
   jump:{title:'Jumped the train!',text:'You roll into the dark fields by the highway. Ground route only.',cash:1,next:['bus','port'],via:{bus:'Hitch to the bus stand →',port:'Hitch a truck to the docks →'}},
   station:{title:'Walked out with the crowd',text:'Clean exit at the station. Nobody looked twice. +50% cash, wanted cleared.',cash:1.5,next:['airport','bus','port'],via:{airport:'Cab to the airport →',bus:'Walk to the bus stand →',port:'Local train to the docks →'}},
   truck:{title:'Hid in a truck',text:'You skipped the police checkpost in the back of a cargo truck. It is heading for the coast.',cash:.8,next:['port','train'],via:{port:'Ride to the docks →',train:'Jump off near a station →'}},
@@ -263,7 +266,8 @@ const JOBS=['Sales manager','Software tester','Purchase executive','Logistics co
 const L=(()=>{try{const c=JSON.parse(localStorage.getItem('trace_cover')||'null');if(c&&c.given)return {given:c.given,surname:c.surname,city:c.city,job:c.job};}catch(e){}const n=pick(NAMES);return {given:n[0],surname:n[1],city:pick(CITIES),job:pick(JOBS)};})();
 const ROWS=12;
 const MY_ROW=ri(3,10);            // the row whose overhead bin holds the drive
-const FLIGHT=pick(['AI 863 · DELHI','6E 512 · DELHI','UK 944 · DELHI']);
+const FLIGHT=RUN&&RUN.fcode?`${RUN.fcode} · ${RUN.dest}`:pick(['AI 863 · DELHI','6E 512 · DELHI','UK 944 · DELHI']);
+const DEST=FLIGHT.split(' · ')[1].charAt(0)+FLIGHT.split(' · ')[1].slice(1).toLowerCase();
 const JOB='swap';
 const S={phase:'title',t:0,timeLeft:120,traces:[],camsSeen:new Set(),alerts:0,wanted:null,photos:[],look:{outfit:'coat',hat:true},startLook:'coath',
   hold:null,done:false,escape:0,seat:null,covered:false,checkDone:false,stage:'gate',stageT:0,paid:false};
@@ -584,6 +588,7 @@ async function title(){
     c.querySelector('#go').onclick=()=>{auInit();AU.ctx&&AU.ctx.resume();closeSheet();res();};});
   await comic('start');startPlatform();}
 function startPlatform(){S.phase='platform';S.area='platform';S.timeLeft=120;buildPlayer(new T.Vector3(-12,0,-1.6),Math.PI/2);ui(true);locked=false;sfx.chime();runStart();
+  if(RUN&&RUN.fcode){S.phase='boarding';startTrain();return;}
   toast('Boarding is closing. Walk to the jet bridge (east end).','info');}
 async function board(){if(S.phase!=='platform')return;locked=true;S.phase='talk';
   await say('Gate agent','Boarding pass and ID, please.');const ok=await nameQ('Gate agent');
@@ -627,7 +632,7 @@ function trainTick(dt,t){
     if(S.stageT>15){S.stage='cruise2';S.stageT=0;seatbeltSign.material=glow(0x333333,1);toast('Seatbelt sign off.','info');}}
   if((S.stage==='cruise'||S.stage==='cruise2')&&S.timeLeft<30){S.stage='landing';S.stageT=0;seatbeltSign.material=glow(0xffd166,2);sfx.chime();banner('Landing! Be in a seat when the wheels touch down',true);}
   if(S.stage==='landing'&&S.timeLeft<=0){banner(null);if(!S.seat){S.stage='done';return failMission('Landing pe khadi thi. Crew ne marshal ko bulaya.');}
-    if(!S.done){S.stage='done';return failMission('Drive badli hi nahi. Contact ne Delhi airport pe intezaar karke chhod diya.');}
+    if(!S.done){S.stage='done';return failMission('Drive badli hi nahi. Contact ne airport pe intezaar karke chhod diya.');}
     S.stage='done';immigration();return;}
   updTC(dt,t);
   for(const o of outside){o.position.x-=(S.stage==='landing'?10:22)*dt;if(o.position.x<-95)o.position.x+=190;}
@@ -642,7 +647,7 @@ async function immigration(){locked=true;S.phase='talk';if(S.seat)standUp();
   if(r!==ans){await say('Immigration officer','Passport mein to kuch aur likha hai… Side mein aaiye.');closeDlg();S.phase='over';ui(false);await comic('caught','Immigration');return finish(false,'Immigration');}
   if(hot){await say('Immigration officer','Aur kaam kya karti hain?');const j=L.job;const r2=await choose(shuffle([j,...shuffle(JOBS.filter(x=>x!==j)).slice(0,2)]).map(o=>({label:o})),{timer:5000});
     if(r2!==j){await say('Immigration officer','Hmm. Security!');closeDlg();S.phase='over';ui(false);await comic('caught','Immigration');return finish(false,'Immigration');}}
-  await say('Immigration officer','Welcome to Delhi.');closeDlg();jump();}
+  await say('Immigration officer',`Welcome to ${DEST}.`);closeDlg();jump();}
 function updTC(dt,t){if(!tc||S.stage==='landing'||S.stage==='done')return;
   if(tc.checking){tc.checking-=dt;tc.speed=0;}
   else{const target=ROW_X(tc.bay);if(stepTo(tc,target,TZ,dt,.8)){tc.checking=2.4;tc.yaw=Math.PI;tc.g.rotation.y=tc.yaw;
