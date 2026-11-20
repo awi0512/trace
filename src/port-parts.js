@@ -116,7 +116,7 @@ inter({area:'platform',label:'Steal the speedboat (loud escape)',r:2.2,on:()=>RT
   RT.exit='boat';addStars(1,'stolen speedboat');S.phase='over';locked=true;banner(null);ui(false);sfx.horn();finish(true);}});
 //@@FLOW
 const ui=on=>['#hud','#pads','#joy','#map'].forEach(s=>$(s).hidden=!on);
-function setObj(t){if($('#objText').textContent!==t)$('#objText').textContent=t;}
+function setObj(t){t=gtx(t);if($('#objText').textContent!==t)$('#objText').textContent=t;}
 async function title(){
   $('#loading').hidden=true;const C=getC();const story=!!(C&&C.active&&C.ch>=4);
   await new Promise(res=>{const c=sheet(`<div class="eyebrow">${RUN?'ESCAPE · LEG '+RUN.leg:'TRACE · '+(story?'CHAPTER 4':'LEVEL 4')}</div><h2>The Last Ship</h2>

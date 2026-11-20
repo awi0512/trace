@@ -115,7 +115,7 @@ inter({area:'train',label:'Front galley: put on the spare crew jacket',r:1.4,on:
 //@@FLOW
 /* ---------------- flow ---------------- */
 const ui=on=>['#hud','#pads','#joy','#map'].forEach(s=>$(s).hidden=!on);
-function setObj(t){if($('#objText').textContent!==t)$('#objText').textContent=t;}
+function setObj(t){t=gtx(t);if($('#objText').textContent!==t)$('#objText').textContent=t;}
 let coverMesh=null;
 async function title(){
   $('#loading').hidden=true;

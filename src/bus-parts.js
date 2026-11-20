@@ -157,7 +157,7 @@ inter({area:'train',label:'Dupatta + chashma kharido · ₹300',r:2,on:()=>S.sta
 //@@FLOW
 /* ---------------- flow ---------------- */
 const ui=on=>['#hud','#pads','#joy','#map'].forEach(s=>$(s).hidden=!on);
-function setObj(t){if($('#objText').textContent!==t)$('#objText').textContent=t;}
+function setObj(t){t=gtx(t);if($('#objText').textContent!==t)$('#objText').textContent=t;}
 let coverMesh=null;
 async function title(){
   $('#loading').hidden=true;
