@@ -172,6 +172,12 @@ function updGun(dt){W.cd-=dt;for(const g of G)if(g.stunT>0)g.stunT-=dt;W.hitT+=d
     if(Math.random()<pHit){const dmg=ri(18,32);W.hp-=dmg;W.hitT=0;W.vig.style.opacity=1;setTimeout(()=>W.vig.style.opacity=0,260);vib([60,30,60]);drawGun();
       if(W.hp<=0){W.hp=0;drawGun();toast('You were shot...');setTimeout(()=>runEnd(false,null,`Shot by ${g.name}. At ${W.stars}★ the police don\'t ask questions.`),900);RT.dead=true;locked=true;P.g.rotation.x=-Math.PI/2;P.g.position.y=.25;return;}
       else toast(`Hit! Health ${Math.round(W.hp)}. Hide to recover.`);}}}
+/* fair stops: a correct answer always lets you go, unless you were caught red-handed or still look exactly like the wanted photo */
+async function judge(g,ok,redHanded){if(redHanded===undefined)redHanded=S.wanted===lookKey();
+  if(!ok){await say(g.name,'Ye naam record se match nahi karta. Chalo!');return false;}
+  if(redHanded){await say(g.name,'Naam sahi hoga, par tumhe abhi kuch galat karte dekha gaya hai. Chalo!');return false;}
+  if(g.knows&&lookKey()===S.startLook){await say(g.name,'Naam to sahi hai… par ye chehra aur ye kapde photo wale hain. Chalo!');toast('Tip: pehle look badlo (shop / washroom). Photo wale guard tumhara purana hulia pehchaante hain.','info');return false;}
+  return true;}
 /* guards that are knocked out skip their normal update */
 function runNoArrest(g){return !!(RT.on&&(W.stars>=W.shootAt||g.stunT>0||RT.dead));}
 function isDown(g){if(g.stunT>0){if(g.icon)g.icon.sp.visible=true;return true;}if(!(g.down>0))return false;g.cone.piv.visible=false;if(g.icon)g.icon.sp.visible=false;return true;}
@@ -608,7 +614,7 @@ async function jump(){if(S.phase!=='train'&&S.phase!=='talk')return;S.phase='ove
 function failMission(why){if(S.phase!=='train'&&S.phase!=='platform')return;S.phase='over';locked=true;banner(null);sfx.alert();finish(false,null,why);}
 async function caught(g){if(runNoArrest(g))return;if(S.phase!=='platform'&&S.phase!=='train')return;const ph=S.phase;locked=true;S.phase='talk';if(S.seat)standUp();
   await say(g.name,'Ruko. Boarding pass dikhao. Naam?');const ok=await nameQ(g.name);
-  if(ok&&S.wanted!==lookKey()&&lookKey()!==S.startLook&&chance(.6)){await say(g.name,'Theek hai. Apni seat pe baitho.');closeDlg();trace(`${g.name} ne roka, naam likha`);G.forEach(o=>{if(o.area===S.area){o.state='patrol';o.sus=20;}});S.phase=ph;locked=false;return;}
+  if(await judge(g,ok)){await say(g.name,'Theek hai. Apni seat pe baitho.');closeDlg();trace(`${g.name} ne roka, naam likha`);G.forEach(o=>{if(o.area===S.area){o.state='patrol';o.sus=20;}});S.phase=ph;locked=false;return;}
   closeDlg();S.phase='over';ui(false);await comic('caught',g.name);finish(false,g.name);}
 async function nameQ(who){await say(who,'Naam kya hai?');const ans=`${L.given} ${L.surname}`;const opts=shuffle([ans,...shuffle(NAMES.map(n=>n[0]+' '+n[1]).filter(x=>x!==ans)).slice(0,2)]);
   const r=await choose(opts.map(o=>({label:o})),{timer:7000});return r===ans;}
@@ -669,7 +675,7 @@ function updNPC(dt,t){for(const n of NPC){if(n.inArea!==S.area)continue;let mv=f
 /* ---------------- input ---------------- */
 const joy=$('#joy'),knob=joy.firstElementChild;let joyId=null,joyO=null,lookId=null,lookLast=null;
 canvas.addEventListener('pointerdown',e=>{if(!(S.phase==='platform'||S.phase==='train'))return;if(e.clientX<innerWidth*.5&&e.clientY>innerHeight*.35&&joyId===null&&e.pointerType!=='mouse'){joyId=e.pointerId;joyO=[e.clientX,e.clientY];joy.style.left=e.clientX+'px';joy.style.top=e.clientY+'px';knob.style.transform='';canvas.setPointerCapture(e.pointerId);}
-  else if(lookId===null&&S.area!=='train'){lookId=e.pointerId;lookLast=[e.clientX,e.clientY];canvas.setPointerCapture(e.pointerId);}});
+  else if(lookId===null){lookId=e.pointerId;lookLast=[e.clientX,e.clientY];canvas.setPointerCapture(e.pointerId);}});
 canvas.addEventListener('pointermove',e=>{if(e.pointerId===lookId){camYaw-=(e.clientX-lookLast[0])*.006;camPitch=clamp(camPitch+(e.clientY-lookLast[1])*.004,.3,1.25);lookLast=[e.clientX,e.clientY];return;}if(e.pointerId!==joyId)return;let dx=e.clientX-joyO[0],dy=e.clientY-joyO[1];const d=Math.hypot(dx,dy);if(d>50){dx=dx/d*50;dy=dy/d*50;}knob.style.transform=`translate(${dx}px,${dy}px)`;input.x=dx/50;input.y=-dy/50;});
 const endP=e=>{if(e.pointerId===lookId)lookId=null;if(e.pointerId===joyId){joyId=null;joy.style.left=joy.style.top='';knob.style.transform='';input.x=input.y=0;}};
 canvas.addEventListener('pointerup',endP);canvas.addEventListener('pointercancel',endP);
@@ -692,6 +698,7 @@ function updCam(dt){const tx=P.pos.x,tz=P.pos.z;let pos,look;
   else{const cy=CAMY0+camYaw,py=P.pos.y>1?P.pos.y:0;let d=camDist;for(;d>4;d-=.5){const r0=d*Math.cos(camPitch),cx=tx+Math.sin(cy)*r0,cz=tz+Math.cos(cy)*r0;if((!CAMB||cx>CAMB[0]&&cx<CAMB[1]&&cz>CAMB[2]&&cz<CAMB[3])&&!losBlocked(tx,tz,cx,cz))break;}
     const rr=d*Math.cos(camPitch);pos=new T.Vector3(tx+Math.sin(cy)*rr,d*Math.sin(camPitch),tz+Math.cos(cy)*rr);look=new T.Vector3(tx,.8,tz);}
   if(S.area!=='train'&&P.pos.y>1){pos.y+=P.pos.y;look.y+=P.pos.y;}
+  if(S.area==='train'&&camYaw){camYaw=clamp(camYaw,-.8,.8);const c=Math.cos(camYaw),sn=Math.sin(camYaw),dx=pos.x-look.x,dz=pos.z-look.z;pos.x=look.x+dx*c+dz*sn;pos.z=look.z-dx*sn+dz*c;}
   camera.position.lerp(pos,Math.min(1,dt*6));camera.lookAt(look);sun.position.set(tx+8,22,tz+10);sun.target.position.set(tx,0,tz);}
 const clk=new T.Clock();let frames=0;
 function frame(){let dt=Math.min(window.__dtcap||.05,clk.getDelta());if(slowT>0){slowT-=dt;dt*=.3;}const t=clk.elapsedTime;

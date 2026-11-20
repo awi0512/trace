@@ -143,7 +143,7 @@ async function jump(){if(S.phase!=='train'&&S.phase!=='talk')return;S.phase='ove
 function failMission(why){if(S.phase!=='train'&&S.phase!=='platform')return;S.phase='over';locked=true;banner(null);sfx.alert();finish(false,null,why);}
 async function caught(g){if(runNoArrest(g))return;if(S.phase!=='platform'&&S.phase!=='train')return;const ph=S.phase;locked=true;S.phase='talk';if(S.seat)standUp();
   await say(g.name,'Ruko. Boarding pass dikhao. Naam?');const ok=await nameQ(g.name);
-  if(ok&&S.wanted!==lookKey()&&lookKey()!==S.startLook&&chance(.6)){await say(g.name,'Theek hai. Apni seat pe baitho.');closeDlg();trace(`${g.name} ne roka, naam likha`);G.forEach(o=>{if(o.area===S.area){o.state='patrol';o.sus=20;}});S.phase=ph;locked=false;return;}
+  if(await judge(g,ok)){await say(g.name,'Theek hai. Apni seat pe baitho.');closeDlg();trace(`${g.name} ne roka, naam likha`);G.forEach(o=>{if(o.area===S.area){o.state='patrol';o.sus=20;}});S.phase=ph;locked=false;return;}
   closeDlg();S.phase='over';ui(false);await comic('caught',g.name);finish(false,g.name);}
 async function nameQ(who){await say(who,'Naam kya hai?');const ans=`${L.given} ${L.surname}`;const opts=shuffle([ans,...shuffle(NAMES.map(n=>n[0]+' '+n[1]).filter(x=>x!==ans)).slice(0,2)]);
   const r=await choose(opts.map(o=>({label:o})),{timer:7000});return r===ans;}

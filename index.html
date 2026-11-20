@@ -110,7 +110,7 @@ body.talking #pads,body.talking #joy{visibility:hidden}
 #splash .tapgo{margin-top:20px;font-family:var(--display);font-weight:700;letter-spacing:.32em;font-size:14px;animation:blink 1.4s infinite}
 #lbls .lbl{position:fixed;z-index:14;transform:translate(-50%,-100%);font-family:var(--sfx);font-size:18px;letter-spacing:.08em;padding:2px 10px;background:var(--noir);color:var(--paper);border-left:4px solid var(--accent);pointer-events:none;white-space:nowrap}
 #lbls .lbl.cam{border-left-color:var(--red)} #lbls .lbl.tgt{border-left-color:var(--good)}
-#banner{position:fixed;z-index:6;left:50%;translate:-50% 0;top:calc(env(safe-area-inset-top,0px) + 92px);width:auto;max-width:min(88vw,400px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;background:var(--accent);color:#1d1a10;font-family:var(--display);font-weight:700;font-size:15px;line-height:1.3;padding:7px 14px;border-radius:999px;box-shadow:5px 5px 0 var(--noir);text-align:center;pointer-events:none;animation:pop .3s}
+#banner{position:fixed;z-index:6;left:50%;translate:-50% 0;top:calc(env(safe-area-inset-top,0px) + 92px);width:auto;max-width:min(92vw,520px);white-space:normal;text-align:center;line-height:1.25;background:var(--accent);color:#1d1a10;font-family:var(--display);font-weight:700;font-size:15px;line-height:1.3;padding:7px 14px;border-radius:999px;box-shadow:5px 5px 0 var(--noir);text-align:center;pointer-events:none;animation:pop .3s}
 #banner.danger{background:var(--red);color:#fff;animation:bpulse 1s infinite}
 @keyframes bpulse{50%{scale:1.04}}
 body.banner #obj,body.banner .tools{visibility:hidden}
@@ -323,6 +323,12 @@ function updGun(dt){W.cd-=dt;for(const g of G)if(g.stunT>0)g.stunT-=dt;W.hitT+=d
     if(Math.random()<pHit){const dmg=ri(18,32);W.hp-=dmg;W.hitT=0;W.vig.style.opacity=1;setTimeout(()=>W.vig.style.opacity=0,260);vib([60,30,60]);drawGun();
       if(W.hp<=0){W.hp=0;drawGun();toast('You were shot...');setTimeout(()=>runEnd(false,null,`Shot by ${g.name}. At ${W.stars}★ the police don\'t ask questions.`),900);RT.dead=true;locked=true;P.g.rotation.x=-Math.PI/2;P.g.position.y=.25;return;}
       else toast(`Hit! Health ${Math.round(W.hp)}. Hide to recover.`);}}}
+/* fair stops: a correct answer always lets you go, unless you were caught red-handed or still look exactly like the wanted photo */
+async function judge(g,ok,redHanded){if(redHanded===undefined)redHanded=S.wanted===lookKey();
+  if(!ok){await say(g.name,'Ye naam record se match nahi karta. Chalo!');return false;}
+  if(redHanded){await say(g.name,'Naam sahi hoga, par tumhe abhi kuch galat karte dekha gaya hai. Chalo!');return false;}
+  if(g.knows&&lookKey()===S.startLook){await say(g.name,'Naam to sahi hai… par ye chehra aur ye kapde photo wale hain. Chalo!');toast('Tip: pehle look badlo (shop / washroom). Photo wale guard tumhara purana hulia pehchaante hain.','info');return false;}
+  return true;}
 /* guards that are knocked out skip their normal update */
 function runNoArrest(g){return !!(RT.on&&(W.stars>=W.shootAt||g.stunT>0||RT.dead));}
 function isDown(g){if(g.stunT>0){if(g.icon)g.icon.sp.visible=true;return true;}if(!(g.down>0))return false;g.cone.piv.visible=false;if(g.icon)g.icon.sp.visible=false;return true;}
@@ -1006,7 +1012,7 @@ async function caught(g){if(runNoArrest(g))return;if(S.phase!=='play')return;loc
   await say(g.name,'Ruko! Kahan bhaag rahi thi? Naam batao.');
   const serious=S.wanted===lookKey()&&(S.hold||playerFlags().illegal||S.done&&M.type!=='handoff');
   const ok=await legendQ(g.name,shuffle(['city','purpose']).slice(0,1));
-  if(ok&&!serious&&chance(.7)){await say(g.name,'Hmm. Theek hai, jaao. Aur dobara bhaagti dikhi to seedha andar.');closeDlg();CAREER.heat=Math.min(100,CAREER.heat+5);trace(`${g.name} ne roka, naam likh liya`);
+  if(await judge(g,ok,serious)){await say(g.name,'Hmm. Theek hai, jaao. Aur dobara bhaagti dikhi to seedha andar.');closeDlg();CAREER.heat=Math.min(100,CAREER.heat+5);trace(`${g.name} ne roka, naam likh liya`);
     for(const o of G){o.state='patrol';o.sus=20;}S.phase='play';locked=false;return;}
   closeDlg();S.phase='over';await comic('caught',g.name);finish(false,g.name);}
 function failMission(why){if(S.phase!=='play')return;S.phase='over';locked=true;sfx.alert();slowmo();finish(false,null,why);}
