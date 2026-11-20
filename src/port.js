@@ -97,6 +97,7 @@ function runTick(dt){if(!RT.on||!P)return;const h=RUN.lh;
 function checkLock(){if(ZONE_ID!=='airport'||RT.lock)return;if(S.alerts>0||W.stars>0||RT.body){RT.lock=true;sfx.alert();vib([120,60,120]);
   banner('AIRPORT LOCKDOWN! Gates closed. No flight now: get out via the taxi stand',true);setTimeout(()=>{if(RT.on)banner(null);},7000);toast('Announcement: "Security alert. Saari flights hold pe hain."');drawGun();}}
 const gateOpen=()=>!RT.lock;
+const runClean=()=>RT.on&&S.alerts===0&&W.stars===0&&!RT.body;
 /* ---- behoshi dart pistol ---- */
 let dartBtn=null;
 function dartUI(){if(dartBtn||!RUN)return;if(!RUN.wmode)RUN.wmode='dart';dartBtn=document.createElement('button');dartBtn.type='button';dartBtn.id='dartBtn';
@@ -162,6 +163,12 @@ function runNoArrest(g){return !!(RT.on&&(W.stars>=3||g.stunT>0||RT.dead));}
 function isDown(g){if(g.stunT>0){if(g.icon)g.icon.sp.visible=true;return true;}if(!(g.down>0))return false;g.cone.piv.visible=false;if(g.icon)g.icon.sp.visible=false;return true;}
 /* ---- how you left a zone decides where you can go next ---- */
 const EXITS={flight:{title:'Flight caught! ✈',text:'Clean exit. You land in a new city: wanted cleared, double cash, +1 dart. Rana loses your trail for now.',cash:2,next:['port','airport'],via:{port:'Fly to Goa →',airport:'Fly to Delhi →'}},
+  jump:{title:'Jumped the train!',text:'You roll into the dark fields by the highway. Ground route only.',cash:1,next:['bus','port'],via:{bus:'Hitch to the bus stand →',port:'Hitch a truck to the docks →'}},
+  station:{title:'Walked out with the crowd',text:'Clean exit at the station. Nobody looked twice. +50% cash, wanted cleared.',cash:1.5,next:['airport','bus','port'],via:{airport:'Cab to the airport →',bus:'Walk to the bus stand →',port:'Local train to the docks →'}},
+  truck:{title:'Hid in a truck',text:'You skipped the police checkpost in the back of a cargo truck. It is heading for the coast.',cash:.8,next:['port','train'],via:{port:'Ride to the docks →',train:'Jump off near a station →'}},
+  city:{title:'Through the checkpost',text:'The bus rolls into the city. Clean pass: +50% cash, wanted cleared.',cash:1.5,next:['airport','train','port'],via:{airport:'Auto to the airport →',train:'Walk to the station →',port:'Bus to the docks →'}},
+  ship:{title:'Aboard the cargo ship',text:'The ship slips out at 4 AM. You step off two days later on a quiet coast. +50% cash, wanted cleared.',cash:1.5,next:['airport','train','bus'],via:{airport:'Land in Kochi → airport',train:'Land in Kochi → station',bus:'Land in Kochi → bus stand'}},
+  boat:{title:'Stole a speedboat!',text:'Loud, fast and messy. You beach it up the coast with the police boats far behind.',cash:.8,next:['bus','train'],via:{bus:'Run to the highway →',train:'Run to a small station →'}},
   taxi:{title:'Out by taxi',text:'The airport is behind you, but every flight is watched now. Ground route only.',cash:1,next:['train','bus'],via:{train:'Taxi to the station →',bus:'Taxi to the bus stand →'}}};
 /* ---- end of a zone: next leg or run over ---- */
 function runEnd(win,who,why){if(!RT.on)return false;RT.on=false;S.phase='over';locked=true;if(dartBtn){dartBtn.sw.remove();dartBtn.remove();}['#wantedHud'].forEach(q=>{const e=document.querySelector(q);if(e)e.remove();});RUN.wanted=Math.max(0,W.stars-1);RUN.kills=(RUN.kills||0)+W.kills;
@@ -169,7 +176,7 @@ function runEnd(win,who,why){if(!RT.on)return false;RT.on=false;S.phase='over';l
   const nCam=S.camsSeen?S.camsSeen.size:0;RUN.lh.cams+=nCam;
   const legScore=win?Math.round(100+RUN.leg*40+(S.alerts?0:60)+Math.max(0,S.timeLeft)|0):0;const cash=win?40000+RUN.leg*15000:0;
   RUN.legs.push({zone:ZONE_ID,win,traces:S.traces.length,alerts:S.alerts});
-  const EX=RT.exit&&EXITS[RT.exit];if(EX&&win){RUN.cash+=cash*(EX.cash-1);if(RT.exit==='flight'){RUN.lh.flight++;W.stars=0;RUN.wanted=0;RUN.darts++;}}
+  const EX=RT.exit&&EXITS[RT.exit];if(EX&&win){RUN.cash+=cash*(EX.cash-1);if(RT.exit==='flight'){RUN.lh.flight++;W.stars=0;RUN.wanted=0;RUN.darts++;}if(RT.exit==='station'||RT.exit==='city'||RT.exit==='ship'){W.stars=0;RUN.wanted=0;}}
   if(win){RUN.score+=legScore;RUN.cash+=cash;const opts=(EX?shuffle(EX.next).slice(0,2):nextZones(ZONE_ID)).map(z=>({z,mods:rollMods(RUN.leg+1)}));RUN.offer=opts;saveRun(RUN);
     const c=sheet(`<div class="eyebrow">ESCAPE · LEG ${RUN.leg} CLEARED</div><h2>${EX?EX.title:'Escaped!'}</h2>${EX?`<p>${EX.text}</p>`:''}
       <div class="stats"><div class="stat"><span>Score</span><b>${RUN.score}</b></div><div class="stat"><span>Run cash</span><b>${inr(RUN.cash)}</b></div><div class="stat"><span>Darts / Ammo</span><b>${RUN.darts} / ${RUN.ammo}</b></div></div>${RUN.wanted?`<p class="eyebrow" style="color:#ffd166">WANTED ${'★'.repeat(RUN.wanted)} carries into the next zone</p>`:''}
@@ -505,6 +512,12 @@ inter({area:'platform',label:'Gangway pe chadho',r:2.4,on:()=>S.done,pos:()=>[12
   if(!ok){await say('Gangway guard','Ye naam crew list mein nahi hai! SECURITY!');closeDlg();locked=false;goAlert(g,'galat naam');return;}
   if(lookKey()===S.startLook){await say('Gangway guard','Deck hand… is coat mein? Hmm, chalo jaldi.');trace('Gangway: guard ne coat aur hat pe gaur kiya');}
   else await say('Gangway guard','Theek hai, upar jao.');closeDlg();jump();}});
+/* escape mode: a speedboat at the west quay. No papers needed, but you leave loud */
+let boat=null;function addBoat(){if(boat||!RUN)return;boat=new T.Group();boat.position.set(45,-.9,34.2);scene.add(boat);
+  mesh(rb(2.2,1,5.2,.4),m(0xf1ece1),0,.5,0,boat,{cast:true});mesh(new T.BoxGeometry(2.25,.25,5.25),m(0xe0242b),0,.25,0,boat);mesh(rb(1.4,.8,1.2,.2),m(0x1d2340),0,1.3,.4,boat);
+  sign('SPEEDBOAT',45,1.1,30.4,Math.PI,2.2,.4,'#e0242b','#fff');setTimeout(()=>{if(RT.on)toast('A speedboat sits at the east quay. No papers needed, but stealing it is loud.','info');},6500);}
+inter({area:'platform',label:'Steal the speedboat (loud escape)',r:2.2,on:()=>RT.on&&S.phase==='platform',pos:()=>[45,29.8],run:async()=>{const ok=await hold('Engine ki taar jod rahi ho…',4,true);if(!ok)return;
+  RT.exit='boat';addStars(1,'stolen speedboat');S.phase='over';locked=true;banner(null);ui(false);sfx.horn();finish(true);}});
 const ui=on=>['#hud','#pads','#joy','#map'].forEach(s=>$(s).hidden=!on);
 function setObj(t){if($('#objText').textContent!==t)$('#objText').textContent=t;}
 async function title(){
@@ -516,12 +529,12 @@ async function title(){
     <button class="btn" id="go" type="button">Enter the docks</button><a class="btn alt" href="index.html">Safehouse</a>`);
     c.querySelector('#go').onclick=()=>{auInit();AU.ctx&&AU.ctx.resume();closeSheet();res();};});
   await comic('start');startPlatform();}
-function startPlatform(){S.phase='platform';S.area='platform';S.timeLeft=300;buildPlayer(new T.Vector3(-46,0,-28),0);ui(true);locked=false;sfx.horn();runStart();
+function startPlatform(){addBoat();S.phase='platform';S.area='platform';S.timeLeft=300;buildPlayer(new T.Vector3(-46,0,-28),0);ui(true);locked=false;sfx.horn();runStart();
   toast('Neeche-left gole se chalo. Searchlight ki roshni aur guards ki peeli nazar se bacho.','info');}
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 async function board(){}
 function startTrain(){}
-async function jump(){if(S.phase!=='platform'&&S.phase!=='talk')return;S.phase='over';locked=true;banner(null);ui(false);sfx.horn();await comic('jump');if(runEnd(true))return;await finale(true);}
+async function jump(){if(S.phase!=='platform'&&S.phase!=='talk')return;S.phase='over';locked=true;banner(null);ui(false);sfx.horn();RT.exit='ship';await comic('jump');if(runEnd(true))return;await finale(true);}
 function failMission(why){if(S.phase!=='platform')return;S.phase='over';locked=true;banner(null);sfx.alert();finish(false,null,why);}
 async function caught(g){if(runNoArrest(g))return;if(S.phase!=='platform')return;locked=true;S.phase='talk';
   await say(g.name==='Sniffer kutta'?'Port security':g.name,g.name==='Sniffer kutta'?'(kutta bhaunkta hai) Ruko! Haath upar! Naam?':'Ruko! Yahan kya kar rahi ho? Naam?');const ok=await nameQ(g.name);

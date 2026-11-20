@@ -96,6 +96,7 @@ function runTick(dt){if(!RT.on||!P)return;const h=RUN.lh;
 function checkLock(){if(ZONE_ID!=='airport'||RT.lock)return;if(S.alerts>0||W.stars>0||RT.body){RT.lock=true;sfx.alert();vib([120,60,120]);
   banner('AIRPORT LOCKDOWN! Gates closed. No flight now: get out via the taxi stand',true);setTimeout(()=>{if(RT.on)banner(null);},7000);toast('Announcement: "Security alert. Saari flights hold pe hain."');drawGun();}}
 const gateOpen=()=>!RT.lock;
+const runClean=()=>RT.on&&S.alerts===0&&W.stars===0&&!RT.body;
 /* ---- behoshi dart pistol ---- */
 let dartBtn=null;
 function dartUI(){if(dartBtn||!RUN)return;if(!RUN.wmode)RUN.wmode='dart';dartBtn=document.createElement('button');dartBtn.type='button';dartBtn.id='dartBtn';
@@ -161,6 +162,12 @@ function runNoArrest(g){return !!(RT.on&&(W.stars>=3||g.stunT>0||RT.dead));}
 function isDown(g){if(g.stunT>0){if(g.icon)g.icon.sp.visible=true;return true;}if(!(g.down>0))return false;g.cone.piv.visible=false;if(g.icon)g.icon.sp.visible=false;return true;}
 /* ---- how you left a zone decides where you can go next ---- */
 const EXITS={flight:{title:'Flight caught! ✈',text:'Clean exit. You land in a new city: wanted cleared, double cash, +1 dart. Rana loses your trail for now.',cash:2,next:['port','airport'],via:{port:'Fly to Goa →',airport:'Fly to Delhi →'}},
+  jump:{title:'Jumped the train!',text:'You roll into the dark fields by the highway. Ground route only.',cash:1,next:['bus','port'],via:{bus:'Hitch to the bus stand →',port:'Hitch a truck to the docks →'}},
+  station:{title:'Walked out with the crowd',text:'Clean exit at the station. Nobody looked twice. +50% cash, wanted cleared.',cash:1.5,next:['airport','bus','port'],via:{airport:'Cab to the airport →',bus:'Walk to the bus stand →',port:'Local train to the docks →'}},
+  truck:{title:'Hid in a truck',text:'You skipped the police checkpost in the back of a cargo truck. It is heading for the coast.',cash:.8,next:['port','train'],via:{port:'Ride to the docks →',train:'Jump off near a station →'}},
+  city:{title:'Through the checkpost',text:'The bus rolls into the city. Clean pass: +50% cash, wanted cleared.',cash:1.5,next:['airport','train','port'],via:{airport:'Auto to the airport →',train:'Walk to the station →',port:'Bus to the docks →'}},
+  ship:{title:'Aboard the cargo ship',text:'The ship slips out at 4 AM. You step off two days later on a quiet coast. +50% cash, wanted cleared.',cash:1.5,next:['airport','train','bus'],via:{airport:'Land in Kochi → airport',train:'Land in Kochi → station',bus:'Land in Kochi → bus stand'}},
+  boat:{title:'Stole a speedboat!',text:'Loud, fast and messy. You beach it up the coast with the police boats far behind.',cash:.8,next:['bus','train'],via:{bus:'Run to the highway →',train:'Run to a small station →'}},
   taxi:{title:'Out by taxi',text:'The airport is behind you, but every flight is watched now. Ground route only.',cash:1,next:['train','bus'],via:{train:'Taxi to the station →',bus:'Taxi to the bus stand →'}}};
 /* ---- end of a zone: next leg or run over ---- */
 function runEnd(win,who,why){if(!RT.on)return false;RT.on=false;S.phase='over';locked=true;if(dartBtn){dartBtn.sw.remove();dartBtn.remove();}['#wantedHud'].forEach(q=>{const e=document.querySelector(q);if(e)e.remove();});RUN.wanted=Math.max(0,W.stars-1);RUN.kills=(RUN.kills||0)+W.kills;
@@ -168,7 +175,7 @@ function runEnd(win,who,why){if(!RT.on)return false;RT.on=false;S.phase='over';l
   const nCam=S.camsSeen?S.camsSeen.size:0;RUN.lh.cams+=nCam;
   const legScore=win?Math.round(100+RUN.leg*40+(S.alerts?0:60)+Math.max(0,S.timeLeft)|0):0;const cash=win?40000+RUN.leg*15000:0;
   RUN.legs.push({zone:ZONE_ID,win,traces:S.traces.length,alerts:S.alerts});
-  const EX=RT.exit&&EXITS[RT.exit];if(EX&&win){RUN.cash+=cash*(EX.cash-1);if(RT.exit==='flight'){RUN.lh.flight++;W.stars=0;RUN.wanted=0;RUN.darts++;}}
+  const EX=RT.exit&&EXITS[RT.exit];if(EX&&win){RUN.cash+=cash*(EX.cash-1);if(RT.exit==='flight'){RUN.lh.flight++;W.stars=0;RUN.wanted=0;RUN.darts++;}if(RT.exit==='station'||RT.exit==='city'||RT.exit==='ship'){W.stars=0;RUN.wanted=0;}}
   if(win){RUN.score+=legScore;RUN.cash+=cash;const opts=(EX?shuffle(EX.next).slice(0,2):nextZones(ZONE_ID)).map(z=>({z,mods:rollMods(RUN.leg+1)}));RUN.offer=opts;saveRun(RUN);
     const c=sheet(`<div class="eyebrow">ESCAPE · LEG ${RUN.leg} CLEARED</div><h2>${EX?EX.title:'Escaped!'}</h2>${EX?`<p>${EX.text}</p>`:''}
       <div class="stats"><div class="stat"><span>Score</span><b>${RUN.score}</b></div><div class="stat"><span>Run cash</span><b>${inr(RUN.cash)}</b></div><div class="stat"><span>Darts / Ammo</span><b>${RUN.darts} / ${RUN.ammo}</b></div></div>${RUN.wanted?`<p class="eyebrow" style="color:#ffd166">WANTED ${'★'.repeat(RUN.wanted)} carries into the next zone</p>`:''}
@@ -573,8 +580,8 @@ function startTrain(){S.phase='train';S.area='train';S.timeLeft=300;S.trainT=0;
   scene.fog=new T.Fog(0x0b1020,20,90);scene.background.set(0x0b1020);hemi.intensity=.8;sun.intensity=.5;
   ui(true);$('#map').hidden=true;locked=false;banner(JOB==='drop'?'Aage (right) ke dibbe S1 tak jao →':'Peeche/aage dibbe S2 tak jao →');setTimeout(()=>banner(null),5000);
   toast('TC ticket check karta aa raha hai. Berth pe baith ya so ke chhup sakti ho.','info');}
-function jobDone(msg){S.done=true;sfx.ok();toast(msg,'good');setTimeout(()=>{if(S.phase!=='train')return;S.escape=45;sfx.horn();banner('Gaadi dheemi! Darwaze se kood jao →',true);vib([60,40,60]);},4000);}
-async function jump(){if(S.phase!=='train')return;S.phase='over';locked=true;banner(null);ui(false);await comic('jump');finish(true);}
+function jobDone(msg){S.done=true;sfx.ok();toast(msg,'good');setTimeout(()=>{if(S.phase!=='train')return;S.escape=45;sfx.horn();banner(RT.on?(runClean()?'Train slowing. Jump off now, or stay calm till the station (clean exit)':'Train slowing. RPF waits at the station: JUMP!'):'Gaadi dheemi! Darwaze se kood jao →',true);vib([60,40,60]);},4000);}
+async function jump(){if(S.phase!=='train')return;S.phase='over';locked=true;banner(null);ui(false);RT.exit='jump';await comic('jump');finish(true);}
 function failMission(why){if(S.phase!=='train'&&S.phase!=='platform')return;S.phase='over';locked=true;banner(null);sfx.alert();finish(false,null,why);}
 async function caught(g){if(runNoArrest(g))return;if(S.phase!=='platform'&&S.phase!=='train')return;const ph=S.phase;locked=true;S.phase='talk';if(S.seat)standUp();
   await say(g.name,'Ruko! Naam batao. Ticket dikhao.');const ok=await nameQ(g.name);
@@ -608,7 +615,7 @@ function platformTick(dt,t){
 }
 function trainTick(dt,t){
   S.trainT+=dt;
-  if(S.escape>0){S.escape-=dt;S.timeLeft=S.escape;if(S.escape<=0)return failMission('Gaadi station pahunch gayi. Platform pe RPF intezaar kar rahi thi.');}
+  if(S.escape>0){S.escape-=dt;S.timeLeft=S.escape;if(S.escape<=0){if(runClean()){S.phase='over';locked=true;banner(null);ui(false);RT.exit='station';return finish(true);}return failMission('Gaadi station pahunch gayi. Platform pe RPF intezaar kar rahi thi.');}}
   else{S.timeLeft-=dt;if(S.timeLeft<=0)return failMission('Gaadi Delhi pahunch gayi. Kaam adhoora reh gaya.');}
   // RPF boards at a station stop
   if(!S.stationDone&&S.trainT>S.stationAt){S.stationDone=true;sfx.horn();toast('Gaadi Vapi station pe ruki. Do RPF jawan chadhe!','info');banner('RPF chadhi! Chhupo: berth pe baitho ya upar so jao',true);setTimeout(()=>{if(S.phase==='train')banner(null);},6000);
@@ -619,7 +626,7 @@ function trainTick(dt,t){
   const v=S.escape>0?6:(S.trainT>S.stationAt-6&&S.trainT<S.stationAt+6?3:22);for(const o of outside){o.position.x-=v*dt;if(o.position.x<-95)o.position.x+=190;}
   clackT-=dt*(v/22);if(clackT<=0){clackT=.62;sfx.clack(S.escape>0?.2:.35);}
   const coachOf=x=>clamp(Math.ceil((40-x)/20),1,4);
-  setObj(S.escape>0?`Kisi bhi darwaze se kood jao! ${Math.ceil(S.escape)} sec`:S.done?'Signal ka intezaar…':JOB==='drop'?`Coach S1 mein hari shawl wale contact ko packet do (abhi S${coachOf(P.pos.x)} mein ho)`:`Coach S2 mein berth ke neeche ka kaala bag uthao (abhi S${coachOf(P.pos.x)} mein ho)`);
+  setObj(S.escape>0?(RT.on&&runClean()?`Jump off (door), or wait ${Math.ceil(S.escape)}s for the station: clean exit`:`Kisi bhi darwaze se kood jao! ${Math.ceil(S.escape)} sec`):S.done?'Signal ka intezaar…':JOB==='drop'?`Coach S1 mein hari shawl wale contact ko packet do (abhi S${coachOf(P.pos.x)} mein ho)`:`Coach S2 mein berth ke neeche ka kaala bag uthao (abhi S${coachOf(P.pos.x)} mein ho)`);
 }
 function updTC(dt,t){if(!tc)return;const F=flags();
   if(tc.checking){tc.checking-=dt;tc.speed=0;}

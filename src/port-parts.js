@@ -108,6 +108,12 @@ inter({area:'platform',label:'Gangway pe chadho',r:2.4,on:()=>S.done,pos:()=>[12
   if(!ok){await say('Gangway guard','Ye naam crew list mein nahi hai! SECURITY!');closeDlg();locked=false;goAlert(g,'galat naam');return;}
   if(lookKey()===S.startLook){await say('Gangway guard','Deck hand… is coat mein? Hmm, chalo jaldi.');trace('Gangway: guard ne coat aur hat pe gaur kiya');}
   else await say('Gangway guard','Theek hai, upar jao.');closeDlg();jump();}});
+/* escape mode: a speedboat at the west quay. No papers needed, but you leave loud */
+let boat=null;function addBoat(){if(boat||!RUN)return;boat=new T.Group();boat.position.set(45,-.9,34.2);scene.add(boat);
+  mesh(rb(2.2,1,5.2,.4),m(0xf1ece1),0,.5,0,boat,{cast:true});mesh(new T.BoxGeometry(2.25,.25,5.25),m(0xe0242b),0,.25,0,boat);mesh(rb(1.4,.8,1.2,.2),m(0x1d2340),0,1.3,.4,boat);
+  sign('SPEEDBOAT',45,1.1,30.4,Math.PI,2.2,.4,'#e0242b','#fff');setTimeout(()=>{if(RT.on)toast('A speedboat sits at the east quay. No papers needed, but stealing it is loud.','info');},6500);}
+inter({area:'platform',label:'Steal the speedboat (loud escape)',r:2.2,on:()=>RT.on&&S.phase==='platform',pos:()=>[45,29.8],run:async()=>{const ok=await hold('Engine ki taar jod rahi ho…',4,true);if(!ok)return;
+  RT.exit='boat';addStars(1,'stolen speedboat');S.phase='over';locked=true;banner(null);ui(false);sfx.horn();finish(true);}});
 //@@FLOW
 const ui=on=>['#hud','#pads','#joy','#map'].forEach(s=>$(s).hidden=!on);
 function setObj(t){if($('#objText').textContent!==t)$('#objText').textContent=t;}
@@ -120,12 +126,12 @@ async function title(){
     <button class="btn" id="go" type="button">Enter the docks</button><a class="btn alt" href="index.html">Safehouse</a>`);
     c.querySelector('#go').onclick=()=>{auInit();AU.ctx&&AU.ctx.resume();closeSheet();res();};});
   await comic('start');startPlatform();}
-function startPlatform(){S.phase='platform';S.area='platform';S.timeLeft=300;buildPlayer(new T.Vector3(-46,0,-28),0);ui(true);locked=false;sfx.horn();runStart();
+function startPlatform(){addBoat();S.phase='platform';S.area='platform';S.timeLeft=300;buildPlayer(new T.Vector3(-46,0,-28),0);ui(true);locked=false;sfx.horn();runStart();
   toast('Neeche-left gole se chalo. Searchlight ki roshni aur guards ki peeli nazar se bacho.','info');}
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 async function board(){}
 function startTrain(){}
-async function jump(){if(S.phase!=='platform'&&S.phase!=='talk')return;S.phase='over';locked=true;banner(null);ui(false);sfx.horn();await comic('jump');if(runEnd(true))return;await finale(true);}
+async function jump(){if(S.phase!=='platform'&&S.phase!=='talk')return;S.phase='over';locked=true;banner(null);ui(false);sfx.horn();RT.exit='ship';await comic('jump');if(runEnd(true))return;await finale(true);}
 function failMission(why){if(S.phase!=='platform')return;S.phase='over';locked=true;banner(null);sfx.alert();finish(false,null,why);}
 async function caught(g){if(runNoArrest(g))return;if(S.phase!=='platform')return;locked=true;S.phase='talk';
   await say(g.name==='Sniffer kutta'?'Port security':g.name,g.name==='Sniffer kutta'?'(kutta bhaunkta hai) Ruko! Haath upar! Naam?':'Ruko! Yahan kya kar rahi ho? Naam?');const ok=await nameQ(g.name);

@@ -178,7 +178,12 @@ function startTrain(){S.phase='train';S.area='train';S.timeLeft=330;S.trainT=0;S
   ui(true);$('#map').hidden=true;locked=false;banner('Koi khaali seat dhoondh ke baith jao');setTimeout(()=>banner(null),5000);
   toast('Conductor kiraya lene aa raha hai.','info');}
 function jobDone(){}
-async function jump(){if(S.phase!=='train')return;S.phase='over';locked=true;banner(null);ui(false);await comic('jump');finish(true);}
+async function jump(){if(S.phase!=='train')return;S.phase='over';locked=true;banner(null);ui(false);if(RT.on&&!RT.exit)RT.exit=runClean()?'city':'naka';await comic('jump');finish(true);}
+/* escape mode: a cargo truck behind the dhaba skips the police checkpost */
+let truck=null;function addTruck(){if(truck||!RT.on)return;truck=new T.Group();truck.position.set(-13.4,0,TZ+3.8);dhaba.add(truck);
+  mesh(rb(2.4,2.6,5.4,.2),m(0x2f5d8a),0,1.7,-.6,truck,{cast:true});mesh(rb(2.4,1.8,1.8,.2),m(0xd97a1f),0,1.3,2.6,truck,{cast:true});for(const x of [-1.15,1.15])for(const z of [-2,1,2.8])mesh(new T.CylinderGeometry(.42,.42,.3,12),m(0x111111),x,.42,z,truck).rotation.z=Math.PI/2;
+  sign('GOA · CARGO',-12.1,2.4,TZ+3.8,Math.PI/2,2.4,.45,'#f5d000','#111',dhaba);}
+inter({area:'train',label:'Hide in the cargo truck (skip the checkpost)',r:2.2,on:()=>RT.on&&S.stage==='dhaba'&&S.done&&!S.seat,pos:()=>[-10.6,TZ+3.3],run:async()=>{const ok=await hold('Tarpaulin ke neeche chhup rahi ho…',2.5,true);if(!ok)return;RT.exit='truck';S.phase='over';locked=true;banner(null);ui(false);finish(true);}});
 function failMission(why){if(S.phase!=='train'&&S.phase!=='platform')return;S.phase='over';locked=true;banner(null);sfx.alert();finish(false,null,why);}
 async function caught(g){if(runNoArrest(g))return;if(S.phase!=='platform'&&S.phase!=='train')return;const ph=S.phase;locked=true;S.phase='talk';if(S.seat)standUp();
   await say(g.name,'Ruko! Naam batao. ID dikhao.');const ok=await nameQ(g.name);
@@ -216,7 +221,7 @@ function trainTick(dt,t){
   const moving=S.stage==='drive1'||S.stage==='drive2'||S.stage==='drive3';
   // stage machine: drive → dhaba stop (70 s) → drive → police naka → drive → win
   if(S.stage==='drive1'&&S.stageT>32){S.stage='dhaba';S.stageT=0;dhaba.visible=true;NPC.forEach(n=>{if(n.inArea==='dhaba')n.g.visible=true;});doorCol.on=false;sfx.horn();
-    S.dhabaCop=guard({route:[[-1.5,TZ+8.6]],yaw:0,area:'train',range:7.5,name:'Highway patrol'});banner('Dhaba stop 70 sec! Contact se passport lo →',true);setTimeout(()=>{if(S.stage==='dhaba')banner(null);},6000);}
+    S.dhabaCop=guard({route:[[-1.5,TZ+8.6]],yaw:0,area:'train',range:7.5,name:'Highway patrol'});addTruck();if(RT.on&&truck)toast('A cargo truck to Goa is parked behind the dhaba. Could skip the checkpost…','info');banner('Dhaba stop 70 sec! Contact se passport lo →',true);setTimeout(()=>{if(S.stage==='dhaba')banner(null);},6000);}
   if(S.stage==='dhaba'){const left=70-S.stageT;S.timeLeft=left;if(left<15&&!S.honk){S.honk=true;sfx.horn();toast('Conductor: "Chalo chalo! Bus nikal rahi hai!"','info');}
     if(left<=0){if(P.pos.z>TZ+1.45)return failMission('Bus tumhe dhabe pe chhod ke nikal gayi.');if(!S.done)return failMission('Contact se passport nahi mila. Bina passport aage ka raasta band.');
       S.stage='drive2';S.stageT=0;dhaba.visible=false;NPC.forEach(n=>{if(n.inArea==='dhaba')n.g.visible=false;});doorCol.on=true;S.dhabaCop.g.visible=false;S.dhabaCop.area='gone';S.timeLeft=200;toast('Bus phir chal padi. Aage toll naka hai.','info');}}
