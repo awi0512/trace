@@ -193,7 +193,11 @@ const HOTELS=['Al Noor Residency, Deira','Creekside Inn, Bur Dubai','Marina Pear
 const OBJ={
   handoff:{title:'Dead drop',brief:'Signal cloner contact tak pahunchao. Contact airside (security ke paar) hai. Phir Gate 72 se flight pakdo.',exit:'gate'},
   steal:{title:'Staff room ka laptop',brief:'Security office ke andar ek laptop hai jismein CCTV ka password hai. Use utha ke taxi stand se bahar niklo.',exit:'taxi'},
-  bug:{title:'Bug lagao',brief:'Ek businessman ke briefcase mein tracker lagana hai, bina usse pata chale. Wo terminal mein ghoom raha hai. Phir taxi stand se niklo.',exit:'taxi'}};
+  bug:{title:'Bug lagao',brief:'Ek businessman ke briefcase mein tracker lagana hai, bina usse pata chale. Wo terminal mein ghoom raha hai. Phir taxi stand se niklo.',exit:'taxi'},
+  tail:{title:'Peecha karo',brief:'Ek aadmi ka 50 second peecha karo. Wo palat ke dekhta hai. Door gaye to kho jaayega, paas gaye to pakde jaoge. Phir uski meeting ki photo lo.',exit:'taxi'},
+  extract:{title:'Informer ko nikaalo',brief:'Washroom mein ek dara hua informer chhupa hai. Use dhoondho aur taxi stand tak le jao. Guards uska ghabraaya chehra notice karte hain.',exit:'taxi'},
+  photos:{title:'Teen saboot',brief:'Teen jagah ki photo lo: staff office ke CCTV monitors, security ke paas guard roster, aur Gate 72 ki passenger list. Phir taxi stand se niklo.',exit:'taxi'}};
+const EVENTS=['tipoff','blackout','surge'];
 const COMPS={
   alert:{t:'Alert list',d:'Tumhara naam 6 minute mein alert list mein aa jaayega.'},
   guards:{t:'Extra guards',d:'Aaj raat do extra guard duty pe hain.'},
@@ -202,11 +206,11 @@ const COMPS={
   cams:{t:'Naye camere',d:'CCTV ki range badha di gayi hai.'}};
 let M;const INTRO_V=2;const TUT=!(CAREER.tutV>=INTRO_V);
 function newMission(){
-  const n=pick(NAMES);let type=pick(Object.keys(OBJ));
+  const n=pick(NAMES);let type=pick(Object.keys(OBJ).filter(k=>k!==CAREER.lastType));
   let comps=shuffle(Object.keys(COMPS)).slice(0,chance(.5)?2:1);if(TUT){type='steal';comps=[];}
   let carried=null;if(TUT){try{carried=JSON.parse(localStorage.getItem('trace_cover')||'null');}catch(e){}}
   M={type,comps,L:carried&&carried.given?{given:carried.given,surname:carried.surname,city:carried.city,job:carried.job,purpose:carried.purpose,hotel:carried.hotel}:{given:n[0],surname:n[1],city:pick(CITIES),job:pick(JOBS),purpose:pick(PURPOSES),hotel:pick(HOTELS)},
-     time:comps.includes('alert')?360:600,code:TUT?'OP-001':'OP-'+ri(100,999)};
+     time:comps.includes('alert')?360:600,code:TUT?'OP-001':'OP-'+ri(100,999),event:TUT?null:pick(EVENTS),eventAt:rnd(55,130)};
 }
 
 /* ===================== state ===================== */
@@ -245,7 +249,7 @@ function resize(){const w=innerWidth,h=innerHeight;renderer.setSize(w,h,false);c
 addEventListener('resize',resize);resize();
 composer=new EffectComposer(renderer,new T.WebGLRenderTarget(innerWidth,innerHeight,{type:T.HalfFloatType,samples:Math.min(4,renderer.capabilities.maxSamples||0)}));
 composer.setPixelRatio(renderer.getPixelRatio());composer.addPass(new RenderPass(scene,camera));composer.addPass(new UnrealBloomPass(new T.Vector2(innerWidth,innerHeight),.35,.45,.9));composer.addPass(new OutputPass());resize();
-scene.add(new T.HemisphereLight(0xfff4e6,0x5a5080,1.5));
+const hemi=new T.HemisphereLight(0xfff4e6,0x5a5080,1.5);scene.add(hemi);
 const sun=new T.DirectionalLight(0xffffff,1.6);sun.position.set(10,30,14);sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);Object.assign(sun.shadow.camera,{left:-20,right:20,top:20,bottom:-20,near:1,far:80});sun.shadow.bias=-.0006;scene.add(sun,sun.target);
 
 /* ===================== helpers ===================== */
@@ -414,6 +418,8 @@ function updNPC(dt,t){
       case 'path':{if(!n.path.length){n.beh='wander';break;}const [x,z]=n.path[0];if(stepTo(n,x,z,dt,n.walk))n.path.shift();mv=true;break;}
       case 'route':{const r=n.route[n.ri];if(r[0]==='w'){n.wait=(n.wait>0?n.wait:r[1])-dt;n.speed=0;if(n.wait<=.01){n.wait=0;n.ri=(n.ri+1)%n.route.length;}}else if(stepTo(n,r[0],r[1],dt,n.walk))n.ri=(n.ri+1)%n.route.length;else mv=true;break;}
       case 'target':{n.tick(dt,t);mv=n.speed>.1;break;}
+      case 'follow':{const d=Math.hypot(P.pos.x-n.pos.x,P.pos.z-n.pos.z);if(d>13){n.speed=0;if(!S.ex.wait){S.ex.wait=true;toast('Informer: "Ruko! Itna tez mat chalo!"','info');}break;}S.ex.wait=false;
+        if(d>1.8){const bx=P.pos.x-Math.sin(P.yaw)*1.4,bz=P.pos.z-Math.cos(P.yaw)*1.4;const q=navPath(n.pos.x,n.pos.z,bx,bz)[0];stepTo(n,q[0],q[1],dt,d>5?2.9:2.2);mv=true;}break;}
       case 'idle':{n.yaw+=Math.sin(t*.5+n.ph)*dt*.2;n.g.rotation.y=n.yaw;break;}
     }
     anim(n,dt,mv?n.speed:0,t);}
@@ -448,12 +454,13 @@ function cctv(id,x,z,yaw,sweep,range,fov=.42){const g=new T.Group();g.position.s
   const c={id,x,z,base:yaw,yaw,sweep,range,fov,head,led,cone,ph:rnd(0,6),cd:0};CAMS.push(c);return c;}
 function setupCams(boost){const k=boost?1.4:1;
   cctv(1,0,23,Math.PI,.7,14*k);cctv(2,-27,6,Math.PI*.3,.45,12*k);cctv(3,17,14,Math.PI,0,12*k,.32);cctv(4,0,-5.4,0,.6,11*k);cctv(5,-12,-8,-2.3,.5,10*k);cctv(6,20,-7,Math.PI,.7,14*k);cctv(7,-30,-18.6,Math.PI,.8,7*k,.5);}
-function camSees(c,x,z){if(region(x,z)==='WASH')return false;const dx=x-c.x,dz=z-c.z,d=Math.hypot(dx,dz);if(d>c.range)return false;if(Math.abs(angDiff(Math.atan2(dx,dz),c.yaw))>c.fov)return false;return !losBlocked(c.x,c.z,x,z);}
+function camSees(c,x,z){if(S.blackUntil>clockT||region(x,z)==='WASH')return false;const dx=x-c.x,dz=z-c.z,d=Math.hypot(dx,dz);if(d>c.range)return false;if(Math.abs(angDiff(Math.atan2(dx,dz),c.yaw))>c.fov)return false;return !losBlocked(c.x,c.z,x,z);}
 
 /* ===================== player ===================== */
 let P;
 const LOOKS={coat:{body:0xd9c3a0,coat:true,scarf:0xe0242b,legs:0x2c2c36},tourist:{body:0x3d6fd6,legs:0x2c3150,capColor:0xf5f5f5},staff:{body:0x2d4a8a,vest:0xf28b0f,legs:0x1f2430,capColor:0xf28b0f}};
-function buildPlayer(){const pos=P?P.pos.clone():new T.Vector3(-1.5,0,15.5),yaw=P?P.yaw:Math.PI;if(P){scene.remove(P.g);}
+const SPAWNS=[[-1.5,15.5],[-18,20.5],[15,20.5],[-24,4]];
+function buildPlayer(){const sp0=TUT?SPAWNS[0]:pick(SPAWNS);const pos=P?P.pos.clone():new T.Vector3(sp0[0],0,sp0[1]),yaw=P?P.yaw:Math.PI;if(P){scene.remove(P.g);}
   const L=LOOKS[S.look.outfit];const o=Object.assign({skin:0xc68b5e,hair:0x1a1a1a,longHair:true,shadow:true,bag:S.look.outfit==='staff'?null:0x2b2f3a},L);
   if(S.look.hat){if(S.look.outfit==='coat')o.hat=0x2b2b35;else{o.cap=L.capColor;o.capPeak=0x222222;}}
   o.glasses=S.look.glasses;P=chibi(o);P.pos.copy(pos);P.yaw=yaw;P.g.rotation.y=yaw;
@@ -484,7 +491,7 @@ function playerFlags(){const reg=region(P.pos.x,P.pos.z);const staff=S.look.outf
   const illegal=(reg==='STAFF'&&!staff)||(reg==='AIR'&&!S.cleared&&!staff);
   let crowd=0;for(const n of NPC){if(Math.hypot(n.pos.x-P.pos.x,n.pos.z-P.pos.z)<2)crowd++;}
   return {reg,running:P.running,illegal,action:!!(S.hold&&S.hold.illegal),wanted:S.wanted===lookKey(),crowd,staff};}
-function canSee(g,x,z){const dx=x-g.pos.x,dz=z-g.pos.z,d=Math.hypot(dx,dz);if(d<2.2)return losBlocked(g.pos.x,g.pos.z,x,z)?0:Math.max(d,.01);if(d>g.range)return 0;if(Math.abs(angDiff(Math.atan2(dx,dz),g.yaw))>g.fov)return 0;return losBlocked(g.pos.x,g.pos.z,x,z)?0:d;}
+function canSee(g,x,z){const dx=x-g.pos.x,dz=z-g.pos.z,d=Math.hypot(dx,dz);if(d<2.2)return losBlocked(g.pos.x,g.pos.z,x,z)?0:Math.max(d,.01);if(d>g.range*(S.blackUntil>clockT?.55:1))return 0;if(Math.abs(angDiff(Math.atan2(dx,dz),g.yaw))>g.fov)return 0;return losBlocked(g.pos.x,g.pos.z,x,z)?0:d;}
 let anyAlertT=0,worst='calm';
 function goAlert(g,why){if(g.state==='alert')return;g.state='alert';g.sus=100;g.lost=0;S.alerts++;S.wanted=lookKey();sfx.alert();slowmo();vib([90,50,90]);
   toast(`${g.name}: "RUKO!" ${why?'('+why+')':''}`);for(const o of G){if(o!==g&&o.state!=='alert'){o.sus=Math.max(o.sus,62);o.state='search';o.lastSeen=[P.pos.x,P.pos.z];o.searchT=10;}}
@@ -506,6 +513,7 @@ function updGuards(dt,t){
       if(F.wanted){gain+=(TS&&TS.step<3)?14:40;why='wahi look';}
       if(g.knows&&lookKey()===S.startLook){gain+=26;why='photo se match';}
       if(F.staff&&g.name==='Staff guard'&&F.reg==='STAFF')gain+=7;
+      if(S.ex&&S.ex.met&&inf&&Math.hypot(inf.pos.x-P.pos.x,inf.pos.z-P.pos.z)<5&&canSee(g,inf.pos.x,inf.pos.z)){gain+=14;why='ghabraaya hua saathi';}
       gain*=near*(1+CAREER.heat/160);
       if(!F.action&&!F.running&&F.crowd>=2)gain*=.3;}
     if(gain>0){g.sus=Math.min(100,g.sus+gain*dt);g.lastSeen=[P.pos.x,P.pos.z];g.lost=0;}
@@ -544,7 +552,8 @@ function moveG(g,tx,tz,dt,spd,t){g.pathT-=dt;if(!g.path||g.pathT<=0||g.pathTo!==
   const v=Math.min(spd,dd/dt);const nx=g.pos.x+dx/dd*v*dt,nz=g.pos.z+dz/dd*v*dt;g.pos.x=nx;g.pos.z=nz;
   const before=g.pos.clone();collide(g.pos,.3,COL.filter(c=>c!==staffDoor.c&&c!==airDoor.c&&c!==secGate.c));g.speed=v;faceTo(g,Math.atan2(dx,dz),dt,8);return false;}
 function updCams(dt){const F=playerFlags();
-  for(const c of CAMS){c.ph+=dt*.32;c.yaw=c.base+Math.sin(c.ph)*c.sweep;c.head.rotation.y=c.yaw;c.cone.piv.position.set(c.x,.025,c.z);c.cone.piv.rotation.y=c.yaw-Math.PI/2;c.cd-=dt;
+  const dark=S.blackUntil>clockT;
+  for(const c of CAMS){c.cone.piv.visible=!dark;c.led.visible=!dark;c.ph+=dt*.32;c.yaw=c.base+Math.sin(c.ph)*c.sweep;c.head.rotation.y=c.yaw;c.cone.piv.position.set(c.x,.025,c.z);c.cone.piv.rotation.y=c.yaw-Math.PI/2;c.cd-=dt;
     const seen=!locked&&camSees(c,P.pos.x,P.pos.z);c.cone.me.material.opacity=seen?.26:.1;
     if(seen){if(!S.camsSeen.has(c.id)){S.camsSeen.add(c.id);snapshot(c);}
       if((F.action||F.illegal||F.wanted||worst==='alert')&&c.cd<=0){c.cd=8;const g=G.slice().sort((a,b)=>Math.hypot(a.pos.x-P.pos.x,a.pos.z-P.pos.z)-Math.hypot(b.pos.x-P.pos.x,b.pos.z-P.pos.z))[0];
@@ -614,12 +623,12 @@ function comic(name,arg){return new Promise(res=>{const c=$('#comic');const full
 function sheet(html){const s=$('#sheet');s.innerHTML=`<div class="card">${html}</div>`;s.hidden=false;return s.firstElementChild;}
 const closeSheet=()=>{$('#sheet').hidden=true;$('#sheet').innerHTML='';};
 function dossierHTML(){const o=OBJ[M.type],L=M.L;
-  const target=M.type==='handoff'?'Contact: <b>gulaabi dupatta, haath mein akhbaar</b>. Airside, gates ke paas.':M.type==='bug'?'Target: <b>grey suit, laal tie, briefcase</b>. Terminal mein ghoom raha hai.':'Laptop: <b>Security office</b>, staff area ke andar. Staff ki <b>naarangi jacket</b> mein ghusna aasaan.';
+  const target=M.type==='tail'?'Target: <b>maroon jacket, kaali topi, moonchh</b>. Hall mein ghoom raha hai.':M.type==='extract'?'Informer: <b>grey kapde, chashma</b>. Washroom mein chhupa hai.':M.type==='photos'?'Teen jagah: <b>staff office ke monitors</b>, <b>security ke paas guard roster</b>, <b>Gate 72 ki passenger list</b>.':M.type==='handoff'?'Contact: <b>gulaabi dupatta, haath mein akhbaar</b>. Airside, gates ke paas.':M.type==='bug'?'Target: <b>grey suit, laal tie, briefcase</b>. Terminal mein ghoom raha hai.':'Laptop: <b>Security office</b>, staff area ke andar. Staff ki <b>naarangi jacket</b> mein ghusna aasaan.';
   return `<div class="dossier"><h3>${esc(M.code)} · ${esc(o.title)}</h3><div>${esc(o.brief)}</div><div>${target}</div>
     <dl><dt>Musibat</dt><dd>${M.comps.map(c=>`<b>${esc(COMPS[c].t)}:</b> ${esc(COMPS[c].d)}`).join('<br>')}</dd><dt>Waqt</dt><dd>${Math.round(M.time/60)} minute</dd>
     <dt>Naam</dt><dd>${esc(L.given)} ${esc(L.surname)}</dd><dt>Shehar</dt><dd>${esc(L.city)}</dd><dt>Kaam</dt><dd>${esc(L.job)}</dd><dt>Maqsad</dt><dd>${esc(L.purpose)}</dd><dt>Hotel</dt><dd>${esc(L.hotel)}</dd></dl>
     <span class="stampx">TOP SECRET</span></div>`;}
-function briefHTML(){const L=M.L,short={handoff:'Gulaabi dupatte wale contact ko device do, phir Gate 72 se board karo.',steal:'Security office ka laptop churao, phir taxi stand se niklo.',bug:'Businessman ke briefcase mein bug lagao, phir taxi stand se niklo.'}[M.type];
+function briefHTML(){const L=M.L,short={tail:'Maroon jacket wale ka 50 second peecha karo, phir uski meeting ki photo lo.',extract:'Washroom se informer ko nikaal ke taxi stand tak le jao.',photos:'Teen jagah ki photo lo: monitors, guard roster, passenger list.',handoff:'Gulaabi dupatte wale contact ko device do, phir Gate 72 se board karo.',steal:'Security office ka laptop churao, phir taxi stand se niklo.',bug:'Businessman ke briefcase mein bug lagao, phir taxi stand se niklo.'}[M.type];
   return `<div class="dossier"><h3>${esc(M.code)} · ${esc(OBJ[M.type].title)}</h3><div><b>${esc(short)}</b></div>${M.comps.length?`<div>Musibat: ${M.comps.map(c=>`<b>${esc(COMPS[c].t)}</b>`).join(' · ')}</div>`:''}
     <details><summary>Cover story (officer poochh sakte hain)</summary><dl><dt>Naam</dt><dd>${esc(L.given)} ${esc(L.surname)}</dd><dt>Shehar</dt><dd>${esc(L.city)}</dd><dt>Kaam</dt><dd>${esc(L.job)}</dd><dt>Maqsad</dt><dd>${esc(L.purpose)}</dd><dt>Hotel</dt><dd>${esc(L.hotel)}</dd></dl></details><span class="stampx">TOP SECRET</span></div>`;}
 $('#bDossier').onclick=()=>{if(S.phase!=='play')return;locked=true;const c=sheet(`${dossierHTML()}<button class="btn" id="cl" type="button">Wapas</button>`);c.querySelector('#cl').onclick=()=>{closeSheet();locked=false;};};
@@ -696,9 +705,52 @@ function setupObjective(){
       if(ok){S.done=true;sfx.ok();toast('Bug lag gaya. Ab taxi stand (south exit) se niklo.','good');}
       else{target.alertT=4;const g=G.slice().sort((a,b)=>Math.hypot(a.pos.x-target.pos.x,a.pos.z-target.pos.z)-Math.hypot(b.pos.x-target.pos.x,b.pos.z-target.pos.z))[0];g.sus=Math.max(g.sus,55);g.state='search';g.lastSeen=[P.pos.x,P.pos.z];g.searchT=8;toast('Businessman: "Excuse me! Kya kar rahi ho?" Guard ne sun liya.');}}});}
 }
-function objText(){if(!S.done){if(M.type==='handoff')return 'Gulaabi dupatta wale contact ko device do (airside, security ke paar)'+(S.cleared?'':'. Pehle emigration, ya staff ka raasta.');if(M.type==='steal')return S.wardrobe.has('staff')?'Security office ka laptop uthao (staff area, hari line)':'Pehle staff jacket: staff ke peeche STAFF ONLY mein ghuso, left wall ke locker se lo';return 'Grey suit wale businessman ke peeche jaake briefcase mein bug lagao.';}
+let inf=null,meetGuy=null;
+function setupObjective2(){
+  if(M.type==='tail'){
+    target=npc({body:0x7a1f2a,skin:0xc68b5e,hair:0x111111,cap:0x222222,capPeak:0x111111,mustache:true},-24,19,'HALL');target.special=true;target.beh='target';target.walk=1.15;
+    target.plan=shuffle([[24,16],[17,13],[30.5,14],[-22,18],[-2,9],[-24,-1],[22,-2]]);target.pi=0;target.lookT=rnd(6,9);target.lookFor=0;target.tailSus=0;target.icon=iconSprite();
+    S.tail={t:0,need:50,lost:0,met:false};
+    target.tick=(dt,t)=>{if(S.tail.met){target.speed=0;if(meetGuy)faceTo(target,Math.atan2(meetGuy.pos.x-target.pos.x,meetGuy.pos.z-target.pos.z),dt,4);return;}
+      if(target.lookFor>0){target.lookFor-=dt;target.speed=0;if(target.lookFor<=0)target.lookT=rnd(5,9);return;}
+      target.lookT-=dt;if(target.lookT<=0){target.lookFor=2.2;target.yaw+=Math.PI;target.g.rotation.y=target.yaw;return;}
+      const p=target.plan[target.pi%target.plan.length];const path=navPath(target.pos.x,target.pos.z,p[0],p[1]);const q=path[0];if(stepTo(target,q[0],q[1],dt,target.walk)&&path.length===1)target.pi++;};
+    inter({label:'Meeting ki photo lo',r:10,on:()=>S.tail.met&&!S.done,pos:()=>[target.pos.x,target.pos.z],run:async()=>{const ok=await hold('Zoom karke photo le rahi ho…',2,true,()=>Math.hypot(target.pos.x-P.pos.x,target.pos.z-P.pos.z)>11?'Bahut door chali gayi':null);
+      if(ok){S.done=true;sfx.shutter();toast('Meeting ki photo mil gayi. Ab taxi stand se niklo.','good');}}});}
+  if(M.type==='extract'){
+    inf=npc({body:0x9aa3ad,skin:0xe2b48f,hair:0x3b2416,glasses:true,bag:0x6a5a3a},-34.2,17.5,'WASH');inf.special=true;inf.beh='idle';inf.yaw=Math.PI/2;inf.g.rotation.y=inf.yaw;S.ex={met:false,wait:false};
+    inter({label:'Informer se milo',r:1.9,on:()=>!S.ex.met,pos:()=>[inf.pos.x,inf.pos.z],run:async()=>{locked=true;await say('Informer','(kaanpti aawaaz) Tum agency se ho? Mujhe yahan se nikaalo. Wo log mujhe dhoondh rahe hain.');await say('','Tum dheere se kehti ho: "Mere peeche chalo. Bhaagna mat."',true);closeDlg();locked=false;S.ex.met=true;inf.beh='follow';toast('Informer tumhare peeche hai. Bhaagogi to wo peeche reh jaayega.','info');}});
+    inter({label:'Informer ke saath taxi pakdo',r:2.3,on:()=>S.ex.met&&Math.hypot(inf.pos.x-P.pos.x,inf.pos.z-P.pos.z)<4.5,pos:()=>[0,22.6],run:async()=>{S.done=true;finish(true);}});}
+  if(M.type==='photos'){
+    const roster=mesh(new T.PlaneGeometry(1.1,.8),m(0xf4f1ea),-4.5,1.7,-5.78);mesh(new T.PlaneGeometry(.9,.06),m(0xc0392b),-4.5,1.98,-5.77);
+    const clip=mesh(new T.BoxGeometry(.32,.03,.42),m(0xf4f1ea),22.6,1.17,-23.4);
+    S.ph={done:new Set(),list:[{id:'mon',label:'Photo lo: CCTV monitors',pos:[-34.6,-18.9],name:'staff office ke CCTV monitors'},{id:'roster',label:'Photo lo: guard roster',pos:[-4.5,-4.7],name:'security ke paas guard roster'},{id:'manifest',label:'Photo lo: passenger list',pos:[22.6,-22.3],name:'Gate 72 ki passenger list'}]};
+    S.ph.list.forEach(ph=>inter({label:ph.label,r:1.6,on:()=>!S.ph.done.has(ph.id),pos:()=>ph.pos,run:async()=>{const ok=await hold('Photo le rahi ho…',2,true);
+      if(ok){S.ph.done.add(ph.id);sfx.shutter();toast(`Saboot ${S.ph.done.size}/3: ${ph.name}`,'good');if(S.ph.done.size===3){S.done=true;toast('Teeno saboot mil gaye. Ab taxi stand se niklo.','good');}}}}));}
+}
+function missionTick(dt){
+  if(M.type==='tail'&&!S.tail.met){const d=Math.hypot(P.pos.x-target.pos.x,P.pos.z-target.pos.z);
+    if(d<=16){S.tail.t+=dt;S.tail.lost=0;}else{S.tail.lost+=dt;if(S.tail.lost>8)return failMission('Target nazar se nikal gaya. Peecha toot gaya.');}
+    let seen=false;if(target.lookFor>0&&d<10){const a=Math.atan2(P.pos.x-target.pos.x,P.pos.z-target.pos.z);seen=Math.abs(angDiff(a,target.yaw))<.9&&!losBlocked(target.pos.x,target.pos.z,P.pos.x,P.pos.z);}
+    const was=target.tailSus;target.tailSus=clamp(target.tailSus+(seen?(playerFlags().crowd>=2?16:45):-8)*dt,0,100);if(seen&&was<5)sfx.q();
+    if(target.tailSus>=100)return failMission('Target ne tumhe pehchaan liya aur bheed mein gayab ho gaya.');
+    if(S.tail.t>=S.tail.need){S.tail.met=true;meetGuy=npc({body:0x1d1d1d,suit:true,tie:0x2b4c8a,skin:0xc79a70,hair:0x111111,case:true},target.pos.x+2.4,target.pos.z+.6,'HALL');meetGuy.special=true;meetGuy.beh='idle';meetGuy.yaw=Math.atan2(target.pos.x-meetGuy.pos.x,target.pos.z-meetGuy.pos.z);meetGuy.g.rotation.y=meetGuy.yaw;
+      sfx.ok();toast('Wo kisi se mil raha hai! 10 metre ke andar se photo lo.','good');}}
+  if(M.type==='tail'&&target.icon){target.icon.sp.position.set(target.pos.x,2.3,target.pos.z);drawIcon(target.icon,target.tailSus>60?'search':'sus',target.tailSus);if(target.tailSus<3)target.icon.sp.visible=false;}
+  if(M.event&&!S.evFired&&M.time-S.timeLeft>M.eventAt){S.evFired=true;fireEvent(M.event);}
+}
+function fireEvent(e){
+  if(e==='tipoff'){S.wanted=lookKey();sfx.alert();vib([60,40,60]);banner('TIP-OFF! Turant kapde badlo',true);setTimeout(()=>{if(S.phase==='play')banner(null);},6000);toast('Radio: "Suspect ka hulia mil gaya hai. Sab dhyaan do."');}
+  if(e==='blackout'){S.blackUntil=clockT+20;hemi.intensity=.3;sun.intensity=.25;sfx.thak();banner('BLACKOUT! 20 sec: camere band');toast('Andhere mein guards ko kam dikhta hai. Mauka hai!','info');setTimeout(()=>{hemi.intensity=1.5;sun.intensity=1.6;if(S.phase==='play'){banner(null);toast('Bijli wapas aa gayi.','info');}},20000);}
+  if(e==='surge'){for(let i=0;i<10;i++)npc(paxOpts(),rnd(-6,6),rnd(18,22),'HALL');sfx.chime();toast('Announcement: Do flights late. Bheed badh gayi, chhupna aasaan.','info');}}
+function objText(){if(M.type==='tail'&&!S.done)return S.tail.met?'Meeting ki photo lo (10 metre ke andar)':`Maroon jacket wale ka peecha karo: ${Math.floor(S.tail.t)}/${S.tail.need} sec. Jab palte, nazar mat milao.`;
+  if(M.type==='extract')return !S.ex.met?'Washroom mein chhupa informer dhoondho (grey kapde, chashma)':S.ex.wait?'Informer peeche reh gaya! Wapas jao.':'Informer ko taxi stand (south exit) tak le jao. Bhaagna mat.';
+  if(M.type==='photos'&&!S.done)return `Saboot ki photo lo (${S.ph.done.size}/3): `+S.ph.list.filter(x=>!S.ph.done.has(x.id)).map(x=>x.name).join(', ');
+  if(!S.done){if(M.type==='handoff')return 'Gulaabi dupatta wale contact ko device do (airside, security ke paar)'+(S.cleared?'':'. Pehle emigration, ya staff ka raasta.');if(M.type==='steal')return S.wardrobe.has('staff')?'Security office ka laptop uthao (staff area, hari line)':'Pehle staff jacket: staff ke peeche STAFF ONLY mein ghuso, left wall ke locker se lo';return 'Grey suit wale businessman ke peeche jaake briefcase mein bug lagao.';}
   return OBJ[M.type].exit==='gate'?'Gate 72 se board karo':'Taxi stand (south exit) se bahar niklo';}
-function objPos(){if(!S.done){if(M.type==='handoff')return [contact.pos.x,contact.pos.z];if(M.type==='steal')return [-31,-22.4];return [target.pos.x,target.pos.z];}return OBJ[M.type].exit==='gate'?[24,-22.2]:[0,22.6];}
+function objPos(){if(M.type==='extract')return S.ex.met?[0,22.6]:[inf.pos.x,inf.pos.z];
+  if(M.type==='photos'&&!S.done){const r=S.ph.list.filter(x=>!S.ph.done.has(x.id)).sort((a,b)=>Math.hypot(a.pos[0]-P.pos.x,a.pos[1]-P.pos.z)-Math.hypot(b.pos[0]-P.pos.x,b.pos[1]-P.pos.z))[0];return r.pos;}
+  if(!S.done){if(M.type==='handoff')return [contact.pos.x,contact.pos.z];if(M.type==='steal')return [-31,-22.4];return [target.pos.x,target.pos.z];}return OBJ[M.type].exit==='gate'?[24,-22.2]:[0,22.6];}
 
 /* ===================== caught & finish ===================== */
 async function caught(g){if(S.phase!=='play')return;locked=true;S.phase='talk';
@@ -710,13 +762,15 @@ async function caught(g){if(S.phase!=='play')return;locked=true;S.phase='talk';
   if(ok&&!serious&&chance(.7)){await say(g.name,'Hmm. Theek hai, jaao. Aur dobara bhaagti dikhi to seedha andar.');closeDlg();CAREER.heat=Math.min(100,CAREER.heat+5);trace(`${g.name} ne roka, naam likh liya`);
     for(const o of G){o.state='patrol';o.sus=20;}S.phase='play';locked=false;return;}
   closeDlg();S.phase='over';await comic('caught',g.name);finish(false,g.name);}
-function finish(win,who){S.phase='over';locked=true;sfx.chime();
+function failMission(why){if(S.phase!=='play')return;S.phase='over';locked=true;sfx.alert();slowmo();finish(false,null,why);}
+function finish(win,who,why){S.phase='over';locked=true;sfx.chime();
   const nCam=S.camsSeen.size;let stars=0,reward=0;
   if(win){stars=1;if(S.alerts===0)stars++;if(S.traces.length<=3&&nCam<=4)stars++;reward=[0,60000,110000,180000][stars];}
   const heatAdd=Math.min(40,S.traces.length*3+S.alerts*8+nCam);const before=CAREER.heat;CAREER.heat=Math.min(100,CAREER.heat+heatAdd);
+  CAREER.lastType=M.type;if(TUT)CAREER.tutV=INTRO_V;
   CAREER.missions++;if(win){CAREER.wins++;CAREER.money+=reward;CAREER.best=Math.max(CAREER.best,stars);}saveCareer();
   const show=()=>{const c=sheet(`<div class="eyebrow">${esc(M.code)} · ${esc(OBJ[M.type].title)}</div><h2>${win?['','Kaam ho gaya','Saaf kaam','Ghost'][stars]:'Mission fail'}</h2>
-    ${win?`<p style="font-family:var(--sfx);font-size:30px;color:var(--accent)">${'★'.repeat(stars)}<span style="opacity:.3">${'★'.repeat(3-stars)}</span></p>`:`<p>${esc(who||'Waqt khatam')}${who?' ne pakad liya. Agency ne tumhe nahi pehchaana.':': tumhara naam alert list mein aa gaya.'}</p>`}
+    ${win?`<p style="font-family:var(--sfx);font-size:30px;color:var(--accent)">${'★'.repeat(stars)}<span style="opacity:.3">${'★'.repeat(3-stars)}</span></p>`:`<p>${who?esc(who)+' ne pakad liya. Agency ne tumhe nahi pehchaana.':esc(why||'Waqt khatam: tumhara naam alert list mein aa gaya.')}</p>`}
     <div class="stats"><div class="stat"><span>Inaam</span><b>${inr(reward)}</b></div><div class="stat"><span>Alerts</span><b>${S.alerts}</b></div><div class="stat"><span>Camere</span><b>${nCam}/${CAMS.length}</b></div></div>
     <p class="eyebrow">HEAT: ${Math.round(before)} → ${Math.round(CAREER.heat)} (guards tumhe jaldi pehchaanenge)</p><div class="heat"><i style="width:${CAREER.heat}%"></i></div>
     ${S.photos.length?`<p class="eyebrow">CCTV NE YE PHOTOS LI</p><div class="gallery">${S.photos.map((ph,i)=>`<div class="snap" style="--r:${i%2?3:-2}deg"><img alt="CCTV cam ${ph.id}" src="${ph.url}"><b>CAM ${ph.id} · ${esc(ph.t)}</b></div>`).join('')}</div>`:''}
@@ -819,7 +873,7 @@ const clk=new T.Clock();
 function frame(){
   let dt=Math.min(window.__dtcap||.05,clk.getDelta());if(slowT>0){slowT-=dt;dt*=.3;}clockT+=dt;const t=clockT;
   if(S.phase==='play'||S.phase==='talk'){
-    if(S.phase==='play'){updPlayer(dt,t);updHold(dt);updTutorial(dt);S.timeLeft-=dt;if(S.timeLeft<=0){finish(false);}
+    if(S.phase==='play'){updPlayer(dt,t);updHold(dt);updTutorial(dt);missionTick(dt);S.timeLeft-=dt;if(S.timeLeft<=0){finish(false);}
       if((annT+=dt)>48){annT=0;sfx.chime();toast(pick(['Announcement: ZR 501 Dubai ki boarding Gate 72 se jaldi shuru hogi.','Announcement: Kripya apna saamaan laawaaris na chhodein.','Announcement: Passenger Kapoor, please report to Gate 61.','Announcement: Security check pe line mein rahein.']),'info');}}
     updNPC(dt,t);updGuards(dt,t);updCams(dt);
     updDoor(staffDoor,dt,NPC.concat(G).some(n=>(n.staff||G.includes(n))&&nearDoor(staffDoor,n.pos.x,n.pos.z))||(S.look.outfit==='staff'&&nearDoor(staffDoor,P.pos.x,P.pos.z)));
@@ -843,11 +897,11 @@ newMission();
 setupNPC(M.comps.includes('crowd')?12:0);
 setupGuards(M.comps.includes('guards'),M.comps.includes('face')?pick([0,1]):-1);
 setupCams(M.comps.includes('cams'));
-setupObjective();
+setupObjective();setupObjective2();
 buildPlayer();drawBoard();
 camera.position.set(0,8,30);
 window.__ready=true;
-window.__trace={get TS(){return TS;},S,M,G,CAMS,NPC,get P(){return P;},CAREER,start,doAct,get cur(){return current&&(typeof current.label==='function'?current.label():current.label);},tp:(x,z)=>{P.pos.set(x,0,z);}};
+window.__trace={fireEvent,get inf(){return inf;},get target(){return target;},get TS(){return TS;},S,M,G,CAMS,NPC,get P(){return P;},CAREER,start,doAct,get cur(){return current&&(typeof current.label==='function'?current.label():current.label);},tp:(x,z)=>{P.pos.set(x,0,z);}};
 frame();
 if(!(CAREER.introV>=INTRO_V))splash();else if(location.hash==='#play'){$('#loading').hidden=true;auInit();start();}else hub();
 </script>
