@@ -53,6 +53,10 @@ Every CCTV camera that sees you is counted. Suspicious acts on camera, police st
 
 Systems: real-time clock (check-in closes 03:15), heart-rate/nerve meter with a breathing mini-game, timed answers, hidden suspicion, secondary-inspection interrogation, and a digital-footprint report at the end.
 
+## Play online
+
+https://trace-game.pages.dev (Cloudflare Pages, no login needed). To publish changes: `CLOUDFLARE_ACCOUNT_ID=... sh scripts/deploy-cloudflare.sh` (rebuilds `site/` and deploys).
+
 ## Run
 
 Open `index.html` in a browser (needs internet for three.js from jsDelivr). Single file, no build step. Sound is synthesised in the browser. Use headphones.
