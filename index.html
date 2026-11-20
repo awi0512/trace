@@ -768,7 +768,7 @@ function finish(win,who,why){S.phase='over';locked=true;sfx.chime();
     <p class="eyebrow">HEAT: ${Math.round(before)} → ${Math.round(CAREER.heat)} (guards tumhe jaldi pehchaanenge)</p><div class="heat"><i style="width:${CAREER.heat}%"></i></div>
     ${S.photos.length?`<p class="eyebrow">CCTV NE YE PHOTOS LI</p><div class="gallery">${S.photos.map((ph,i)=>`<div class="snap" style="--r:${i%2?3:-2}deg"><img alt="CCTV cam ${ph.id}" src="${ph.url}"><b>CAM ${ph.id} · ${esc(ph.t)}</b></div>`).join('')}</div>`:''}
     <p class="eyebrow">TUMHARA DIGITAL FOOTPRINT</p><ul class="traces">${S.traces.length?S.traces.map(t=>`<li>${esc(t.t)} · ${esc(t.text)}</li>`).join(''):'<li class="ok">Koi nishaan nahi.</li>'}</ul>
-    <button class="btn" id="again" type="button">Agla mission</button><button class="btn alt" id="hub" type="button">Safehouse</button>`);
+    <button class="btn" id="again" type="button">Agla mission</button>${win?`<a class="btn" href="train.html" style="background:#1f4f9a">Agla level: Raat ki Gaadi →</a>`:''}<button class="btn alt" id="hub" type="button">Safehouse</button>`);
     c.querySelector('#again').onclick=()=>{location.hash='play';location.reload();};c.querySelector('#hub').onclick=()=>{location.hash='';location.reload();};};
   if(win)comic('win').then(show);else show();}
 
@@ -780,6 +780,7 @@ function hub(){$('#loading').hidden=true;const h=Math.round(CAREER.heat);
     <p class="eyebrow">HEAT ${h}/100</p><div class="heat"><i style="width:${h}%"></i></div>
     <button class="btn" id="go" type="button">Naya mission</button>
     <button class="btn alt" id="pp" type="button" ${CAREER.money<100000||h<10?'disabled':''}>Naya passport (heat −50) · ${inr(100000)}</button>
+    <a class="btn" href="train.html" style="background:#1f4f9a">Level 2: Raat ki Gaadi</a>
     <a class="btn alt" href="cab.html">Story: Ghar se airport</a>
     <button class="btn alt" id="replay" type="button">Kahani shuru se (intro + tutorial)</button>
     <p style="opacity:.7;font-size:13px">Phone: neeche-left gola se chalo, right side se camera, RUN se bhaago. Computer: WASD, Shift, mouse drag, E.</p>`);

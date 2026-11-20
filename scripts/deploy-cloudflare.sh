@@ -10,17 +10,18 @@ sh scripts/build-site.sh
 PROJECT="${CF_PAGES_PROJECT:-trace-game}"
 TMP="$(mktemp -d)"
 python3 - "$TMP/_worker.js" <<'PY'
-import json, sys
-idx = open('site/index.html', encoding='utf-8').read()
-cab = open('site/cab.html', encoding='utf-8').read()
-src = """const INDEX=%s;
-const CAB=%s;
-const page=s=>new Response(s,{headers:{'content-type':'text/html; charset=utf-8','cache-control':'no-cache'}});
-export default{async fetch(req){const p=new URL(req.url).pathname;
-  if(p==='/'||p==='/index.html')return page(INDEX);
-  if(p==='/cab'||p==='/cab.html')return page(CAB);
+import json, sys, pathlib
+pages = {}
+for f in sorted(pathlib.Path('site').glob('*.html')):
+    pages['/' + f.name] = f.read_text(encoding='utf-8')
+    if f.name != 'index.html':
+        pages['/' + f.stem] = pages['/' + f.name]
+pages['/'] = pages['/index.html']
+src = 'const PAGES=%s;\n' % json.dumps(pages)
+src += """export default{async fetch(req){const p=new URL(req.url).pathname;const body=PAGES[p];
+  if(body!==undefined)return new Response(body,{headers:{'content-type':'text/html; charset=utf-8','cache-control':'no-cache'}});
   return new Response('Not found',{status:404,headers:{'content-type':'text/plain'}});}};
-""" % (json.dumps(idx), json.dumps(cab))
+"""
 open(sys.argv[1], 'w', encoding='utf-8').write(src)
 PY
 AUTH=""
