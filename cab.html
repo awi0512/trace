@@ -108,7 +108,7 @@ body.talking #pads{visibility:hidden}
 <div id="hud" hidden>
   <div class="row"><div class="chip" id="clock">00:55<small>IST</small></div><div class="chip" id="money">₹2,40,000</div></div>
   <div id="obj"><b>Objective</b><span id="objText"></span></div>
-  <div class="tools"><button class="tb" id="bLegend" type="button">Kahani (3)</button><button class="tb" id="bMute" type="button">Mute</button><button class="tb" id="bRadio" type="button" hidden>Radio chalao</button><button class="tb" id="bRadioOff" type="button" hidden>Radio band</button></div>
+  <div class="tools"><button class="tb" id="bLegend" type="button">Kahani (3)</button><button class="tb" id="bMute" type="button">Mute</button><button class="tb" id="bSkip" type="button" hidden>Skip ride ⏭</button><button class="tb" id="bRadio" type="button" hidden>Radio chalao</button><button class="tb" id="bRadioOff" type="button" hidden>Radio band</button></div>
 </div>
 <div id="toasts"></div>
 <div id="joy" hidden><i></i></div>
@@ -528,6 +528,10 @@ function legendHTML(){const L=S.L;return `<div class="dossier"><h3>Cover · Sirf
 function legendCard(secs,title){return new Promise(res=>{const c=sheet(`<h2>${title}</h2>${legendHTML()}<div class="count" id="cd"></div><button class="btn" id="ok" type="button">Yaad ho gaya</button>`);let left=secs;const cd=c.querySelector('#cd');const up=()=>cd.textContent=`Ye kaagaz ${left} second mein jal jaayega.`;up();const iv=setInterval(()=>{left--;up();if(left<=0)done();},1000);function done(){clearInterval(iv);closeSheet();res();}c.querySelector('#ok').onclick=done;});}
 $('#bLegend').onclick=async()=>{if(S.legendUses<=0)return;S.legendUses--;$('#bLegend').textContent=`Kahani (${S.legendUses})`;await legendCard(5,'Mann mein dohrao');};
 $('#bRadio').onclick=()=>{if(!R.on)radio(true);else nextSong();};$('#bRadioOff').onclick=()=>radio(false);
+$('#bSkip').onclick=()=>{if(S.phase!=='drive'||S.skip)return;S.skip=true;$('#bSkip').hidden=true;closeDlg();driver.look=0;
+  JAM.forEach(v=>{v.o.visible=false;const i=TRAFFIC.indexOf(v);if(i>=0)TRAFFIC.splice(i,1);});JAM=[];
+  taxi.car.position.x=Math.max(taxi.car.position.x,END-110);taxi.car.position.z=-4.4;taxi.laneTarget=-4.4;taxi.car.rotation.y=0;taxi.target=15;
+  const f=()=>{if(taxi.dist>=END-60){taxi.target=0;taxi.stopAt=END;S.phase='arrive';}else setTimeout(f,100);};f();};
 $('#bMute').onclick=()=>{AU.on=!AU.on;if(AU.m)AU.m.gain.value=AU.on?.8:0;$('#bMute').textContent=AU.on?'Mute':'Unmute';};
 
 /* ===================== interactions ===================== */
@@ -587,7 +591,7 @@ INTER.push({label:'Cab mein baitho',r:1.6,on:()=>S.phase==='doorOpen',pos:()=>{c
     await say('Driver','Kahan chalna hai madam?');
     await choose([{label:'"Airport. Terminal 2, departures."'}]);
     driver.look=0;await say('Driver','T2. Chalo, raat hai, 40-45 minute mein pahuncha dunga.');closeDlg();
-    S.phase='drive';camMode='inside';P.g.visible=false;$('#camBtn').hidden=false;$('#camBtn').textContent='Bahar se dekho';setObj('Airport ja rahe ho. "Bahar se dekho" se camera badlo.');
+    S.phase='drive';$('#bSkip').hidden=false;camMode='inside';P.g.visible=false;$('#camBtn').hidden=false;$('#camBtn').textContent='Bahar se dekho';setObj('Airport ja rahe ho. "Bahar se dekho" se camera badlo.');
     locked=true;taxi.target=15;driveScript();
   }});
 
@@ -599,7 +603,7 @@ async function legendQ(key,who,q){
   S.said[key]=r===TIMEOUT?'(chup)':r;trace(`Cab driver ko bataya: "${S.said[key]}" (kahani se alag)`);return 'bad';
 }
 async function driveScript(){
-  const waitDist=d=>new Promise(res=>{const f=()=>{if(taxi.dist>=d)res();else setTimeout(f,100);};f();});
+  const waitDist=d=>new Promise(res=>{const f=()=>{if(S.skip)return;if(taxi.dist>=d)res();else setTimeout(f,100);};f();});
   await waitDist(120);
   driver.look=-.6;
   const r=await legendQ('purpose','Driver','Dubai ja rahe ho? Kaam se ya ghoomne?');
@@ -607,7 +611,7 @@ async function driveScript(){
   await waitDist(330);
   driver.look=-.4;await say('Driver','Ye Andheri flyover pe hamesha jaam rehta hai. Dekho aage…');closeDlg();
   spawnJam();
-  await new Promise(res=>{const f=()=>{if(taxi.dist>360&&taxi.speed<.4)res();else setTimeout(f,150);};f();});
+  await new Promise(res=>{const f=()=>{if(S.skip)return;if(taxi.dist>360&&taxi.speed<.4)res();else setTimeout(f,150);};f();});
   await sleep(900);
   const j=await choose([{label:'"Bhaiya, side se nikaal lo"',tag:'+'+inr(200),sub:'Driver lane badal ke aage nikal jaayega',value:'go'},{label:'"Koi baat nahi, ruk jaate hain"',sub:'15-20 minute lag sakte hain',value:'wait'}]);
   if(j==='go'){S.money-=200;await say('Driver','Pakad ke baitho madam!');closeDlg();sfx.horn(1.1);taxi.laneTarget=-1.5;clearLaneForOvertake();releaseJam(false);}
@@ -622,7 +626,7 @@ async function driveScript(){
   taxi.target=0;taxi.stopAt=END;S.phase='arrive';
 }
 async function arrival(){
-  S.phase='arrived';setObj('Terminal 2 pahunch gayi. Utro.');driver.look=-1.1;
+  S.phase='arrived';$('#bSkip').hidden=true;setObj('Terminal 2 pahunch gayi. Utro.');driver.look=-1.1;
   await say('Driver','T2 aa gaya madam. Departure yahin hai.');
   if(S.cabType==='kp'){
     await say('Driver','Meter ke hisaab se ₹700.');
@@ -649,8 +653,9 @@ function endCard(){
     <p>Tum ${clockStr()} pe Terminal 2 pahunchi. Paise bache: ${inr(S.money)}.</p>
     <p class="typ" style="color:var(--paper)">Tumhara digital footprint:</p>
     <ul class="traces">${S.traces.length?S.traces.map(t=>`<li>${esc(t.t)} · ${esc(t.text)}</li>`).join(''):'<li class="ok">Koi nishaan nahi. Ghost.</li>'}</ul>
-    <p style="opacity:.8">Agla chapter: <b>Mumbai airport</b> (isi style mein) — CISF, check-in, emigration, CCTV. Ye nishaan wahan tumhara peechha karenge.</p>
-    <button class="btn" id="again" type="button">Dobara khelo</button><a class="btn" href="index.html" style="text-align:center;text-decoration:none;background:#1d2340">Mission khelo</a>`);
+    <p style="opacity:.8">Ab airport ke andar. Ye nishaan wahan tumhara peechha karenge.</p>
+    <a class="btn" href="index.html#play" style="text-align:center;text-decoration:none">Airport mein ghuso →</a><button class="btn" id="again" type="button" style="background:#1d2340">Dobara khelo</button>`);
+  try{localStorage.setItem('trace_cover',JSON.stringify({given:S.L.given,surname:S.L.surname,city:S.L.city,job:S.L.job.title,purpose:S.L.purpose,hotel:S.L.hotel,days:S.L.days}));}catch(e){}
   c.querySelector('#again').onclick=()=>location.reload();
 }
 // jam
