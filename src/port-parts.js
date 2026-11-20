@@ -120,12 +120,12 @@ async function title(){
     <button class="btn" id="go" type="button">Port mein ghuso</button><a class="btn alt" href="index.html">Safehouse</a>`);
     c.querySelector('#go').onclick=()=>{auInit();AU.ctx&&AU.ctx.resume();closeSheet();res();};});
   await comic('start');startPlatform();}
-function startPlatform(){S.phase='platform';S.area='platform';S.timeLeft=300;buildPlayer(new T.Vector3(-46,0,-28),0);ui(true);locked=false;sfx.horn();
+function startPlatform(){S.phase='platform';S.area='platform';S.timeLeft=300;buildPlayer(new T.Vector3(-46,0,-28),0);ui(true);locked=false;sfx.horn();runStart();
   toast('Neeche-left gole se chalo. Searchlight ki roshni aur guards ki peeli nazar se bacho.','info');}
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 async function board(){}
 function startTrain(){}
-async function jump(){if(S.phase!=='platform'&&S.phase!=='talk')return;S.phase='over';locked=true;banner(null);ui(false);sfx.horn();await comic('jump');await finale(true);}
+async function jump(){if(S.phase!=='platform'&&S.phase!=='talk')return;S.phase='over';locked=true;banner(null);ui(false);sfx.horn();await comic('jump');if(runEnd(true))return;await finale(true);}
 function failMission(why){if(S.phase!=='platform')return;S.phase='over';locked=true;banner(null);sfx.alert();finish(false,null,why);}
 async function caught(g){if(S.phase!=='platform')return;locked=true;S.phase='talk';
   await say(g.name==='Sniffer kutta'?'Port security':g.name,g.name==='Sniffer kutta'?'(kutta bhaunkta hai) Ruko! Haath upar! Naam?':'Ruko! Yahan kya kar rahi ho? Naam?');const ok=await nameQ(g.name);
@@ -133,7 +133,7 @@ async function caught(g){if(S.phase!=='platform')return;locked=true;S.phase='tal
   closeDlg();S.phase='over';ui(false);await comic('caught',g.name==='Sniffer kutta'?'Sniffer kutte':g.name);finish(false,g.name==='Sniffer kutta'?'Sniffer kutte':g.name);}
 async function nameQ(who){await say(who,'Naam kya hai?');const ans=`${L.given} ${L.surname}`;const opts=shuffle([ans,...shuffle(NAMES.map(n=>n[0]+' '+n[1]).filter(x=>x!==ans)).slice(0,2)]);
   const r=await choose(opts.map(o=>({label:o})),{timer:7000});return r===ans;}
-function finish(win,who,why){S.phase='over';locked=true;ui(false);const C=getC();const story=!!(C&&C.active&&C.ch>=4);
+function finish(win,who,why){if(runEnd(win,who,why))return;S.phase='over';locked=true;ui(false);const C=getC();const story=!!(C&&C.active&&C.ch>=4);
   CAREER.missions=(CAREER.missions||0)+1;saveCareer();
   const c=sheet(`<div class="eyebrow">${story?'CHAPTER 4':'LEVEL 4'} · BANDAR KA AKHRI JAHAZ</div><h2>Mission fail</h2><p>${who?esc(who)+' ne pakad liya.':esc(why||'Jahaz chhoot gaya.')}</p>
     <button class="btn" id="again" type="button">${story?'Chapter dobara khelo':'Dobara khelo'}</button><a class="btn alt" href="index.html">Safehouse</a>`);

@@ -4,6 +4,7 @@
 # HTML document with a mobile viewport here. cab.html is already a full document and is copied as is.
 set -e
 cd "$(dirname "$0")/.."
+python3 scripts/sync-run.py
 python3 scripts/assemble-train.py
 python3 scripts/assemble-bus.py
 python3 scripts/assemble-port.py

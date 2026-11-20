@@ -168,7 +168,7 @@ async function title(){
     <button class="btn" id="go" type="button">Adde pe jao</button><a class="btn alt" href="index.html">Safehouse</a>`);
     c.querySelector('#go').onclick=()=>{auInit();AU.ctx&&AU.ctx.resume();closeSheet();res();};});
   await comic('start');startPlatform();}
-function startPlatform(){S.phase='platform';S.area='platform';S.timeLeft=180;buildPlayer(new T.Vector3(0,0,12),Math.PI);ui(true);locked=false;sfx.horn();
+function startPlatform(){S.phase='platform';S.area='platform';S.timeLeft=180;buildPlayer(new T.Vector3(0,0,12),Math.PI);ui(true);locked=false;sfx.horn();runStart();
   toast(`Neeche-left gole se chalo. ${MY_DEST} likhi bus dhoondho.`,'info');}
 async function board(){if(S.phase!=='platform')return;locked=true;S.phase='boarding';sfx.horn();vib(40);ui(false);await sleep(500);trace(`Bus adda: ${MY_DEST} wali bus mein chadhi (CCTV ${S.camsSeen.size} camere)`);startTrain();}
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
@@ -186,7 +186,7 @@ async function caught(g){if(S.phase!=='platform'&&S.phase!=='train')return;const
   closeDlg();S.phase='over';ui(false);await comic('caught',g.name);finish(false,g.name);}
 async function nameQ(who){await say(who,'Naam kya hai?');const ans=`${L.given} ${L.surname}`;const opts=shuffle([ans,...shuffle(NAMES.map(n=>n[0]+' '+n[1]).filter(x=>x!==ans)).slice(0,2)]);
   const r=await choose(opts.map(o=>({label:o})),{timer:7000});return r===ans;}
-function finish(win,who,why){S.phase='over';locked=true;ui(false);const nCam=S.camsSeen.size;let stars=0,reward=0;
+function finish(win,who,why){if(runEnd(win,who,why))return;S.phase='over';locked=true;ui(false);const nCam=S.camsSeen.size;let stars=0,reward=0;
   if(win){stars=1;if(S.alerts===0)stars++;if(S.traces.length<=3&&nCam<=2)stars++;reward=[0,90000,160000,250000][stars];}
   const heatAdd=Math.min(40,S.traces.length*3+S.alerts*8+nCam);const before=CAREER.heat||0;CAREER.heat=Math.min(100,before+heatAdd);CAREER.missions=(CAREER.missions||0)+1;if(win){CAREER.wins=(CAREER.wins||0)+1;CAREER.money+=reward;CAREER.best=Math.max(CAREER.best||0,stars);CAREER.busDone=true;}saveCareer();
   const C=win?storyRecord(3,S.traces,S.photos,S.alerts,'Adda cam','port.html'):getC();const story=!!(C&&C.active);
