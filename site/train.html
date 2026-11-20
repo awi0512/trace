@@ -576,7 +576,7 @@ function finish(win,who,why){S.phase='over';locked=true;ui(false);const nCam=S.c
     <p class="eyebrow">HEAT: ${Math.round(before)} → ${Math.round(CAREER.heat)}</p><div class="heat"><i style="width:${CAREER.heat}%"></i></div>
     ${S.photos.length?`<p class="eyebrow">CCTV NE YE PHOTOS LI</p><div class="gallery">${S.photos.map(p=>`<div class="snap"><img alt="CCTV cam ${p.id}" src="${p.url}"><b>PF4 CAM ${p.id} · ${esc(p.t)}</b></div>`).join('')}</div>`:''}
     <p class="eyebrow">TUMHARA DIGITAL FOOTPRINT</p><ul class="traces">${S.traces.length?S.traces.map(t=>`<li>${esc(t.text)}</li>`).join(''):'<li class="ok">Koi nishaan nahi.</li>'}</ul>
-    <button class="btn" id="again" type="button">Dobara khelo</button><a class="btn alt" href="index.html">Safehouse</a>`);
+    ${win?`<a class="btn" href="bus.html" style="background:#d35400">Agla level: Highway ki Bus →</a>`:''}<button class="btn" id="again" type="button">Dobara khelo</button><a class="btn alt" href="index.html">Safehouse</a>`);
   c.querySelector('#again').onclick=()=>location.reload();}
 
 /* ---------------- per-phase logic ---------------- */
