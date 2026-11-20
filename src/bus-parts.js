@@ -180,7 +180,7 @@ function startTrain(){S.phase='train';S.area='train';S.timeLeft=330;S.trainT=0;S
 function jobDone(){}
 async function jump(){if(S.phase!=='train')return;S.phase='over';locked=true;banner(null);ui(false);await comic('jump');finish(true);}
 function failMission(why){if(S.phase!=='train'&&S.phase!=='platform')return;S.phase='over';locked=true;banner(null);sfx.alert();finish(false,null,why);}
-async function caught(g){if(S.phase!=='platform'&&S.phase!=='train')return;const ph=S.phase;locked=true;S.phase='talk';if(S.seat)standUp();
+async function caught(g){if(runNoArrest(g))return;if(S.phase!=='platform'&&S.phase!=='train')return;const ph=S.phase;locked=true;S.phase='talk';if(S.seat)standUp();
   await say(g.name,'Ruko! Naam batao. ID dikhao.');const ok=await nameQ(g.name);
   if(ok&&S.wanted!==lookKey()&&lookKey()!==S.startLook&&chance(.6)){await say(g.name,'Hmm. Theek hai, jaao.');closeDlg();CAREER.heat=Math.min(100,(CAREER.heat||0)+5);trace(`${g.name} ne roka, naam likha`);G.forEach(o=>{if(o.area===S.area){o.state='patrol';o.sus=20;}});S.phase=ph;locked=false;return;}
   closeDlg();S.phase='over';ui(false);await comic('caught',g.name);finish(false,g.name);}

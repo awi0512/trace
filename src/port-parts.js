@@ -127,7 +127,7 @@ async function board(){}
 function startTrain(){}
 async function jump(){if(S.phase!=='platform'&&S.phase!=='talk')return;S.phase='over';locked=true;banner(null);ui(false);sfx.horn();await comic('jump');if(runEnd(true))return;await finale(true);}
 function failMission(why){if(S.phase!=='platform')return;S.phase='over';locked=true;banner(null);sfx.alert();finish(false,null,why);}
-async function caught(g){if(S.phase!=='platform')return;locked=true;S.phase='talk';
+async function caught(g){if(runNoArrest(g))return;if(S.phase!=='platform')return;locked=true;S.phase='talk';
   await say(g.name==='Sniffer kutta'?'Port security':g.name,g.name==='Sniffer kutta'?'(kutta bhaunkta hai) Ruko! Haath upar! Naam?':'Ruko! Yahan kya kar rahi ho? Naam?');const ok=await nameQ(g.name);
   if(ok&&S.look.outfit==='worker'&&S.wanted!==lookKey()&&chance(.55)){await say('Port security','Hmm, nayi aayi ho? Apni shift pe jao.');closeDlg();trace('Port security ne roka, naam likha');G.forEach(o=>{o.state='patrol';o.sus=20;});S.phase='platform';locked=false;return;}
   closeDlg();S.phase='over';ui(false);await comic('caught',g.name==='Sniffer kutta'?'Sniffer kutte':g.name);finish(false,g.name==='Sniffer kutta'?'Sniffer kutte':g.name);}
