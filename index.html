@@ -222,8 +222,8 @@ const habitNorm={run:60,crowd:90,disguise:3,dart:3,cams:8,flight:2,upi:3};
 function pickCounters(){const h=HUNTER.habits;return Object.keys(habitNorm).map(k=>[k,(h[k]||0)/habitNorm[k]]).filter(x=>x[1]>=1).sort((a,b)=>b[1]-a[1]).slice(0,Math.min(3,1+Math.floor(HUNTER.runs/3))).map(x=>x[0]);}
 function rollMods(leg){const n=leg<=1?0:leg<=3?1:leg<=6?2:3;return shuffle(Object.keys(MODS)).slice(0,n);}
 function nextZones(cur){return shuffle(GROUND.filter(z=>z!==cur)).slice(0,2);}
-function newRun(){const counters=pickCounters();for(const k in WORLD.zones)WORLD.zones[k]=+(WORLD.zones[k]*.75).toFixed(2);wjson(WKEY,WORLD);const z=pick(GROUND);
-  const r={active:true,leg:1,zone:z,mods:[],counters,darts:2+(CAREER.dartUp||0),score:0,cash:0,legs:[],lh:{run:0,crowd:0,disguise:0,dart:0,cams:0,flight:0},started:Date.now()};saveRun(r);return r;}
+function newRun(){const counters=pickCounters();for(const k in WORLD.zones)WORLD.zones[k]=+(WORLD.zones[k]*.75).toFixed(2);wjson(WKEY,WORLD);const z=pick(GROUND);const B=getBoard();const raid=B.strength>=100;
+  const r={active:true,leg:1,zone:z,mods:raid?['patrol','alert']:[],raid,counters,darts:2+(CAREER.dartUp||0),score:0,cash:0,legs:[],lh:{run:0,crowd:0,disguise:0,dart:0,cams:0,flight:0},started:Date.now()};saveRun(r);return r;}
 function startNewRun(){const r=newRun();location.href=ZONES[r.zone].url;if(ZONE_ID==='airport'&&r.zone==='airport')location.reload();}
 /* ---- in-zone ---- */
 const RT={on:false,lock:false,body:false,exit:null,lastLook:null,lookT:0,traitorAt:0,blackT:0,dark:false,saved:null};
@@ -240,6 +240,7 @@ function runStart(){if(!RUN)return;RT.on=true;RT.lastLook=lookKey();
   const hl=WORLD.news.filter(n=>n.zone===ZONE_ID).slice(-1)[0];if(sec>=1||hl)setTimeout(()=>{if(RT.on)newsFlash(hl?hl.text:null,sec);},1800);
   if(RUN.lh.flight===undefined)RUN.lh.flight=0;
   if(!(typeof TUT!=='undefined'&&TUT)){dartUI();gunUI();phoneUI();}
+  if(RUN.raid&&RUN.leg===1)setTimeout(()=>{if(!RT.on)return;sfx.alert();vib([200,100,200]);banner('RAID! Rana\'s task force is here. Survive this zone to wipe his case board.',true);setTimeout(()=>{if(RT.on)banner(null);},7000);},900);
   const lines=[`ESCAPE · LEG ${RUN.leg} · ${ZONES[ZONE_ID].name.toUpperCase()}`];
   mods.forEach(k=>lines.push('⚠ '+MODS[k].name+': '+MODS[k].d));
   (RUN.counters||[]).forEach(k=>lines.push('RANA: "Wo '+HABITS[k].t+'." → '+HABITS[k].c));
@@ -435,6 +436,29 @@ function say2(text,rate=1,pitch=1){if(!VOX.ok||typeof AU!=='undefined'&&!AU.on)r
   try{speechSynthesis.cancel();const deva=DEVA[text];const u=new SpeechSynthesisUtterance(deva||text);const v=deva?(VOX.hi||VOX.en):(VOX.en||VOX.hi);if(v){u.voice=v;u.lang=v.lang;}else u.lang=deva?'hi-IN':'en-IN';
     u.rate=rate;u.pitch=pitch;u.volume=1;speechSynthesis.speak(u);VOX.last=now;}catch(e){}}
 function voiceFor(t){const m=/^(\w+)[^:]*:\s*"([^"]+)"/.exec(t)||/^(Announcement):\s*(.+)$/.exec(t);if(!m)return;const st=VSTYLE[m[1]];if(!st)return;say2(m[2].replace(/[“”]/g,''),st[0],st[1]);}
+/* ---- Rana's case board: every leg pins evidence; at 100% the next run opens with a raid ---- */
+const BKEY='trace_board';
+const getBoard=()=>Object.assign({strength:0,photos:[],notes:[],cleared:0},rjson(BKEY)||{});
+function addEvidence(win){const B=getBoard();const ph=(S.photos||[])[0];if(ph&&ph.url){B.photos=B.photos.concat([{url:ph.url,zone:ZONE_ID}]).slice(-6);}
+  const notes=(S.traces||[]).slice(-2).map(t=>({zone:ZONE_ID,text:t.text}));B.notes=B.notes.concat(notes).slice(-10);
+  const add=(S.traces||[]).length*2+S.alerts*4+W.kills*12+W.shots*2+(win?0:8)+((RUN.lh.upi||0)?3:0)+(ph?4:0);
+  B.strength=Math.min(100,Math.round(B.strength+add));wjson(BKEY,B);}
+function boardHTML(){const B=getBoard();const items=[];
+  B.photos.forEach((p,i)=>items.push(`<div class="cb-item" style="--r:${(i%2?3:-4)}deg"><img alt="CCTV still" src="${p.url}"><b>${esc(ZONES[p.zone]?ZONES[p.zone].name:p.zone)} CCTV</b></div>`));
+  B.notes.forEach((n,i)=>items.push(`<div class="cb-note" style="--r:${(i%3-1)*3}deg">${esc(n.text)}<i>${esc(ZONES[n.zone]?ZONES[n.zone].name:'')}</i></div>`));
+  const H=getHunter();const top=Object.keys(habitNorm).map(k=>[k,(H.habits[k]||0)/habitNorm[k]]).filter(x=>x[1]>=.6).sort((a,b)=>b[1]-a[1]).slice(0,3);
+  top.forEach(([k])=>items.push(`<div class="cb-note hab">"Wo ${esc(HABITS[k].t)}."<i>pattern</i></div>`));
+  return `<style>.cb{position:relative;background:#8a5a3a;background-image:radial-gradient(rgba(0,0,0,.15) 1px,transparent 1px);background-size:6px 6px;border:6px solid #4a2f1c;padding:14px;display:flex;flex-wrap:wrap;gap:12px;justify-content:center;min-height:200px}
+    .cb-item{background:#f1ece1;padding:6px 6px 4px;width:120px;rotate:var(--r);box-shadow:0 4px 0 rgba(0,0,0,.4);position:relative}.cb-item img{width:100%;display:block;filter:grayscale(1) contrast(1.2)}.cb-item b{font:700 10px monospace;color:#111}
+    .cb-note{background:#f5e6a8;color:#111;width:130px;padding:8px;font:600 12px/1.25 'Special Elite',monospace;rotate:var(--r);box-shadow:0 4px 0 rgba(0,0,0,.4);position:relative}.cb-note i{display:block;margin-top:4px;font:700 10px sans-serif;color:#8a1f1f}.cb-note.hab{background:#ffd0c8}
+    .cb-item::before,.cb-note::before{content:'';position:absolute;top:-6px;left:50%;width:12px;height:12px;border-radius:50%;background:#e0242b;box-shadow:0 2px 0 #600;translate:-50% 0}
+    .cb svg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}</style>
+    <div class="eyebrow">CASE #TR-${String(41+(B.cleared||0)).padStart(3,'0')} · INSPECTOR RANA</div><h2>Case board</h2>
+    <p>Case strength: <b style="color:${B.strength>=100?'var(--red)':B.strength>=60?'#ffb627':'var(--good)'}">${B.strength}%</b>${B.strength>=100?' · <b style="color:var(--red)">RAID READY: your next run opens against Rana\'s task force. Survive the first zone to wipe the board.</b>':' · at 100% Rana leads a raid.'}</p>
+    <div class="heat"><i style="width:${B.strength}%"></i></div>
+    <div class="cb">${items.length?items.join(''):'<p style="color:#f1ece1">Board is empty. Rana has nothing on you… yet.</p>'}<svg viewBox="0 0 100 100" preserveAspectRatio="none">${items.length>1?Array.from({length:Math.min(items.length,8)},(_,i)=>`<line x1="${10+(i*37)%80}" y1="${8+(i*23)%80}" x2="${15+(i*53)%75}" y2="${12+(i*41)%78}" stroke="#d11" stroke-width=".5"/>`).join(''):''}</svg></div>
+    ${B.cleared?`<p class="eyebrow">Cases you have beaten: ${B.cleared}</p>`:''}`;}
+function showBoard(back){const c=sheet(boardHTML()+`<button class="btn" id="bk" type="button">Back</button>`);c.querySelector('#bk').onclick=back;}
 /* ---- news ---- */
 function newsFlash(text,sec){const d=document.createElement('div');d.style.cssText='position:fixed;left:16px;right:16px;top:calc(180px + env(safe-area-inset-top));z-index:31;background:#f1ece1;color:#111;border:3px solid #111;box-shadow:5px 5px 0 #111;padding:10px 12px;font-family:var(--type,monospace);transform:rotate(-1.2deg);pointer-events:none;max-width:460px;margin:0 auto';
   d.innerHTML=`<div style="font:800 11px 'Space Grotesk',sans-serif;letter-spacing:2px;border-bottom:2px solid #111;padding-bottom:3px;margin-bottom:6px;display:flex;justify-content:space-between"><span>BREAKING NEWS</span><span style="color:#e0242b">SECURITY: ${SEC_NAMES[sec].toUpperCase()}</span></div>${text?`<div style="font:700 17px/1.2 'Space Grotesk',sans-serif">${esc(text)}</div>`:''}${sec?`<div style="font-size:12px;margin-top:5px">Guards here are sharper${sec>=2?' and faster':''}${sec>=3?'. Police shoot at 2★':''}.</div>`:''}`;
@@ -456,10 +480,12 @@ const EXITS={flight:{title:'Boarding! ✈',text:'Clean exit from the airport: wa
 /* ---- end of a zone: next leg or run over ---- */
 function runEnd(win,who,why){if(!RT.on)return false;RT.on=false;S.phase='over';locked=true;if(dartBtn){dartBtn.sw.remove();dartBtn.remove();}if(PH.ring)endCall('missed');['#wantedHud','#phoneBtn','#phone','#callBar'].forEach(q=>{const e=document.querySelector(q);if(e)e.remove();});RUN.wanted=Math.max(0,W.stars-1);RUN.kills=(RUN.kills||0)+W.kills;
   ['#hud','#pads','#joy','#map'].forEach(s=>{const e=$(s);if(e)e.hidden=true;});banner(null);
-  const nCam=S.camsSeen?S.camsSeen.size:0;RUN.lh.cams+=nCam;recordWorld(win);
+  const nCam=S.camsSeen?S.camsSeen.size:0;RUN.lh.cams+=nCam;recordWorld(win);addEvidence(win);
   const legScore=win?Math.round(100+RUN.leg*40+(S.alerts?0:60)+Math.max(0,S.timeLeft)|0):0;const cash=win?40000+RUN.leg*15000:0;
   RUN.legs.push({zone:ZONE_ID,win,traces:S.traces.length,alerts:S.alerts});
   const EX=RT.exit&&EXITS[RT.exit];if(EX&&win){RUN.cash+=cash*(EX.cash-1);if(RT.exit==='flight'){RUN.lh.flight++;W.stars=0;RUN.wanted=0;RUN.darts++;}if(RT.exit==='station'||RT.exit==='city'||RT.exit==='ship'||RT.exit==='landed'){W.stars=0;RUN.wanted=0;}}
+  if(win&&RUN.raid&&RUN.leg===1){RUN.raid=false;const B=getBoard();B.strength=0;B.photos=[];B.notes=[];B.cleared=(B.cleared||0)+1;wjson(BKEY,B);RUN.cash+=500000;
+    WORLD.news.push({zone:ZONE_ID,text:'Inspector Rana ka case gira: saboot nakaafi, suspect faraar',at:Date.now()});wjson(WKEY,WORLD);toast('RAID SURVIVED! Rana\'s case board is wiped. +₹5,00,000','good');}
   if(win){RUN.score+=legScore;RUN.cash+=cash;const opts=(EX?shuffle(EX.next).slice(0,2):nextZones(ZONE_ID)).map(z=>({z,mods:rollMods(RUN.leg+1)}));RUN.offer=opts;saveRun(RUN);
     const c=sheet(`<div class="eyebrow">ESCAPE · LEG ${RUN.leg} CLEARED</div><h2>${EX?EX.title:'Escaped!'}</h2>${EX?`<p>${EX.text}</p>`:''}
       <div class="stats"><div class="stat"><span>Score</span><b>${RUN.score}</b></div><div class="stat"><span>Run cash</span><b>${inr(RUN.cash)}</b></div><div class="stat"><span>Darts / Ammo</span><b>${RUN.darts} / ${RUN.ammo}</b></div></div>${RUN.wanted?`<p class="eyebrow" style="color:#ffd166">WANTED ${'★'.repeat(RUN.wanted)} carries into the next zone</p>`:''}
@@ -494,8 +520,9 @@ function runOver(banked){const r=RUN;r.active=false;saveRun(r);
     <p class="eyebrow">BEST RUN: ${HUNTER.best} LEGS · RANA HAS SEEN ${HUNTER.runs} RUNS</p>
     ${learned?`<div class="dossier"><h3>Inspector Rana's notes</h3><p style="margin:6px 0 0;color:#1b1b1b">"Wo ${HABITS[learned].t}. Agli baar taiyaar rahunga."</p><span class="stampx">NOTED</span></div>`:''}
     <ul class="traces">${r.legs.map((l,i)=>`<li class="${l.win?'ok':''}">Leg ${i+1} · ${ZONES[l.zone].name} · ${l.win?'cleared':'failed'} · ${l.traces} traces</li>`).join('')}</ul>
+    <button class="btn" id="board" type="button" style="background:#8a5a3a">Rana's case board · ${getBoard().strength}%</button>
     <button class="btn" id="again" type="button" style="background:#e0242b">New run</button><a class="btn alt" href="index.html">Safehouse</a>`);
-  c.querySelector('#again').onclick=startNewRun;}
+  c.querySelector('#again').onclick=startNewRun;c.querySelector('#board').onclick=()=>showBoard(()=>runOver(banked));}
 window.__run={PH,incoming:()=>incoming(),endCall:a=>endCall(a),togglePhone:()=>togglePhone(),CT,spawnContact:()=>{RUN.leg=Math.max(RUN.leg,2);const o=Math.random;Math.random=()=>0;try{spawnContact();}finally{Math.random=o;}},W,WORLD,newsFlash:(t,s)=>newsFlash(t,s),gateOpen:()=>gateOpen(),switchWpn:()=>switchWpn(),shootGun:()=>shootGun(),addStars:(n)=>addStars(n,'test'),runEnd:(...a)=>runEnd(...a),shootDart:()=>shootDart(),get RUN(){return RUN;},HUNT,RT};
 /*RUN-END*/
 const CAREER=loadCareer();
@@ -1133,12 +1160,14 @@ function hub(){$('#loading').hidden=true;const h=Math.round(CAREER.heat);const H
     ${(()=>{const n=getWorld().news.slice(-1)[0];return n?`<div style="background:#f1ece1;color:#111;border:3px solid #111;padding:8px 10px;transform:rotate(-1deg);box-shadow:4px 4px 0 #111"><div style="font:800 10px 'Space Grotesk',sans-serif;letter-spacing:2px">LATEST NEWS</div><div style="font:700 15px/1.25 'Space Grotesk',sans-serif">${esc(n.text)}</div></div>`:'';})()}
     <button class="btn" id="play" type="button" style="background:#e0242b;font-size:26px;padding:18px">${act?`CONTINUE · LEG ${r.leg}`:'PLAY'}</button>
     ${act?`<button class="btn alt" id="newrun" type="button">Abandon run, start new</button>`:''}
+    <button class="btn" id="cboard" type="button" style="background:#8a5a3a">Rana's case board · ${getBoard().strength}%</button>
     <p class="eyebrow" style="margin-top:6px">UPGRADES · HEAT ${h}/100</p>
     ${up<3?`<button class="btn alt" id="dartup" type="button" ${CAREER.money<DART_COST()?'disabled':''}>+1 dart every run · ${inr(DART_COST())}</button>`:''}
     <button class="btn alt" id="pp" type="button" ${CAREER.money<100000||h<10?'disabled':''}>New passport (heat −50) · ${inr(100000)}</button>
     <p style="opacity:.7;font-size:13px">Phone: left stick to move, drag right side for camera, RUN to sprint. Computer: WASD, Shift, mouse drag, E to act, F to fire, Q to switch.</p>`);
   c.querySelector('#play').onclick=()=>{auInit();if(act){location.href=ZONES[r.zone].url;if(r.zone==='airport')location.reload();}else startNewRun();};
   if(c.querySelector('#newrun'))c.querySelector('#newrun').onclick=()=>{auInit();startNewRun();};
+  c.querySelector('#cboard').onclick=()=>showBoard(hub);
   if(c.querySelector('#dartup'))c.querySelector('#dartup').onclick=()=>{CAREER.money-=DART_COST();CAREER.dartUp=(CAREER.dartUp||0)+1;saveCareer();hub();};
   c.querySelector('#pp').onclick=()=>{CAREER.money-=100000;CAREER.heat=Math.max(0,CAREER.heat-50);saveCareer();hub();};}
 const DART_COST=()=>150000*((CAREER.dartUp||0)+1);
