@@ -46,7 +46,7 @@ i = js.index('function buildPlayer(pos,yaw){'); j = js.index('\nconst input=', i
 js = js[:i] + """function buildPlayer(pos,yaw){if(P)scene.remove(P.g);let o;
   if(S.look.outfit==='worker')o={body:0xf28b0f,legs:0x2c3150,cap:0xf5d000,capPeak:0xd9b000};
   else o={body:0xd9c3a0,coat:true,scarf:0xe0242b,legs:0x2c2c36,hat:0x2b2b35};
-  Object.assign(o,{skin:0xc68b5e,hair:0x1a1a1a,longHair:true,shadow:true,bag:0x2b2f3a});P=chibi(o);P.pos.copy(pos);P.yaw=yaw;P.g.rotation.y=yaw;
+  Object.assign(o,{skin:0xc68b5e,hair:0x1a1a1a,longHair:true,shadow:true,bag:0x2b2f3a});charLook(o);P=chibi(o);P.pos.copy(pos);P.yaw=yaw;P.g.rotation.y=yaw;
   const ring=new T.Mesh(new T.RingGeometry(.5,.62,28),new T.MeshBasicMaterial({color:0xf5b82e,transparent:true,opacity:.85,toneMapped:false,depthWrite:false}));ring.rotation.x=-Math.PI/2;ring.position.y=.04;P.g.add(ring);P.ring=ring;}""" + js[j:]
 (root / 'src' / 'port.js').write_text(js, encoding='utf-8')
 idx = (root / 'index.html').read_text(encoding='utf-8')
