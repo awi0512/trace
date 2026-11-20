@@ -260,7 +260,7 @@ async function fareCheck(){if(locked)return;locked=true;S.phase='talk';
 //@@NPCUPD
 function updNPC(dt,t){for(const n of NPC){if(!(n.inArea===S.area||(S.area==='train'&&n.inArea==='dhaba'&&n.g.visible)))continue;let mv=false;
   if(n.beh==='wander'){if(!n.target){n.wait-=dt;if(n.wait<=0)n.target=[clamp(n.pos.x+rnd(-12,12),-38,38),rnd(-3,10)];}if(n.target){if(stepTo(n,n.target[0],n.target[1],dt,n.walk)){n.target=null;n.wait=rnd(1,5);}else mv=true;}
-    if(n.isChai&&Math.hypot(n.pos.x-P.pos.x,n.pos.z-P.pos.z)<3&&!n.said){n.said=true;toast('Chaiwala: "Chaai, garam samosa!"','info');setTimeout(()=>n.said=false,15000);}}
+    if(n.isChai&&Math.hypot(n.pos.x-P.pos.x,n.pos.z-P.pos.z)<6&&!n.said){n.said=true;toast('Chaiwala: "Chaai, garam samosa!"','info');setTimeout(()=>n.said=false,15000);}}
   anim(n,dt,mv?n.speed:0,t);}}
 //@@MINIMAP
 const mc=$('#map'),mg=mc.getContext('2d');const mx=x=>(x+44)/88*236,mz=z=>(z+14)/28*168;
