@@ -117,15 +117,16 @@ body.talking #pads,body.talking #joy{visibility:hidden}
 #splash .tapgo{margin-top:20px;font-family:var(--display);font-weight:700;letter-spacing:.32em;font-size:14px;animation:blink 1.4s infinite}
 #lbls .lbl{position:fixed;z-index:14;transform:translate(-50%,-100%);font-family:var(--sfx);font-size:18px;letter-spacing:.08em;padding:2px 10px;background:var(--noir);color:var(--paper);border-left:4px solid var(--accent);pointer-events:none;white-space:nowrap}
 #lbls .lbl.cam{border-left-color:var(--red)} #lbls .lbl.tgt{border-left-color:var(--good)}
-#banner{position:fixed;z-index:6;left:50%;translate:-50% 0;top:calc(env(safe-area-inset-top,0px) + 92px);width:min(92vw,440px);background:var(--accent);color:#1d1a10;font-family:var(--display);font-weight:700;font-size:16px;line-height:1.3;padding:10px 14px;box-shadow:5px 5px 0 var(--noir);text-align:center;pointer-events:none;animation:pop .3s}
+#banner{position:fixed;z-index:6;left:50%;translate:-50% 0;top:calc(env(safe-area-inset-top,0px) + 92px);width:auto;max-width:min(88vw,400px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;background:var(--accent);color:#1d1a10;font-family:var(--display);font-weight:700;font-size:15px;line-height:1.3;padding:7px 14px;border-radius:999px;box-shadow:5px 5px 0 var(--noir);text-align:center;pointer-events:none;animation:pop .3s}
 #banner.danger{background:var(--red);color:#fff;animation:bpulse 1s infinite}
 @keyframes bpulse{50%{scale:1.04}}
 body.banner #obj,body.banner .tools{visibility:hidden}
-body.banner #snaps{top:calc(env(safe-area-inset-top,0px) + 186px)}
+body.banner #snaps{top:calc(env(safe-area-inset-top,0px) + 136px)}
 #flash{position:fixed;inset:0;z-index:7;background:#fff;opacity:0;pointer-events:none}
 #snaps{position:fixed;z-index:5;right:max(14px,env(safe-area-inset-right,0px));top:calc(env(safe-area-inset-top,0px) + 104px);display:flex;flex-direction:column;gap:6px;pointer-events:none}
 .snap{background:#f4f1ea;padding:4px 4px 10px;box-shadow:0 4px 12px rgba(0,0,0,.45);transform:rotate(var(--r,3deg))}
-.snap img{display:block;width:84px;height:63px;object-fit:cover}
+.snap img{display:block;width:62px;height:46px;object-fit:cover}
+#snaps .count{align-self:flex-end;background:var(--noir);color:var(--paper);font-family:var(--display);font-weight:700;font-size:12px;padding:2px 8px;border-radius:999px}
 .snap b{display:block;font-family:var(--type);font-weight:400;font-size:9px;color:#333;margin-top:3px}
 .snap.big{position:fixed;left:50%;top:40%;z-index:9;transform:translate(-50%,-50%) rotate(-3deg);animation:pop .35s cubic-bezier(.2,1.5,.4,1)}
 .snap.big img{width:min(72vw,300px);height:auto}.snap.big b{font-size:13px}
@@ -138,7 +139,7 @@ details{font-size:13px}summary{cursor:pointer;color:#7a4b1a}
 <canvas id="gl"></canvas>
 <div id="vig"></div>
 <div id="hud" hidden>
-  <div class="row"><div class="chip" id="clock">10:00</div><div class="chip calm" id="state">Shaant</div><div class="chip" id="look">Look: Coat</div></div>
+  <div class="row"><div class="chip" id="clock">10:00</div><div class="chip calm" id="state">Shaant</div></div>
   <div id="obj"><b>Objective</b><span id="objText"></span></div>
   <div class="tools"><button class="tb" id="bDossier" type="button">Mission</button><button class="tb" id="bLegend" type="button">Kahani (3)</button><button class="tb" id="bMute" type="button">Mute</button></div>
 </div>
@@ -203,7 +204,8 @@ let M;const TUT=!CAREER.tutDone;
 function newMission(){
   const n=pick(NAMES);let type=pick(Object.keys(OBJ));
   let comps=shuffle(Object.keys(COMPS)).slice(0,chance(.5)?2:1);if(TUT){type='steal';comps=[];}
-  M={type,comps,L:{given:n[0],surname:n[1],city:pick(CITIES),job:pick(JOBS),purpose:pick(PURPOSES),hotel:pick(HOTELS)},
+  let carried=null;if(TUT){try{carried=JSON.parse(localStorage.getItem('trace_cover')||'null');}catch(e){}}
+  M={type,comps,L:carried&&carried.given?{given:carried.given,surname:carried.surname,city:carried.city,job:carried.job,purpose:carried.purpose,hotel:carried.hotel}:{given:n[0],surname:n[1],city:pick(CITIES),job:pick(JOBS),purpose:pick(PURPOSES),hotel:pick(HOTELS)},
      time:comps.includes('alert')?360:600,code:TUT?'OP-001':'OP-'+ri(100,999)};
 }
 
@@ -456,9 +458,9 @@ function buildPlayer(){const pos=P?P.pos.clone():new T.Vector3(-1.5,0,15.5),yaw=
   if(S.look.hat){if(S.look.outfit==='coat')o.hat=0x2b2b35;else{o.cap=L.capColor;o.capPeak=0x222222;}}
   o.glasses=S.look.glasses;P=chibi(o);P.pos.copy(pos);P.yaw=yaw;P.g.rotation.y=yaw;
   const ring=new T.Mesh(new T.RingGeometry(.5,.62,28),new T.MeshBasicMaterial({color:0xf5b82e,transparent:true,opacity:.85,toneMapped:false,depthWrite:false}));ring.rotation.x=-Math.PI/2;ring.position.y=.04;P.g.add(ring);
-  $('#look').textContent='Look: '+({coat:'Trench coat',tourist:'Tourist',staff:'Ground staff'})[S.look.outfit]+(S.look.glasses?' + chashma':'');}
+  if(S.phase==='play')toast('Look: '+({coat:'Trench coat',tourist:'Tourist',staff:'Ground staff'})[S.look.outfit]+(S.look.glasses?' + chashma':''),'info');}
 const input={x:0,y:0,run:false,keys:{}};
-let camYaw=Math.PI,camPitch=.62,camDist=10,locked=true;
+let camYaw=Math.PI,camPitch=.74,camDist=12,locked=true;
 function updPlayer(dt,t){
   let ix=input.x,iy=input.y;if(input.keys.KeyW||input.keys.ArrowUp)iy+=1;if(input.keys.KeyS||input.keys.ArrowDown)iy-=1;if(input.keys.KeyA||input.keys.ArrowLeft)ix-=1;if(input.keys.KeyD||input.keys.ArrowRight)ix+=1;
   const mag=Math.min(1,Math.hypot(ix,iy));
@@ -566,7 +568,7 @@ function polaroid(url,id,ts){const f=$('#flash');f.style.transition='none';f.sty
   sfx.shutter();vib(35);slowT=Math.max(slowT,.3);
   const el=document.createElement('div');el.className='snap big';el.style.setProperty('--r',(snapN%2?4:-3)+'deg');el.innerHTML=`<img alt="CCTV cam ${id} ki photo" src="${url}"><b>CAM ${id} · ${ts}</b>`;document.body.appendChild(el);
   if(snapN===0)setTimeout(()=>toast('CCTV ne tumhari photo le li. Har photo ek nishaan hai.','info'),500);snapN++;
-  setTimeout(()=>{el.classList.remove('big');const box=$('#snaps');box.prepend(el);while(box.children.length>3)box.lastChild.remove();},1150);}
+  setTimeout(()=>{el.classList.remove('big');const box=$('#snaps');box.innerHTML='';box.appendChild(el);if(S.photos.length>1){const c=document.createElement('div');c.className='count';c.textContent='CCTV '+S.photos.length;box.appendChild(c);}},1150);}
 let slowT=0;function slowmo(){slowT=.7;$('#vig').style.opacity=1;setTimeout(()=>$('#vig').style.opacity=0,900);}
 
 /* ===================== dialogue / comic / sheets ===================== */
@@ -788,7 +790,7 @@ const LBL=[{t:'GUARD',c:'',p:()=>[G[0].pos.x,2.7,G[0].pos.z]},{t:'GUARD',c:'',p:
 function drawLabels(){const box=$('#lbls');if(!box.children.length)box.innerHTML=LBL.map(l=>`<div class="lbl ${l.c}">${l.t}</div>`).join('');
   [...box.children].forEach((el,i)=>{const p=LBL[i].p();tv.set(p[0],p[1],p[2]).project(camera);const on=tv.z<1&&Math.abs(tv.x)<.92&&Math.abs(tv.y)<.9;el.style.display=on?'':'none';if(on){el.style.left=((tv.x+1)/2*innerWidth)+'px';el.style.top=((1-tv.y)/2*innerHeight)+'px';}});}
 function splash(){$('#loading').hidden=true;S.phase='splash';const sp=$('#splash');sp.hidden=false;
-  sp.addEventListener('pointerdown',async()=>{sp.hidden=true;$('#lbls').innerHTML='';auInit();AU.ctx&&AU.ctx.resume();S.phase='intro';await comic('cold');CAREER.seenIntro=true;saveCareer();start();},{once:true});}
+  sp.addEventListener('pointerdown',async()=>{sp.hidden=true;$('#lbls').innerHTML='';auInit();AU.ctx&&AU.ctx.resume();S.phase='intro';await comic('cold');CAREER.seenIntro=true;saveCareer();location.href='cab.html';},{once:true});}
 
 /* ===================== thriller tutorial (first mission only) ===================== */
 let TS=null;
@@ -797,18 +799,18 @@ function tutorialStart(){TS={step:0,t:0,crowdT:0,cluster:[6.5,12]};
   for(let i=0;i<5;i++){const a=i*1.2566;const c=npc(paxOpts(),TS.cluster[0]+Math.cos(a)*1.15,TS.cluster[1]+Math.sin(a)*1.15,'HALL');c.beh='idle';c.special=true;c.yaw=a+Math.PI;c.g.rotation.y=c.yaw;}
   const g=G[0];g.pos.set(-8.5,0,13.5);g.yaw=Math.atan2(P.pos.x-g.pos.x,P.pos.z-g.pos.z);g.g.rotation.y=g.yaw;g.state='patrol';g.sus=0;S.wardrobe.add('tourist');}
 function updTutorial(dt){if(!TS||S.phase!=='play')return;TS.t+=dt;const g=G[0];
-  if(TS.step===0&&TS.t>2.2){TS.step=1;g.scripted=true;sfx.q();vib(60);banner('Guard ko tum pe shak ho raha hai! Hari line pe chalo, logon ke jhund mein ghus jao',true);}
+  if(TS.step===0&&TS.t>2.2){TS.step=1;g.scripted=true;sfx.q();vib(60);banner('Guard ko shak hai! Bheed mein chhupo →',true);}
   else if(TS.step===1){const inC=Math.hypot(P.pos.x-TS.cluster[0],P.pos.z-TS.cluster[1])<2.1||playerFlags().crowd>=3;TS.crowdT=inC?TS.crowdT+dt:0;
     if(TS.crowdT>1.4&&g.sus<15){TS.step=2;g.scripted=false;g.state='search';g.searchT=30;g.lastSeen=[19,19];g.sus=40;g.path=null;S.wanted=lookKey();sfx.ok();toast('Bheed ne chhupa liya.','good');
-      banner('Wo ab bhi tumhara trench coat dhoondh raha hai. Washroom mein kapde badlo (bag mein spare jacket hai)');}}
-  else if(TS.step===2&&lookKey()!==S.startLook){TS.step=3;banner('Shabaash. Ab asli kaam: laptop Security office mein hai. Staff wale ke peeche STAFF ONLY darwaze se ghuso');CAREER.tutDone=true;saveCareer();}
-  else if(TS.step===3&&region(P.pos.x,P.pos.z)==='STAFF'){TS.step=4;banner('Staff guard ki peeli nazar se bacho. Locker mein staff jacket hai. Laptop tak hari line.');setTimeout(()=>{if(TS&&TS.step===4)banner(null);},7000);}}
+      banner('Washroom mein look badlo →');}}
+  else if(TS.step===2&&lookKey()!==S.startLook){TS.step=3;banner('Staff ke peeche STAFF ONLY mein ghuso →');CAREER.tutDone=true;saveCareer();}
+  else if(TS.step===3&&region(P.pos.x,P.pos.z)==='STAFF'){TS.step=4;banner('Peeli nazar se bacho. Laptop tak hari line →');setTimeout(()=>{if(TS&&TS.step===4)banner(null);},7000);}}
 
 /* ===================== camera & loop ===================== */
 function updCam(dt){const tx=P.pos.x,tz=P.pos.z,ty=1.1;let dist=camDist;
   for(;dist>2.5;dist-=.5){const cx=tx-Math.sin(camYaw)*dist*Math.cos(camPitch),cz=tz-Math.cos(camYaw)*dist*Math.cos(camPitch);if(cx>-35.6&&cx<35.6&&cz>-25.6&&cz<23.6&&!losBlocked(tx,tz,cx,cz))break;}
   const pos=new T.Vector3(tx-Math.sin(camYaw)*dist*Math.cos(camPitch),ty+dist*Math.sin(camPitch),tz-Math.cos(camYaw)*dist*Math.cos(camPitch));
-  pos.y=Math.min(pos.y,7.4);camera.position.lerp(pos,Math.min(1,dt*7));camera.lookAt(tx,ty,tz);sun.position.set(tx+10,30,tz+14);sun.target.position.set(tx,0,tz);}
+  pos.y=Math.min(pos.y,7.6);camera.position.lerp(pos,Math.min(1,dt*7));camera.lookAt(tx,ty,tz);sun.position.set(tx+10,30,tz+14);sun.target.position.set(tx,0,tz);}
 let clockT=0,boardT=0,frames=0,annT=0;
 const clk=new T.Clock();
 function frame(){
