@@ -2,7 +2,7 @@
 /* ===================== ESCAPE MODE: endless run + Inspector Rana (shared by every zone page) =====================
    Edit src/run.js only: scripts/sync-run.py copies this block into index.html and src/train.js. */
 const RKEY='trace_run',HKEY='trace_hunter';
-const ZONES={airport:{url:'index.html#bhaag',name:'Airport',sub:'Terminal, security, boarding gates',col:'#e0242b'},train:{url:'train.html',name:'Night Train',sub:'Platform 4 + moving sleeper train',col:'#1f4f9a'},
+const ZONES={airport:{url:'index.html#bhaag',name:'Airport',sub:'Terminal, security, boarding gates',col:'#e0242b'},train:{url:'train.html',name:'Night Train',sub:'3 platforms, overbridge, sleeper train',col:'#1f4f9a'},
   bus:{url:'bus.html',name:'Highway Bus',sub:'Bus stand, dhaba, police checkpost',col:'#d35400'},port:{url:'port.html',name:'Docks',sub:'Containers, searchlights, cargo ship',col:'#2fa37a'},
   plane:{url:'flight.html',name:'Flight',sub:'Cabin, air marshal, immigration',col:'#6d4bd6',special:true}};
 const GROUND=Object.keys(ZONES).filter(z=>!ZONES[z].special);

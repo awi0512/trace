@@ -38,7 +38,7 @@ function storyRecord(ch,traces,photos,alerts,label,next){const C=getC();if(!C||!
 /* ===================== ESCAPE MODE: endless run + Inspector Rana (shared by every zone page) =====================
    Edit src/run.js only: scripts/sync-run.py copies this block into index.html and src/train.js. */
 const RKEY='trace_run',HKEY='trace_hunter';
-const ZONES={airport:{url:'index.html#bhaag',name:'Airport',sub:'Terminal, security, boarding gates',col:'#e0242b'},train:{url:'train.html',name:'Night Train',sub:'Platform 4 + moving sleeper train',col:'#1f4f9a'},
+const ZONES={airport:{url:'index.html#bhaag',name:'Airport',sub:'Terminal, security, boarding gates',col:'#e0242b'},train:{url:'train.html',name:'Night Train',sub:'3 platforms, overbridge, sleeper train',col:'#1f4f9a'},
   bus:{url:'bus.html',name:'Highway Bus',sub:'Bus stand, dhaba, police checkpost',col:'#d35400'},port:{url:'port.html',name:'Docks',sub:'Containers, searchlights, cargo ship',col:'#2fa37a'},
   plane:{url:'flight.html',name:'Flight',sub:'Cabin, air marshal, immigration',col:'#6d4bd6',special:true}};
 const GROUND=Object.keys(ZONES).filter(z=>!ZONES[z].special);
@@ -264,6 +264,7 @@ const NAMES=[['Ananya','Sethi'],['Kavya','Arora'],['Riya','Joshi'],['Meera','Kha
 const CITIES=['Indore','Pune','Lucknow','Jaipur','Surat','Nagpur','Bhopal'];
 const JOBS=['Sales manager','Software tester','Purchase executive','Logistics coordinator','Fashion buyer'];
 const L=(()=>{try{const c=JSON.parse(localStorage.getItem('trace_cover')||'null');if(c&&c.given)return {given:c.given,surname:c.surname,city:c.city,job:c.job};}catch(e){}const n=pick(NAMES);return {given:n[0],surname:n[1],city:pick(CITIES),job:pick(JOBS)};})();
+const TRACKS={A:6.5,B:19};let TRK=chance(.5)?'A':'B';const PFN=()=>TRK==='A'?4:6;const DOOR_Z=()=>TRACKS[TRK]-2.4;let trainG=null,decoyG=null;
 const JOB='papers';
 const S={phase:'title',t:0,timeLeft:300,traces:[],camsSeen:new Set(),alerts:0,wanted:null,photos:[],look:{outfit:'coat',hat:true},startLook:'coath',
   hold:null,done:false,escape:0,seat:null,dogsOut:false,horn1:false,horn2:false};
@@ -315,10 +316,10 @@ const COL=[];
 function box(x0,x1,z0,z1,h,mat,o={}){const xa=Math.min(x0,x1),xb=Math.max(x0,x1),za=Math.min(z0,z1),zb=Math.max(z0,z1);
   const me=mesh(rb(xb-xa,h,zb-za,Math.min(.12,(xb-xa)/2,(zb-za)/2)),mat,(xa+xb)/2,(o.y0||0)+h/2,(za+zb)/2,o.parent||scene,{cast:o.cast||false});
   let c=null;if(o.collide!==false){c={x0:xa,x1:xb,z0:za,z1:zb,on:true,tall:o.tall??h>1.6};COL.push(c);}return {me,c};}
-function losBlocked(ax,az,bx,bz){const dx=bx-ax,dz=bz-az;for(const c of COL){if(!c.on||!c.tall)continue;let t0=0,t1=1;
+function losBlocked(ax,az,bx,bz){const dx=bx-ax,dz=bz-az;for(const c of COL){if(!c.on||!c.tall)continue;if((S.area==='bridge')!==(c.area==='bridge'))continue;let t0=0,t1=1;
   for(const [p,d,lo,hi] of [[ax,dx,c.x0,c.x1],[az,dz,c.z0,c.z1]]){if(Math.abs(d)<1e-6){if(p<lo||p>hi){t0=2;break;}}else{let a=(lo-p)/d,b=(hi-p)/d;if(a>b)[a,b]=[b,a];t0=Math.max(t0,a);t1=Math.min(t1,b);if(t0>t1)break;}}
   if(t0<=t1&&t0<1&&t1>0)return true;}return false;}
-function collide(p,r=.3){for(const c of COL){if(!c.on)continue;const cx=clamp(p.x,c.x0,c.x1),cz=clamp(p.z,c.z0,c.z1);const dx=p.x-cx,dz=p.z-cz,d2=dx*dx+dz*dz;
+function collide(p,r=.3){for(const c of COL){if(!c.on)continue;if((S.area==='bridge')!==(c.area==='bridge'))continue;const cx=clamp(p.x,c.x0,c.x1),cz=clamp(p.z,c.z0,c.z1);const dx=p.x-cx,dz=p.z-cz,d2=dx*dx+dz*dz;
   if(d2<r*r){if(d2>1e-8){const d=Math.sqrt(d2);p.x=cx+dx/d*r;p.z=cz+dz/d*r;}else{const l=p.x-c.x0,rr=c.x1-p.x,f=p.z-c.z0,b=c.z1-p.z,mn=Math.min(l,rr,f,b);if(mn===l)p.x=c.x0-r;else if(mn===rr)p.x=c.x1+r;else if(mn===f)p.z=c.z0-r;else p.z=c.z1+r;}}}}
 
 /* ---------------- chibi characters ---------------- */
@@ -375,8 +376,9 @@ function goAlert(g,why){if(g.state==='alert')return;g.state='alert';g.sus=100;g.
 function flags(){let crowd=0;for(const n of NPC){if(!n.inArea||n.inArea!==S.area)continue;if(Math.hypot(n.pos.x-P.pos.x,n.pos.z-P.pos.z)<2)crowd++;}
   return {running:P.running,action:!!(S.hold&&S.hold.illegal),wanted:S.wanted===lookKey(),crowd,seated:S.seat&&S.seat.kind==='sit',lying:S.seat&&S.seat.kind==='lie'};}
 function updGuards(dt,t){const F=flags();worst='calm';
-  for(const g of G){if(isDown(g))continue;if(g.area!==S.area||!g.g.visible){g.cone.piv.visible=false;g.icon.sp.visible=false;continue;}g.cone.piv.visible=true;
-    const d=locked&&!S.hold?0:canSee(g,P.pos.x,P.pos.z);let gain=0,why='';
+  const station=a=>a==='platform'||a==='bridge';
+  for(const g of G){if(isDown(g))continue;if(g.area!==S.area&&!(station(g.area)&&station(S.area))||!g.g.visible){g.cone.piv.visible=false;g.icon.sp.visible=false;continue;}g.cone.piv.visible=true;
+    const d=locked&&!S.hold||g.area!==S.area?0:canSee(g,P.pos.x,P.pos.z);let gain=0,why='';
     if(d){const near=clamp(1.25-d/g.range,.35,1.25);
       if(F.running){gain+=30*HUNT.run;why='bhaag rahi thi';}if(F.action){gain+=85;why='kuch kar rahi thi';}if(F.wanted){gain+=40;why='wahi hulia';}
       if(g.knows&&lookKey()===S.startLook){gain+=26;why='photo se match';}
@@ -388,7 +390,7 @@ function updGuards(dt,t){const F=flags();worst='calm';
     if(g.state==='sus'&&g.sus<25)g.state='patrol';
     let mv=0;
     if(g.state==='alert'){if(d){g.lastSeen=[P.pos.x,P.pos.z];g.lost=0;}else g.lost+=dt;
-      if(g.lost>5){g.state='search';g.searchT=8;g.sus=70;}else{stepTo(g,g.lastSeen[0],g.lastSeen[1],dt,3.7);mv=g.speed;if(Math.hypot(P.pos.x-g.pos.x,P.pos.z-g.pos.z)<1.05&&!locked)caught(g);}}
+      if(g.lost>5){g.state='search';g.searchT=8;g.sus=70;}else{stepTo(g,g.lastSeen[0],g.lastSeen[1],dt,3.7);mv=g.speed;if(Math.hypot(P.pos.x-g.pos.x,P.pos.z-g.pos.z)<1.05&&!locked&&g.area===S.area)caught(g);}}
     else if(g.state==='search'){g.searchT-=dt;if(g.lastSeen&&Math.hypot(g.lastSeen[0]-g.pos.x,g.lastSeen[1]-g.pos.z)>1){stepTo(g,g.lastSeen[0],g.lastSeen[1],dt,1.9);mv=g.speed;}else faceTo(g,g.yaw+dt*1.6,1,1);if(g.searchT<=0){g.state='patrol';g.sus=Math.min(g.sus,30);}}
     else if(g.state==='sus'){if(d)faceTo(g,Math.atan2(P.pos.x-g.pos.x,P.pos.z-g.pos.z),dt,5);}
     else{if(g.route.length===1){if(Math.hypot(g.route[0][0]-g.pos.x,g.route[0][1]-g.pos.z)>.3){stepTo(g,g.route[0][0],g.route[0][1],dt,g.walk);mv=g.speed;}else{g.yaw+=angDiff(g.staticYaw+Math.sin(t*.45)*.6,g.yaw)*Math.min(1,dt*2);g.g.rotation.y=g.yaw;}}
@@ -488,7 +490,7 @@ function buildPlayer(pos,yaw){if(P)scene.remove(P.g);let o;
 const input={x:0,y:0,run:false,keys:{}};let locked=true;const tv=new T.Vector3();
 function updPlayer(dt,t){if(S.seat){anim(P,dt,0,t);return;}
   let ix=input.x,iy=input.y;if(input.keys.KeyW||input.keys.ArrowUp)iy+=1;if(input.keys.KeyS||input.keys.ArrowDown)iy-=1;if(input.keys.KeyA||input.keys.ArrowLeft)ix-=1;if(input.keys.KeyD||input.keys.ArrowRight)ix+=1;
-  const mag=Math.min(1,Math.hypot(ix,iy));if(locked||S.hold||mag<.08){P.speed=0;P.running=false;anim(P,dt,0,t);return;}
+  const mag=Math.min(1,Math.hypot(ix,iy));if(locked||S.hold||S.climbing||mag<.08){P.speed=0;P.running=false;anim(P,dt,S.climbing?2.2:0,t);return;}
   const run=input.run||input.keys.ShiftLeft||input.keys.ShiftRight;const spd=(run?4.6:2.3)*mag*(S.area==='train'?.85:1);
   camera.getWorldDirection(tv);const cy=Math.atan2(tv.x,tv.z);const fx=Math.sin(cy),fz=Math.cos(cy),rx=-Math.cos(cy),rz=Math.sin(cy);let vx=fx*iy+rx*ix,vz=fz*iy+rz*ix;const l=Math.hypot(vx,vz);vx/=l;vz/=l;
   P.pos.x+=vx*spd*dt;P.pos.z+=vz*spd*dt;collide(P.pos);
@@ -682,16 +684,17 @@ function drawMap(){mg.clearRect(0,0,236,168);mg.fillStyle='rgba(120,140,170,.45)
 function updCam(dt){const tx=P.pos.x,tz=P.pos.z;let pos,look;
   if(S.area==='train'){const port=innerHeight>innerWidth;pos=new T.Vector3(tx,port?7.6:6.2,TZ+(port?9.6:8.2));look=new T.Vector3(tx,.7,TZ-.5);const sh=S.escape>0?.01:.03;pos.y+=Math.sin(clk.elapsedTime*13)*sh;pos.x+=Math.sin(clk.elapsedTime*7)*sh;}
   else{const port=innerHeight>innerWidth;pos=new T.Vector3(tx+4,port?13:10.5,tz-(port?12.5:11));look=new T.Vector3(tx-1,0,tz+1.5);}
+  if(S.area!=='train'&&P.pos.y>1){pos.y+=P.pos.y;look.y+=P.pos.y;}
   camera.position.lerp(pos,Math.min(1,dt*6));camera.lookAt(look);sun.position.set(tx+8,22,tz+10);sun.target.position.set(tx,0,tz);}
 const clk=new T.Clock();let frames=0;
 function frame(){let dt=Math.min(window.__dtcap||.05,clk.getDelta());if(slowT>0){slowT-=dt;dt*=.3;}const t=clk.elapsedTime;
   if(S.phase==='platform'||S.phase==='train'||S.phase==='talk'){
-    if(S.phase==='platform'||S.phase==='train'){updPlayer(dt,t);updHold(dt);runTick(dt);if(S.area==='platform')platformTick(dt,t);else trainTick(dt,t);}
+    if(S.phase==='platform'||S.phase==='train'){updPlayer(dt,t);updHold(dt);runTick(dt);if(S.area!=='train')platformTick(dt,t);else trainTick(dt,t);}
     updNPC(dt,t);updGuards(dt,t);updCams(dt);updAct();
     $('#clock').textContent=clockS();$('#clock').classList.toggle('warn',S.timeLeft<30);
     const st=$('#state');st.className='chip '+worst;st.textContent=worst==='alert'?'ALERT!':worst==='sus'?'Suspicious':'Calm';
     if(AU.tens)AU.tens.gain.setTargetAtTime(worst==='alert'?.05:worst==='sus'?.02:0,AU.ctx.currentTime,.4);
-    if(S.area==='platform'&&(frames++)%3===0)drawMap();
+    if(S.area!=='train'&&(frames++)%3===0)drawMap();
   }
   if(P)updCam(dt);else{camera.position.set(-40+Math.sin(t*.1)*10,12,16);camera.lookAt(0,0,0);}
   composer.render();requestAnimationFrame(frame);}

@@ -37,7 +37,7 @@ function storyRecord(ch,traces,photos,alerts,label,next){const C=getC();if(!C||!
 /* ===================== ESCAPE MODE: endless run + Inspector Rana (shared by every zone page) =====================
    Edit src/run.js only: scripts/sync-run.py copies this block into index.html and src/train.js. */
 const RKEY='trace_run',HKEY='trace_hunter';
-const ZONES={airport:{url:'index.html#bhaag',name:'Airport',sub:'Terminal, security, boarding gates',col:'#e0242b'},train:{url:'train.html',name:'Night Train',sub:'Platform 4 + moving sleeper train',col:'#1f4f9a'},
+const ZONES={airport:{url:'index.html#bhaag',name:'Airport',sub:'Terminal, security, boarding gates',col:'#e0242b'},train:{url:'train.html',name:'Night Train',sub:'3 platforms, overbridge, sleeper train',col:'#1f4f9a'},
   bus:{url:'bus.html',name:'Highway Bus',sub:'Bus stand, dhaba, police checkpost',col:'#d35400'},port:{url:'port.html',name:'Docks',sub:'Containers, searchlights, cargo ship',col:'#2fa37a'},
   plane:{url:'flight.html',name:'Flight',sub:'Cabin, air marshal, immigration',col:'#6d4bd6',special:true}};
 const GROUND=Object.keys(ZONES).filter(z=>!ZONES[z].special);
@@ -263,6 +263,7 @@ const NAMES=[['Ananya','Sethi'],['Kavya','Arora'],['Riya','Joshi'],['Meera','Kha
 const CITIES=['Indore','Pune','Lucknow','Jaipur','Surat','Nagpur','Bhopal'];
 const JOBS=['Sales manager','Software tester','Purchase executive','Logistics coordinator','Fashion buyer'];
 const L=(()=>{try{const c=JSON.parse(localStorage.getItem('trace_cover')||'null');if(c&&c.given)return {given:c.given,surname:c.surname,city:c.city,job:c.job};}catch(e){}const n=pick(NAMES);return {given:n[0],surname:n[1],city:pick(CITIES),job:pick(JOBS)};})();
+const TRACKS={A:6.5,B:19};let TRK=chance(.5)?'A':'B';const PFN=()=>TRK==='A'?4:6;const DOOR_Z=()=>TRACKS[TRK]-2.4;let trainG=null,decoyG=null;
 const MY_COACH=ri(2,4);           // S2..S4
 const MY_BERTH=ri(9,52);
 const JOB=pick(['drop','grab']);
@@ -316,10 +317,10 @@ const COL=[];
 function box(x0,x1,z0,z1,h,mat,o={}){const xa=Math.min(x0,x1),xb=Math.max(x0,x1),za=Math.min(z0,z1),zb=Math.max(z0,z1);
   const me=mesh(rb(xb-xa,h,zb-za,Math.min(.12,(xb-xa)/2,(zb-za)/2)),mat,(xa+xb)/2,(o.y0||0)+h/2,(za+zb)/2,o.parent||scene,{cast:o.cast||false});
   let c=null;if(o.collide!==false){c={x0:xa,x1:xb,z0:za,z1:zb,on:true,tall:o.tall??h>1.6};COL.push(c);}return {me,c};}
-function losBlocked(ax,az,bx,bz){const dx=bx-ax,dz=bz-az;for(const c of COL){if(!c.on||!c.tall)continue;let t0=0,t1=1;
+function losBlocked(ax,az,bx,bz){const dx=bx-ax,dz=bz-az;for(const c of COL){if(!c.on||!c.tall)continue;if((S.area==='bridge')!==(c.area==='bridge'))continue;let t0=0,t1=1;
   for(const [p,d,lo,hi] of [[ax,dx,c.x0,c.x1],[az,dz,c.z0,c.z1]]){if(Math.abs(d)<1e-6){if(p<lo||p>hi){t0=2;break;}}else{let a=(lo-p)/d,b=(hi-p)/d;if(a>b)[a,b]=[b,a];t0=Math.max(t0,a);t1=Math.min(t1,b);if(t0>t1)break;}}
   if(t0<=t1&&t0<1&&t1>0)return true;}return false;}
-function collide(p,r=.3){for(const c of COL){if(!c.on)continue;const cx=clamp(p.x,c.x0,c.x1),cz=clamp(p.z,c.z0,c.z1);const dx=p.x-cx,dz=p.z-cz,d2=dx*dx+dz*dz;
+function collide(p,r=.3){for(const c of COL){if(!c.on)continue;if((S.area==='bridge')!==(c.area==='bridge'))continue;const cx=clamp(p.x,c.x0,c.x1),cz=clamp(p.z,c.z0,c.z1);const dx=p.x-cx,dz=p.z-cz,d2=dx*dx+dz*dz;
   if(d2<r*r){if(d2>1e-8){const d=Math.sqrt(d2);p.x=cx+dx/d*r;p.z=cz+dz/d*r;}else{const l=p.x-c.x0,rr=c.x1-p.x,f=p.z-c.z0,b=c.z1-p.z,mn=Math.min(l,rr,f,b);if(mn===l)p.x=c.x0-r;else if(mn===rr)p.x=c.x1+r;else if(mn===f)p.z=c.z0-r;else p.z=c.z1+r;}}}}
 
 /* ---------------- chibi characters ---------------- */
@@ -376,8 +377,9 @@ function goAlert(g,why){if(g.state==='alert')return;g.state='alert';g.sus=100;g.
 function flags(){let crowd=0;for(const n of NPC){if(!n.inArea||n.inArea!==S.area)continue;if(Math.hypot(n.pos.x-P.pos.x,n.pos.z-P.pos.z)<2)crowd++;}
   return {running:P.running,action:!!(S.hold&&S.hold.illegal),wanted:S.wanted===lookKey(),crowd,seated:S.seat&&S.seat.kind==='sit',lying:S.seat&&S.seat.kind==='lie'};}
 function updGuards(dt,t){const F=flags();worst='calm';
-  for(const g of G){if(isDown(g))continue;if(g.area!==S.area||!g.g.visible){g.cone.piv.visible=false;g.icon.sp.visible=false;continue;}g.cone.piv.visible=true;
-    const d=locked&&!S.hold?0:canSee(g,P.pos.x,P.pos.z);let gain=0,why='';
+  const station=a=>a==='platform'||a==='bridge';
+  for(const g of G){if(isDown(g))continue;if(g.area!==S.area&&!(station(g.area)&&station(S.area))||!g.g.visible){g.cone.piv.visible=false;g.icon.sp.visible=false;continue;}g.cone.piv.visible=true;
+    const d=locked&&!S.hold||g.area!==S.area?0:canSee(g,P.pos.x,P.pos.z);let gain=0,why='';
     if(d){const near=clamp(1.25-d/g.range,.35,1.25);
       if(F.running){gain+=30*HUNT.run;why='bhaag rahi thi';}if(F.action){gain+=85;why='kuch kar rahi thi';}if(F.wanted){gain+=40;why='wahi hulia';}
       if(g.knows&&lookKey()===S.startLook){gain+=26;why='photo se match';}
@@ -389,7 +391,7 @@ function updGuards(dt,t){const F=flags();worst='calm';
     if(g.state==='sus'&&g.sus<25)g.state='patrol';
     let mv=0;
     if(g.state==='alert'){if(d){g.lastSeen=[P.pos.x,P.pos.z];g.lost=0;}else g.lost+=dt;
-      if(g.lost>5){g.state='search';g.searchT=8;g.sus=70;}else{stepTo(g,g.lastSeen[0],g.lastSeen[1],dt,3.7);mv=g.speed;if(Math.hypot(P.pos.x-g.pos.x,P.pos.z-g.pos.z)<1.05&&!locked)caught(g);}}
+      if(g.lost>5){g.state='search';g.searchT=8;g.sus=70;}else{stepTo(g,g.lastSeen[0],g.lastSeen[1],dt,3.7);mv=g.speed;if(Math.hypot(P.pos.x-g.pos.x,P.pos.z-g.pos.z)<1.05&&!locked&&g.area===S.area)caught(g);}}
     else if(g.state==='search'){g.searchT-=dt;if(g.lastSeen&&Math.hypot(g.lastSeen[0]-g.pos.x,g.lastSeen[1]-g.pos.z)>1){stepTo(g,g.lastSeen[0],g.lastSeen[1],dt,1.9);mv=g.speed;}else faceTo(g,g.yaw+dt*1.6,1,1);if(g.searchT<=0){g.state='patrol';g.sus=Math.min(g.sus,30);}}
     else if(g.state==='sus'){if(d)faceTo(g,Math.atan2(P.pos.x-g.pos.x,P.pos.z-g.pos.z),dt,5);}
     else{if(g.route.length===1){if(Math.hypot(g.route[0][0]-g.pos.x,g.route[0][1]-g.pos.z)>.3){stepTo(g,g.route[0][0],g.route[0][1],dt,g.walk);mv=g.speed;}else{g.yaw+=angDiff(g.staticYaw+Math.sin(t*.45)*.6,g.yaw)*Math.min(1,dt*2);g.g.rotation.y=g.yaw;}}
@@ -415,8 +417,8 @@ function buildPlatform(){
   const fl=mesh(new T.PlaneGeometry(130,10.2),m(0xffffff,{map:floorTex,roughness:.8}),0,0,-.1);fl.rotation.x=-Math.PI/2;
   mesh(new T.BoxGeometry(130,.12,.35),m(0xf5d000),0,.01,4.55);                                   // yellow edge line
   mesh(new T.BoxGeometry(130,1.2,.4),m(0x6b6358),0,-.6,4.9);                                    // platform edge wall
-  const bal=mesh(new T.PlaneGeometry(140,12),m(0x4a443c,{roughness:1}),0,-1.2,11);bal.rotation.x=-Math.PI/2;
-  for(const z of [5.85,7.15,11.85,13.15])mesh(new T.BoxGeometry(140,.12,.12),m(0x9aa3ad,{metalness:.8,roughness:.3}),0,-1.05,z);
+  for(const [z,w] of [[6.9,3.8],[19,4.4]]){const bal=mesh(new T.PlaneGeometry(140,w),m(0x4a443c,{roughness:1}),0,-1.2,z);bal.rotation.x=-Math.PI/2;}
+  for(const z of [5.85,7.15,18.35,19.65])mesh(new T.BoxGeometry(140,.12,.12),m(0x9aa3ad,{metalness:.8,roughness:.3}),0,-1.05,z);
   COL.push({x0:-66,x1:66,z0:4.75,z1:5.2,on:true,tall:false});                                    // can't fall onto the tracks
   box(-66,66,-5.2,-6,7,m(0xc9a978),{tall:true});                                                // station building wall
   for(let x=-60;x<=60;x+=6){mesh(new T.BoxGeometry(3.2,2.2,.1),m(0x5b3a28),x,3.2,-5.15);mesh(new T.BoxGeometry(3,2,.12),glow(0xffcf87,.7),x,3.2,-5.12);}  // arched windows glow
@@ -426,13 +428,16 @@ function buildPlatform(){
   {const g=new T.BoxGeometry(4,.08,.4),n=11*2,im=new T.InstancedMesh(g,glow(0xfff1d0,1.6),n);const o=new T.Object3D();let k=0;for(let x=-54;x<=54;x+=11)for(const z of [-1,2]){o.position.set(x,5.9,z);o.updateMatrix();im.setMatrixAt(k++,o.matrix);}im.count=k;scene.add(im);}
   sign('MUMBAI TERMINUS · मुंबई टर्मिनस',-30,5.0,-5.1,0,12,1.3);sign('PLATFORM 4 · प्लेटफॉर्म 4',22,5.0,-5.1,0,9,1.3);
   // coach position indicators (green LED) hanging over the edge
+  let _c0=scene.children.length;
   for(let k=1;k<=5;k++){const x=COACH_X(k);for(const dx of [-8.5,8.5]){mesh(new T.BoxGeometry(1.4,.6,.12),m(0x111111),x+dx,4.4,3.6);mesh(new T.PlaneGeometry(1.2,.45),new T.MeshBasicMaterial({map:signTex('S'+k,'#06140a','#3dff7a',256,96,"700 70px monospace"),toneMapped:false}),x+dx,4.4,3.67);}}
+  const _led=scene.children.slice(_c0);
   // departure board
-  const db=mesh(new T.PlaneGeometry(6,1.6),new T.MeshBasicMaterial({map:canvasTex(768,205,(g,w,h)=>{g.fillStyle='#07090c';g.fillRect(0,0,w,h);g.font="700 44px monospace";g.fillStyle='#ffb627';g.fillText('12951 RAAT EXP',20,60);g.fillText('DELHI   23:40',20,120);g.fillStyle='#ff5a3a';g.fillText('PF 4',520,60);g.fillStyle='#6fe0a0';g.fillText('RIGHT TIME',380,180);}),toneMapped:false}),-52,4.2,-5.0);
+  const db=mesh(new T.PlaneGeometry(6,1.6),new T.MeshBasicMaterial({map:canvasTex(768,205,(g,w,h)=>{g.fillStyle='#07090c';g.fillRect(0,0,w,h);g.font="700 44px monospace";g.fillStyle='#ffb627';g.fillText('12951 RAAT EXP',20,60);g.fillText('DELHI   23:40',20,120);g.fillStyle='#ff5a3a';g.fillText('PF '+PFN(),520,60);g.fillStyle='#6fe0a0';g.fillText('RIGHT TIME',380,180);}),toneMapped:false}),-52,4.2,-5.0);
   // stalls
   const stall=(x,name,col)=>{box(x-2,x+2,-4.6,-3.2,1.1,m(col),{cast:true});mesh(new T.BoxGeometry(4.4,.1,1.8),m(0xe0242b),x,2.4,-3.9);for(const dx of [-2,2])mesh(new T.CylinderGeometry(.05,.05,1.3,6),m(0x555555),x+dx,1.75,-3.2);sign(name,x,2.8,-3.0,0,4,.6,'#1d2340','#ffffff');mesh(new T.SphereGeometry(.15,10,8),glow(0xffe0a0,2.4),x,2.2,-3.6);};
   stall(-40,'CHAI · VADA PAV',0x2f7a46);stall(-6,'BOOK STALL',0x7a4bb0);stall(16,'SHAWL · TOPI',0xb5652a);
   for(const x of [-48,-20,4,30,46]){box(x-1.6,x+1.6,-4.9,-4.3,.45,m(0x6d7ff0),{tall:false});}
+  _c0=scene.children.length;
   // the train (exterior): engine + 5 sleeper coaches, doors on the platform side
   const bodyM=m(0x1f4f9a,{roughness:.5}),stripe=m(0xf1ece1),winM=m(0x0d1422);
   mesh(rb(16,4,3.4,.5),m(0xc8302b,{roughness:.45}),58,1.2,6.5,scene,{cast:true});mesh(new T.BoxGeometry(.1,1,2),glow(0xfff3d0,3),66.05,2.2,6.5);
@@ -440,6 +445,36 @@ function buildPlatform(){
     for(let i=0;i<8;i++){const wx=x-7+i*2;const lit=chance(.55);mesh(new T.PlaneGeometry(1.1,.75),lit?glow(0xffd28a,1):winM,wx,1.95,4.88).rotation.y=Math.PI;}
     for(const dx of [-9.1,9.1]){mesh(new T.PlaneGeometry(.9,2.1),m(0x0b0f18),x+dx,.95,4.88).rotation.y=Math.PI;}
     sign('S'+k,x,2.75,4.87,Math.PI,1.2,.5,'#f1ece1','#1f4f9a');}
+  const moved=_led.concat(scene.children.slice(_c0));trainG=new T.Group();scene.add(trainG);for(const o of moved)trainG.add(o);trainG.position.z=TRACKS[TRK]-6.5;
+  buildStation();
+}
+/* island platform 5/6, platform 7, a parked local train, and the foot overbridge with stairs + lifts on every platform */
+const PFZ=[-1,12.8,25.5],BRX=-20,BRY=7.2;
+function buildStation(){
+  const pf=(z0,z1)=>{const f=mesh(new T.PlaneGeometry(130,z1-z0),m(0xbdb3a2,{roughness:.85}),0,0,(z0+z1)/2);f.rotation.x=-Math.PI/2;mesh(new T.BoxGeometry(130,1.2,z1-z0),m(0x6b6358),0,-.62,(z0+z1)/2);};
+  pf(8.8,16.8);pf(21.2,30);
+  for(const z of [9.05,16.55,21.45])mesh(new T.BoxGeometry(130,.12,.3),m(0xf5d000),0,.01,z);
+  COL.push({x0:-66,x1:66,z0:8.6,z1:9.15,on:true,tall:false,area:'platform'},{x0:-66,x1:66,z0:16.45,z1:17,on:true,tall:false,area:'platform'},{x0:-66,x1:66,z0:21,z1:21.55,on:true,tall:false,area:'platform'});
+  box(-66,66,30,30.6,6,m(0xc9a978),{tall:true});box(-66,-64,9,30,4,m(0xc9a978));box(64,66,9,30,4,m(0xc9a978));
+  sign('PLATFORM 5 · 6',30,3.6,12.8,0,6,1);sign('PLATFORM 7',30,3.6,29.6,0,5,1);
+  for(const z of [12.8,25.5])for(let x=-50;x<=50;x+=20){mesh(new T.CylinderGeometry(.1,.12,4,8),m(0x2f5d4a),x,2,z);mesh(new T.SphereGeometry(.3,8,6),glow(0xffcf87,2),x,4.1,z);}
+  for(const x of [-44,0,36])for(const z of [12.8,27.5]){box(x-1.6,x+1.6,z-.3,z+.3,.45,m(0x6d7ff0),{tall:false});}
+  // parked local train on the other track
+  decoyG=new T.Group();scene.add(decoyG);for(let k=0;k<4;k++){const x=30-k*21;mesh(rb(20,3.7,3.2,.35),m(0x7a1f2a,{roughness:.5}),x,1.05,0,decoyG,{cast:true});mesh(new T.BoxGeometry(20.02,.18,3.22),m(0xf5d000),x,1.55,0,decoyG);for(let i=0;i<8;i++)mesh(new T.PlaneGeometry(1.1,.75),m(0x0d1422),x-7+i*2,1.95,-1.62,decoyG).rotation.y=Math.PI;}
+  mesh(new T.PlaneGeometry(3.6,.6),new T.MeshBasicMaterial({map:signTex('LOCAL · KALYAN','#111','#ffb627',512,90,"700 60px monospace"),toneMapped:false}),20,3.1,-1.63,decoyG).rotation.y=Math.PI;
+  decoyG.position.z=TRACKS[TRK==='A'?'B':'A'];
+  // overbridge
+  const deckM=m(0x8a8f99,{roughness:.7}),railM=m(0x2f5d4a);
+  mesh(new T.BoxGeometry(4.4,.3,33),deckM,BRX,BRY-.15,13,scene,{cast:true});
+  for(const dx of [-2.2,2.2]){mesh(new T.BoxGeometry(.12,1.1,33),railM,BRX+dx,BRY+.55,13);}
+  for(const z of [-3,4.5,18,29])for(const dx of [-2,2])box(BRX+dx-.2,BRX+dx+.2,z-.2,z+.2,BRY,railM,{tall:false,collide:false});
+  sign('FOOT OVERBRIDGE',BRX,BRY+1.6,-3.4,0,4,.6,'#1d2340','#fff');
+  COL.push({x0:BRX-2.5,x1:BRX-2.1,z0:-4,z1:30,on:true,tall:false,area:'bridge'},{x0:BRX+2.1,x1:BRX+2.5,z0:-4,z1:30,on:true,tall:false,area:'bridge'},{x0:BRX-3,x1:BRX+3,z0:-3.8,z1:-3.3,on:true,tall:false,area:'bridge'},{x0:BRX-3,x1:BRX+3,z0:29.3,z1:29.8,on:true,tall:false,area:'bridge'});
+  // stairs (west of the bridge) and a lift shaft (east of it) on each platform
+  for(const z of PFZ){for(let i=0;i<14;i++){const h=(i+1)*BRY/14;mesh(new T.BoxGeometry(.64,h,2),m(0xa79e8e),BRX-2.2-(14-i)*.64+.32,h/2,z);}
+    COL.push({x0:BRX-11.4,x1:BRX-2.2,z0:z-1.05,z1:z+1.05,on:true,tall:false,area:'platform'});
+    box(BRX+3.6,BRX+5.6,z-1,z+1,BRY+1.2,new T.MeshStandardMaterial({color:0x9ad1ff,transparent:true,opacity:.4,roughness:.1}),{tall:true});
+    sign('LIFT',BRX+4.6,BRY+1.6,z+1.02,0,1.4,.5,'#2fe39a','#111');}
 }
 let platformGuards=[],coachDoorGuard=null;
 function setupPlatform(){
@@ -451,7 +486,12 @@ function setupPlatform(){
   const chai=npc({body:0xf1ece1,legs:0x5a5240,skin:0x8f5d3e,hair:0x111111,kettle:true,mustache:true},-30,1,'platform');chai.isChai=true;chai.walk=.9;
   platformGuards.push(guard({route:[[-50,1],[40,1]],area:'platform',knows:true,name:'RPF jawan (photo)',look:{band:true}}));
   platformGuards.push(guard({route:[[30,-1.5],[-30,-1.5]],area:'platform'}));
-  coachDoorGuard=guard({route:[[COACH_X(MY_COACH)+9.1,3.6]],yaw:Math.PI,range:7,area:'platform',name:'RPF hawaldar'});coachDoorGuard.pos.set(60,0,-1);coachDoorGuard.g.visible=false;
+  platformGuards.push(guard({route:[[-50,12.4],[44,12.4]],area:'platform',name:'RPF jawan (PF 5/6)'}));
+  platformGuards.push(guard({route:[[BRX,-2],[BRX,28]],area:'bridge',y:BRY,name:'RPF (bridge)',walk:.9}));
+  for(let i=0;i<14;i++){const c=npc(paxOpts(),rnd(-55,50),rnd(10,15.6),'platform');c.zr=[10,15.6];}
+  for(let i=0;i<8;i++){const c=npc(paxOpts(),rnd(-55,50),rnd(22.4,28.6),'platform');c.zr=[22.4,28.6];}
+  for(let i=0;i<5;i++){const c=npc(paxOpts(),BRX+rnd(-1,1),rnd(0,27),'bridge');c.pos.y=BRY;c.zr=[-2,28];}
+  coachDoorGuard=guard({route:[[COACH_X(MY_COACH)+9.1,DOOR_Z()-.5]],yaw:Math.PI,range:7,area:'platform',name:'RPF hawaldar'});coachDoorGuard.pos.set(60,0,-1);coachDoorGuard.g.visible=false;
 }
 // platform CCTV
 const CAMS=[];
@@ -525,7 +565,7 @@ function buildPlayer(pos,yaw){if(P)scene.remove(P.g);const o=S.look.outfit==='sh
 const input={x:0,y:0,run:false,keys:{}};let locked=true;const tv=new T.Vector3();
 function updPlayer(dt,t){if(S.seat){anim(P,dt,0,t);return;}
   let ix=input.x,iy=input.y;if(input.keys.KeyW||input.keys.ArrowUp)iy+=1;if(input.keys.KeyS||input.keys.ArrowDown)iy-=1;if(input.keys.KeyA||input.keys.ArrowLeft)ix-=1;if(input.keys.KeyD||input.keys.ArrowRight)ix+=1;
-  const mag=Math.min(1,Math.hypot(ix,iy));if(locked||S.hold||mag<.08){P.speed=0;P.running=false;anim(P,dt,0,t);return;}
+  const mag=Math.min(1,Math.hypot(ix,iy));if(locked||S.hold||S.climbing||mag<.08){P.speed=0;P.running=false;anim(P,dt,S.climbing?2.2:0,t);return;}
   const run=input.run||input.keys.ShiftLeft||input.keys.ShiftRight;const spd=(run?4.6:2.3)*mag*(S.area==='train'?.85:1);
   camera.getWorldDirection(tv);const cy=Math.atan2(tv.x,tv.z);const fx=Math.sin(cy),fz=Math.cos(cy),rx=-Math.cos(cy),rz=Math.sin(cy);let vx=fx*iy+rx*ix,vz=fz*iy+rz*ix;const l=Math.hypot(vx,vz);vx/=l;vz/=l;
   P.pos.x+=vx*spd*dt;P.pos.z+=vz*spd*dt;collide(P.pos);
@@ -596,9 +636,19 @@ function updHold(dt){const h=S.hold;if(!h)return;h.t+=dt;$('#prog').classList.to
 inter({area:'platform',label:'Shawl + topi kharido · ₹500',r:2.4,on:()=>S.look.outfit!=='shawl',pos:()=>[16,-2.6],run:async()=>{locked=true;await say('Dukaandaar','Thand hai madam, shawl le lo! Topi free mein.');
   const r=await choose([{label:'Le lo',tag:'₹500 cash',sub:'Look badal jaayega (trench coat chhupa)',value:1},{label:'Nahi chahiye',value:0}]);closeDlg();
   if(r){CAREER.money-=500;S.look={outfit:'shawl',hat:true};buildPlayer(P.pos.clone(),P.yaw);if(S.wanted&&S.wanted!==lookKey()){S.wanted=null;G.forEach(g=>{if(g.state!=='alert'){g.sus=Math.min(g.sus,15);g.state='patrol';}});}sfx.ok();toast('Naya look: shawl + topi. Photo wale RPF ko ab mushkil hogi.','good');}locked=false;}});
-for(const dx of [-9.1,9.1])inter({area:'platform',label:`Coach S${MY_COACH} mein chadho`,r:1.7,pos:()=>[COACH_X(MY_COACH)+dx,4.1],run:async()=>board(COACH_X(MY_COACH)+dx)});
-for(let k=1;k<=5;k++)if(k!==MY_COACH)for(const dx of [-9.1,9.1])inter({area:'platform',label:'Ye tumhara coach nahi',r:1.3,pos:()=>[COACH_X(k)+dx,4.1],run:async()=>toast(`Tumhara ticket coach S${MY_COACH} ka hai. Indicator board dekho.`,'info')});
+for(const dx of [-9.1,9.1])inter({area:'platform',label:`Coach S${MY_COACH} mein chadho`,r:1.7,on:()=>!S.trainAway,pos:()=>[COACH_X(MY_COACH)+dx,DOOR_Z()],run:async()=>board(COACH_X(MY_COACH)+dx)});
+for(let k=1;k<=5;k++)if(k!==MY_COACH)for(const dx of [-9.1,9.1])inter({area:'platform',label:'Ye tumhara coach nahi',r:1.3,on:()=>!S.trainAway,pos:()=>[COACH_X(k)+dx,DOOR_Z()],run:async()=>toast(`Tumhara ticket coach S${MY_COACH} ka hai. Indicator board dekho.`,'info')});
 function inter(o){INTER.push(o);}
+/* ---- overbridge: stairs are quick but in full view, the lift is slow but hidden ---- */
+const PFNAME=['Platform 4','Platform 5/6','Platform 7'];
+function travel(pts,secs){return new Promise(res=>{S.climbing=true;const t0=performance.now();const seg=pts.length-1;const step=()=>{const k=Math.min(1,(performance.now()-t0)/(secs*1000)),f=k*seg,i=Math.min(seg-1,Math.floor(f)),u=f-i;const a=pts[i],b=pts[i+1];
+  P.pos.set(lerp(a[0],b[0],u),lerp(a[1],b[1],u),lerp(a[2],b[2],u));const dx=b[0]-a[0],dz=b[2]-a[2];if(Math.hypot(dx,dz)>.01){P.yaw=Math.atan2(dx,dz);P.g.rotation.y=P.yaw;}if(k<1)requestAnimationFrame(step);else{S.climbing=false;res();}};step();});}
+PFZ.forEach((z,i)=>{
+  inter({area:'platform',label:'Stairs up to the overbridge',r:1.6,on:()=>!S.climbing,pos:()=>[BRX-11.9,z],run:async()=>{await travel([[BRX-11.9,0,z],[BRX-11.2,0,z],[BRX-2.2,BRY,z],[BRX-1,BRY,z]],2.6);S.area='bridge';}});
+  inter({area:'bridge',label:`Stairs down to ${PFNAME[i]}`,r:1.4,on:()=>!S.climbing,pos:()=>[BRX-1.2,z],run:async()=>{S.area='platform';await travel([[BRX-1,BRY,z],[BRX-2.2,BRY,z],[BRX-11.2,0,z],[BRX-11.9,0,z]],2.6);}});
+  inter({area:'platform',label:'Take the lift up (slow, hidden)',r:1.5,on:()=>!S.climbing,pos:()=>[BRX+4.6,z-1.6],run:()=>lift(BRY,'bridge',[BRX+1.2,z])});
+  inter({area:'bridge',label:`Lift down to ${PFNAME[i]}`,r:1.3,on:()=>!S.climbing,pos:()=>[BRX+1.4,z],run:()=>lift(0,'platform',[BRX+4.6,z-1.7])});});
+async function lift(y,area,to){locked=true;P.g.visible=false;toast('Lift ka intezaar… (nobody can see you in here)','info');sfx.chime();await sleep(3800);S.area=area;P.pos.set(to[0],y,to[1]);P.g.visible=true;locked=false;sfx.chime();}
 
 /* ---- train interactions ---- */
 function seatNear(kind){let best=null,bd=1.5;for(const s of SEATS){if(s.taken||s.kind!==kind)continue;const d=Math.hypot(P.pos.x-s.x,P.pos.z-s.z);if(d<bd){bd=d;best=s;}}return best;}
@@ -618,7 +668,7 @@ function setObj(t){if($('#objText').textContent!==t)$('#objText').textContent=t;
 async function title(){
   $('#loading').hidden=true;
   await new Promise(res=>{const c=sheet(`<div class="eyebrow">${RUN?"ESCAPE · LEG "+RUN.leg:"TRACE · LEVEL 2"}</div><h2>Night Train</h2>
-    <div class="dossier"><h3>Ticket · 12951 Raat Express</h3><dl><dt>Naam</dt><dd>${esc(L.given)} ${esc(L.surname)}</dd><dt>Coach</dt><dd><b>S${MY_COACH}</b>, berth ${MY_BERTH}</dd><dt>Gaadi</dt><dd>23:40, Platform 4 → Delhi</dd>
+    <div class="dossier"><h3>Ticket · 12951 Raat Express</h3><dl><dt>Naam</dt><dd>${esc(L.given)} ${esc(L.surname)}</dd><dt>Coach</dt><dd><b>Platform ${PFN()}</b>, coach <b>S${MY_COACH}</b>, berth ${MY_BERTH}</dd><dt>Gaadi</dt><dd>23:40, Platform 4 → Delhi</dd>
     <dt>Kaam</dt><dd>${JOB==='drop'?'Coach S1 mein <b>hari shawl, safed topi</b> wale contact ko packet do.':'Coach S2 mein ek berth ke neeche <b>kaala bag</b> hai. Utha lo.'}</dd><dt>Phir</dt><dd>Gaadi signal pe dheemi hogi. Darwaze se kood jaana.</dd></dl><span class="stampx">TOP SECRET</span></div>
     <p class="eyebrow">Ek RPF jawan (laal armband) ke paas tumhari photo hai. Airport ki heat ${Math.round(CAREER.heat||0)}/100 saath hai.</p>
     <button class="btn" id="go" type="button">Enter the platform</button><a class="btn alt" href="index.html">Safehouse</a>`);
@@ -626,10 +676,17 @@ async function title(){
   await comic('start');
   startPlatform();
 }
+/* platform change: the train pulls out and comes back on the other track */
+async function platformChange(){S.trainAway=true;const oldT=TRK;TRK=TRK==='A'?'B':'A';sfx.chime();vib([60,40,60]);
+  banner(`PLATFORM CHANGE! 12951 Raat Express now on Platform ${PFN()}`,true);toast(`Announcement: "Yatri kripya dhyaan dein: 12951 ab platform ${PFN()} pe aayegi."`,'info');
+  const slide=(g,x0,x1,secs)=>new Promise(res=>{const t0=performance.now();const f=()=>{const k=Math.min(1,(performance.now()-t0)/(secs*1000));g.position.x=lerp(x0,x1,k*k*(3-2*k));if(k<1)requestAnimationFrame(f);else res();};f();});
+  await slide(trainG,0,-150,4);trainG.position.z=TRACKS[TRK]-6.5;decoyG.position.z=TRACKS[oldT];await slide(trainG,150,0,5);
+  S.trainAway=false;if(S.phase==='platform')banner(null);
+  if(coachDoorGuard.g.visible){coachDoorGuard.route=[[COACH_X(MY_COACH)+9.1,DOOR_Z()-.7]];}}
 function startPlatform(){S.phase='platform';S.area='platform';S.timeLeft=180;buildPlayer(new T.Vector3(-58,0,0),Math.PI/2);ui(true);locked=false;sfx.horn();runStart();
   toast('Neeche-left gole se chalo. Coach number ke hare board dekho.','info');}
 async function board(x){if(S.phase!=='platform')return;locked=true;S.phase='boarding';sfx.horn();vib(40);ui(false);
-  await sleep(500);trace(`Platform 4: coach S${MY_COACH} mein chadhi (CCTV ${S.camsSeen.size} camere)`);
+  await sleep(500);trace(`Platform ${PFN()}: coach S${MY_COACH} mein chadhi (CCTV ${S.camsSeen.size} camere)`);
   startTrain();}
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 function startTrain(){S.phase='train';S.area='train';S.timeLeft=300;S.trainT=0;
@@ -664,10 +721,12 @@ let annT=0,clackT=0;
 function platformTick(dt,t){
   S.timeLeft-=dt;if(S.timeLeft<=0)return failMission('Gaadi chhoot gayi. Raat Express tumhare bina Delhi chali gayi.');
   const el=180-S.timeLeft;
-  if(el>55&&!S.checkDone){S.checkDone=true;coachDoorGuard.g.visible=true;const near=Math.abs(P.pos.x-(COACH_X(MY_COACH)+9.1))<Math.abs(P.pos.x-(COACH_X(MY_COACH)-9.1))?9.1:-9.1;coachDoorGuard.route=[[COACH_X(MY_COACH)+near,3.4]];coachDoorGuard.pos.set(COACH_X(MY_COACH)+near-6,0,2);
+  if(el>55&&!S.checkDone){S.checkDone=true;coachDoorGuard.g.visible=true;const near=Math.abs(P.pos.x-(COACH_X(MY_COACH)+9.1))<Math.abs(P.pos.x-(COACH_X(MY_COACH)-9.1))?9.1:-9.1;coachDoorGuard.route=[[COACH_X(MY_COACH)+near,DOOR_Z()-.7]];coachDoorGuard.pos.set(COACH_X(MY_COACH)+near-6,0,DOOR_Z()-2);
     sfx.chime();toast(`Announcement: "RPF coach S${MY_COACH} ke darwaze pe checking kar rahi hai."`,'info');banner('RPF tumhare coach ke ek darwaze pe! Doosra darwaza ya naya look →',true);setTimeout(()=>{if(S.phase==='platform')banner(null);},6000);}
   if(S.timeLeft<40&&!S.lastCall){S.lastCall=true;sfx.horn();toast('Announcement: "12951 Raat Express chhootne wali hai!"','info');}
-  setObj(`Coach S${MY_COACH} ka darwaza dhoondho aur chadh jao (hare board pe S${MY_COACH})`);
+  if(!S.pfcAt&&S.pfcAt!==-1)S.pfcAt=chance(.5)?rnd(25,55):-1;
+  if(S.pfcAt>0&&el>S.pfcAt&&!S.trainAway){S.pfcAt=-1;platformChange();}
+  setObj(S.trainAway?`PLATFORM CHANGE: 12951 ab Platform ${PFN()} pe aa rahi hai. Overbridge se jao!`:P.pos.y>1?`Overbridge: Platform ${PFN()} ki seedhi ya lift lo`:`Platform ${PFN()}: coach S${MY_COACH} ka darwaza dhoondho (hare board pe S${MY_COACH})${(TRK==='A')!==(P.pos.z<6)?' · overbridge se doosre platform pe jao':''}`);
   if((annT+=dt)>30){annT=0;sfx.chime();toast(pick(['Announcement: "Yatri kripya dhyaan dein, gaadi sankhya 12951…"','Chaiwala: "Chaaai, garam chaai!"','Coolie: "Side do, side do!"']),'info');}
 }
 function trainTick(dt,t){
@@ -704,8 +763,8 @@ async function tcCheck(){if(S.phase!=='train'||locked)return;locked=true;S.phase
   closeDlg();S.phase='train';locked=false;}
 
 /* ---------------- NPC update ---------------- */
-function updNPC(dt,t){for(const n of NPC){if(n.inArea!==S.area)continue;let mv=false;
-  if(n.beh==='wander'){if(!n.target){n.wait-=dt;if(n.wait<=0)n.target=[clamp(n.pos.x+rnd(-14,14),-58,52),rnd(-2.2,3.9)];}if(n.target){if(stepTo(n,n.target[0],n.target[1],dt,n.walk)){n.target=null;n.wait=rnd(1,5);}else mv=true;}
+function updNPC(dt,t){const st=a=>a==='platform'||a==='bridge';for(const n of NPC){if(n.inArea!==S.area&&!(st(n.inArea)&&st(S.area)))continue;let mv=false;
+  if(n.beh==='wander'){if(!n.target){n.wait-=dt;if(n.wait<=0)n.target=n.inArea==='bridge'?[BRX+rnd(-1.3,1.3),rnd(-2,28)]:[clamp(n.pos.x+rnd(-14,14),-58,52),rnd(...(n.zr||[-2.2,3.9]))];}if(n.target){if(stepTo(n,n.target[0],n.target[1],dt,n.walk)){n.target=null;n.wait=rnd(1,5);}else mv=true;}
     if(n.isChai&&Math.hypot(n.pos.x-P.pos.x,n.pos.z-P.pos.z)<3&&!n.said){n.said=true;toast('Chaiwala: "Chaai lo madam, garam chaai!"','info');setTimeout(()=>n.said=false,15000);}}
   else if(n.beh==='aisle'){const tx=n.dirX>0?CO(1)-1:CO(4)-19;if(stepTo(n,tx,TZ+.82,dt,n.walk))n.dirX=-(n.dirX||1);else mv=true;if(n.isChai&&Math.hypot(n.pos.x-P.pos.x,n.pos.z-P.pos.z)<2.5&&!n.said){n.said=true;toast('Chaiwala: "Chaaai, garam chaai!"','info');setTimeout(()=>n.said=false,15000);}}
   anim(n,dt,mv?n.speed:0,t);}}
@@ -721,26 +780,30 @@ addEventListener('keyup',e=>input.keys[e.code]=false);
 $('#run').addEventListener('click',e=>{e.stopPropagation();input.run=!input.run;$('#run').classList.toggle('on',input.run);});
 
 /* ---------------- minimap (platform) ---------------- */
-const mc=$('#map'),mg=mc.getContext('2d');const mx=x=>(x+66)/132*236,mz=z=>(z+6)/14*168;
-function drawMap(){mg.clearRect(0,0,236,168);mg.fillStyle='rgba(255,255,255,.18)';mg.fillRect(mx(-64),mz(-5),mx(64)-mx(-64),mz(4.6)-mz(-5));
-  for(let k=1;k<=5;k++){mg.fillStyle=k===MY_COACH?'#3dff7a':'#1f4f9a';mg.fillRect(mx(COACH_X(k)-10),mz(5),mx(COACH_X(k)+10)-mx(COACH_X(k)-10),mz(8)-mz(5));}
-  for(const g of G){if(g.area!=='platform'||!g.g.visible)continue;mg.fillStyle=g.state==='alert'?'#ff3030':g.state==='patrol'?'#ffd166':'#ff9f1c';mg.beginPath();mg.arc(mx(g.pos.x),mz(g.pos.z),5,0,7);mg.fill();}
-  mg.fillStyle='#fff';mg.beginPath();mg.arc(mx(P.pos.x),mz(P.pos.z),6,0,7);mg.fill();}
+const mc=$('#map'),mg=mc.getContext('2d');const mx=x=>(x+66)/132*236,mz=z=>(z+6)/37*168;
+function drawMap(){mg.clearRect(0,0,236,168);mg.fillStyle='rgba(255,255,255,.18)';for(const [a,b] of [[-5,4.6],[9.1,16.5],[21.5,30]])mg.fillRect(mx(-64),mz(a),mx(64)-mx(-64),mz(b)-mz(a));
+  const tz=S.trainAway?null:TRACKS[TRK],oz=TRACKS[TRK==='A'?'B':'A'];
+  mg.fillStyle='#7a1f2a';mg.fillRect(mx(-55),mz(oz-1.5),mx(40)-mx(-55),mz(oz+1.5)-mz(oz-1.5));
+  if(tz!==null)for(let k=1;k<=5;k++){mg.fillStyle=k===MY_COACH?'#3dff7a':'#1f4f9a';mg.fillRect(mx(COACH_X(k)-10),mz(tz-1.5),mx(COACH_X(k)+10)-mx(COACH_X(k)-10),mz(tz+1.5)-mz(tz-1.5));}
+  mg.fillStyle='#ffd166';mg.fillRect(mx(BRX-2),mz(-3),mx(BRX+2)-mx(BRX-2),mz(29)-mz(-3));
+  for(const g of G){if(g.area!=='platform'&&g.area!=='bridge'||!g.g.visible)continue;mg.fillStyle=g.state==='alert'?'#ff3030':g.state==='patrol'?'#ffa500':'#ff9f1c';mg.beginPath();mg.arc(mx(g.pos.x),mz(g.pos.z),4,0,7);mg.fill();}
+  mg.fillStyle='#fff';mg.beginPath();mg.arc(mx(P.pos.x),mz(P.pos.z),5,0,7);mg.fill();}
 
 /* ---------------- camera & loop ---------------- */
 function updCam(dt){const tx=P.pos.x,tz=P.pos.z;let pos,look;
   if(S.area==='train'){const port=innerHeight>innerWidth;pos=new T.Vector3(tx,port?7.6:6.2,TZ+(port?9.6:8.2));look=new T.Vector3(tx,.7,TZ-.5);const sh=S.escape>0?.01:.03;pos.y+=Math.sin(clk.elapsedTime*13)*sh;pos.x+=Math.sin(clk.elapsedTime*7)*sh;}
   else{pos=new T.Vector3(tx-5.5,9.5,tz+10.5);look=new T.Vector3(tx+1.5,0,tz-.5);}
+  if(S.area!=='train'&&P.pos.y>1){pos.y+=P.pos.y;look.y+=P.pos.y;}
   camera.position.lerp(pos,Math.min(1,dt*6));camera.lookAt(look);sun.position.set(tx+8,22,tz+10);sun.target.position.set(tx,0,tz);}
 const clk=new T.Clock();let frames=0;
 function frame(){let dt=Math.min(window.__dtcap||.05,clk.getDelta());if(slowT>0){slowT-=dt;dt*=.3;}const t=clk.elapsedTime;
   if(S.phase==='platform'||S.phase==='train'||S.phase==='talk'){
-    if(S.phase==='platform'||S.phase==='train'){updPlayer(dt,t);updHold(dt);runTick(dt);if(S.area==='platform')platformTick(dt,t);else trainTick(dt,t);}
+    if(S.phase==='platform'||S.phase==='train'){updPlayer(dt,t);updHold(dt);runTick(dt);if(S.area!=='train')platformTick(dt,t);else trainTick(dt,t);}
     updNPC(dt,t);updGuards(dt,t);updCams(dt);updAct();
     $('#clock').textContent=clockS();$('#clock').classList.toggle('warn',S.timeLeft<30);
     const st=$('#state');st.className='chip '+worst;st.textContent=worst==='alert'?'ALERT!':worst==='sus'?'Suspicious':'Calm';
     if(AU.tens)AU.tens.gain.setTargetAtTime(worst==='alert'?.05:worst==='sus'?.02:0,AU.ctx.currentTime,.4);
-    if(S.area==='platform'&&(frames++)%3===0)drawMap();
+    if(S.area!=='train'&&(frames++)%3===0)drawMap();
   }
   if(P)updCam(dt);else{camera.position.set(-40+Math.sin(t*.1)*10,12,16);camera.lookAt(0,0,0);}
   composer.render();requestAnimationFrame(frame);}
