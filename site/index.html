@@ -252,7 +252,8 @@ function runStart(){if(!RUN)return;RT.on=true;RT.lastLook=lookKey();
   mods.forEach(k=>lines.push('⚠ '+MODS[k].name+': '+MODS[k].d));
   (RUN.counters||[]).forEach(k=>lines.push('RANA: "Wo '+HABITS[k].t+'." → '+HABITS[k].c));
   lines.forEach((l,i)=>setTimeout(()=>{if(RT.on)toast(l,i===0?'info':'bad');},400+i*2600));
-  setTimeout(spawnContact,rnd(15000,40000));}
+  setTimeout(spawnContact,rnd(15000,40000));
+  if(CROWDS[ZONE_ID]&&Math.random()<.55)CR.at=rnd(20,60);}
 function runTick(dt){if(!RT.on||!P)return;const h=RUN.lh;
   if(input.run||input.keys.ShiftLeft||input.keys.ShiftRight){if(P.speed>0)h.run+=dt;}
   try{const F=typeof flags==='function'?flags():playerFlags();if(F.crowd>=2)h.crowd+=dt;}catch(e){}
@@ -263,7 +264,7 @@ function runTick(dt){if(!RT.on||!P)return;const h=RUN.lh;
   if((RUN.mods||[]).includes('blackout')&&typeof CAMS!=='undefined'){RT.blackT+=dt;const dark=(RT.blackT%30)>21;if(dark!==RT.dark){RT.dark=dark;
     if(dark){RT.saved=CAMS.map(c=>c.range);CAMS.forEach(c=>c.range=.01);G.forEach(g=>{g._r=g.range;g.range*=.6;});hemi.intensity*=.45;sfx.thak&&sfx.thak();toast('BLACKOUT! Cameras off for 9 seconds.','info');}
     else{CAMS.forEach((c,i)=>c.range=RT.saved[i]);G.forEach(g=>{if(g._r)g.range=g._r;});hemi.intensity/=.45;}}}
-  updDarts(dt);updGun(dt);checkLock();phoneTick(dt);
+  updDarts(dt);updGun(dt);checkLock();phoneTick(dt);crowdTick(dt);
   if(RT.gcT>0){RT.gcT-=dt;if(RT.gcT<=0&&S.phase==='play'){const old=MYGATE;MYGATE=pick(GATES.filter(g=>g!==old));const sw={code:MYGATE.code,dest:MYGATE.dest};Object.assign(MYGATE,{code:old.code,dest:old.dest});Object.assign(old,sw);setGateSign(old);setGateSign(MYGATE);S.gateChanged=true;drawBoard();sfx.chime();vib([60,40,60]);
     banner(`GATE CHANGE! ${MYGATE.code} ${MYGATE.dest} now boards at Gate ${MYGATE.n}`,true);setTimeout(()=>{if(RT.on)banner(null);},6000);toast(`Announcement: "${MYGATE.code} ${MYGATE.dest} ab Gate ${MYGATE.n} se jaayegi."`,'info');}}}
 /* ---- airport: any alert, gunshot or found body locks the gates. No flight; leave by taxi (train or bus next) ---- */
@@ -438,7 +439,7 @@ if(VOX.ok){pickVoices();try{speechSynthesis.onvoiceschanged=pickVoices;}catch(e)
 const DEVA={'Chaai lo madam, garam chaai!':'चाय लो मैडम, गरम चाय!','Chaaai, garam chaai!':'चाय चाय! गरम चाय!','Chaai, garam samosa!':'चाय चाय! गरम समोसा!','Side do, side do!':'साइड दो, साइड दो!',
   'Arre mera thela! Pakdo koi!':'अरे मेरा ठेला! पकड़ो कोई!','Yatri kripya dhyaan dein, gaadi sankhya 12951…':'यात्री कृपया ध्यान दें। गाड़ी संख्या बारह नौ पाँच एक, प्लेटफ़ॉर्म पर खड़ी है।',
   'Chalo chalo! Bus nikal rahi hai!':'चलो चलो! बस निकल रही है!','Saari flights hold pe hain.':'सारी फ़्लाइट्स होल्ड पर हैं।'};
-const VSTYLE={Chaiwala:[1.15,1.25],Coolie:[1.1,.8],Conductor:[1.2,.85],Thelewala:[1.25,1.1],Announcement:[.92,1],Radio:[1.1,.9],Contact:[1,1]};
+const VSTYLE={Crowd:[1.2,1.1],Chaiwala:[1.15,1.25],Coolie:[1.1,.8],Conductor:[1.2,.85],Thelewala:[1.25,1.1],Announcement:[.92,1],Radio:[1.1,.9],Contact:[1,1]};
 function say2(text,rate=1,pitch=1){if(!VOX.ok||typeof AU!=='undefined'&&!AU.on)return;const now=performance.now();if(speechSynthesis.speaking&&now-VOX.last<2500)return;
   try{speechSynthesis.cancel();const deva=DEVA[text];const u=new SpeechSynthesisUtterance(deva||text);const v=deva?(VOX.hi||VOX.en):(VOX.en||VOX.hi);if(v){u.voice=v;u.lang=v.lang;}else u.lang=deva?'hi-IN':'en-IN';
     u.rate=rate;u.pitch=pitch;u.volume=1;speechSynthesis.speak(u);VOX.last=now;}catch(e){}}
@@ -466,6 +467,32 @@ function boardHTML(){const B=getBoard();const items=[];
     <div class="cb">${items.length?items.join(''):'<p style="color:#f1ece1">Board is empty. Rana has nothing on you… yet.</p>'}<svg viewBox="0 0 100 100" preserveAspectRatio="none">${items.length>1?Array.from({length:Math.min(items.length,8)},(_,i)=>`<line x1="${10+(i*37)%80}" y1="${8+(i*23)%80}" x2="${15+(i*53)%75}" y2="${12+(i*41)%78}" stroke="#d11" stroke-width=".5"/>`).join(''):''}</svg></div>
     ${B.cleared?`<p class="eyebrow">Cases you have beaten: ${B.cleared}</p>`:''}`;}
 function showBoard(back){const c=sheet(boardHTML()+`<button class="btn" id="bk" type="button">Back</button>`);c.querySelector('#bk').onclick=back;}
+/* ---- crowd events: a baraat, cricket fans or a shift change sweeps through. Great cover, but pockets get picked ---- */
+const CROWDS={airport:{name:'Cricket fans',path:[[-28,17],[26,17],[26,9],[-26,9]],look:()=>({body:pick([0x2b6fd6,0x1f4f9a,0xf28b0f]),legs:0xf1ece1,skin:pick(SKINS),hair:0x111111}),flag:true,
+    say:'Announcement: "India team airport pe! Fans ki bheed T2 hall mein."',chant:'India! India!'},
+  train:{name:'Baraat',path:[[-56,1.6],[46,1.6]],look:()=>({body:pick([0xff5fa2,0xf5d000,0xf28b0f,0xe0242b,0x9b59b6]),legs:pick([0xf1ece1,0x2c2c36]),skin:pick(SKINS),hair:0x111111,turban:chance(.4)?pick([0xf5d000,0xe0242b,0xff5fa2]):undefined}),dhol:true,
+    say:'Announcement: "Platform 4 pe ek baraat aa rahi hai. Kripya rasta dein."',chant:'Baraat aayi!'},
+  bus:{name:'Baraat',path:[[38,4],[-38,4]],look:()=>({body:pick([0xff5fa2,0xf5d000,0xf28b0f,0xe0242b,0x9b59b6]),legs:pick([0xf1ece1,0x2c2c36]),skin:pick(SKINS),hair:0x111111,turban:chance(.4)?pick([0xf5d000,0xe0242b]):undefined}),dhol:true,
+    say:'Conductor: "Arre baraat aa gayi! Side do, side do!"',chant:'Baraat aayi!'},
+  port:{name:'Shift change',path:[[8,-28],[8,24],[-12,24],[-12,-28]],look:()=>({body:0xf28b0f,legs:0x2c3150,skin:pick(SKINS),hair:0x111111,cap:0xf5d000,capPeak:0xd9b000}),
+    say:'Radio: "Shift change! Naye workers gate se andar aa rahe hain."',chant:''}};
+const CR={on:false,members:[],u:0,len:0,inT:0,picked:false,beatT:0};
+function crowdStart(){const C=CROWDS[ZONE_ID];if(!C||!RT.on)return;const segs=[];let L=0;for(let i=0;i<C.path.length-1;i++){const a=C.path[i],b=C.path[i+1],l=Math.hypot(b[0]-a[0],b[1]-a[1]);segs.push({a,b,l,s:L});L+=l;}CR.segs=segs;CR.len=L;CR.u=0;
+  for(let i=0;i<14;i++){const o=C.look();const ox=rnd(-2.6,2.6),oz=rnd(-1.4,1.4);const a=C.path[0];const n=ZONE_ID==='airport'?npc(o,a[0]+ox,a[1]+oz,'HALL'):npc(o,a[0]+ox,a[1]+oz,'platform','wander');n.beh='wander';n.walk=1.6;n.wait=0;n.crowdOff=[ox,oz];
+    if(C.dhol&&i<2){const d=new T.Mesh(new T.CylinderGeometry(.25,.25,.5,12),new T.MeshStandardMaterial({color:0xd35400}));d.rotation.z=Math.PI/2;d.position.set(0,.85,.35);n.g.add(d);}
+    if(C.flag&&i%4===0){const f=new T.Mesh(new T.PlaneGeometry(.6,.4),new T.MeshBasicMaterial({map:canvasTex(60,40,(g,w,h)=>{g.fillStyle='#ff9933';g.fillRect(0,0,w,h/3);g.fillStyle='#fff';g.fillRect(0,h/3,w,h/3);g.fillStyle='#138808';g.fillRect(0,2*h/3,w,h/3);}),side:T.DoubleSide,toneMapped:false}));f.position.set(.3,2.3,0);n.g.add(f);}
+    CR.members.push(n);}
+  CR.on=true;toast(C.say,'info');banner(`${C.name}! Get inside the crowd: guards can barely see you there. Watch your pockets.`);setTimeout(()=>{if(RT.on)banner(null);},6000);}
+function crowdAt(u){for(const sg of CR.segs){if(u<=sg.s+sg.l){const f=(u-sg.s)/sg.l;return [lerp(sg.a[0],sg.b[0],f),lerp(sg.a[1],sg.b[1],f)];}}const l=CR.segs[CR.segs.length-1];return l.b;}
+function crowdTick(dt){if(CR.at>0){CR.at-=dt;if(CR.at<=0)crowdStart();}if(!CR.on)return;CR.u+=dt*1.25;const c=crowdAt(CR.u);
+  for(const n of CR.members){n.target=[c[0]+n.crowdOff[0],c[1]+n.crowdOff[1]];}
+  const d=Math.hypot(P.pos.x-c[0],P.pos.z-c[1]);const C=CROWDS[ZONE_ID];
+  if(C.dhol&&d<22&&(CR.beatT-=dt)<=0){CR.beatT=.36;const k=(CR.bt=(CR.bt||0)+1)%4;burst(.09,k%2?260:150,k===0?.55:.35);if(k===0)tone(80,.18,'sine',.12);}
+  if(C.chant&&d<14&&(CR.chT=(CR.chT||0)-dt)<=0){CR.chT=9;voiceFor(`Crowd: "${C.chant}"`);}
+  const inside=CR.members.filter(n=>Math.hypot(n.pos.x-P.pos.x,n.pos.z-P.pos.z)<2.2).length>=3;
+  if(inside){CR.inT+=dt;for(const g of G){if(g.state!=='alert'&&g.sus>0)g.sus=Math.max(0,g.sus-12*dt);}
+    if(CR.inT>5&&!CR.picked){CR.picked=true;if(Math.random()<.35){if(RUN.darts>0){RUN.darts--;drawDartBtn();toast('Jeb kat gayi! A pickpocket in the crowd took a dart.');}else{RUN.cash=Math.max(0,RUN.cash-10000);toast('Jeb kat gayi! −₹10,000 run cash.');}}}}
+  if(CR.u>=CR.len+4){CR.on=false;for(const n of CR.members){n.g.visible=false;const i=NPC.indexOf(n);if(i>=0)NPC.splice(i,1);scene.remove(n.g);}CR.members=[];toast(`The ${CROWDS[ZONE_ID].name.toLowerCase()} has passed.`,'info');}}
 /* ---- news ---- */
 function newsFlash(text,sec){const d=document.createElement('div');d.style.cssText='position:fixed;left:16px;right:16px;top:calc(180px + env(safe-area-inset-top));z-index:31;background:#f1ece1;color:#111;border:3px solid #111;box-shadow:5px 5px 0 #111;padding:10px 12px;font-family:var(--type,monospace);transform:rotate(-1.2deg);pointer-events:none;max-width:460px;margin:0 auto';
   d.innerHTML=`<div style="font:800 11px 'Space Grotesk',sans-serif;letter-spacing:2px;border-bottom:2px solid #111;padding-bottom:3px;margin-bottom:6px;display:flex;justify-content:space-between"><span>BREAKING NEWS</span><span style="color:#e0242b">SECURITY: ${SEC_NAMES[sec].toUpperCase()}</span></div>${text?`<div style="font:700 17px/1.2 'Space Grotesk',sans-serif">${esc(text)}</div>`:''}${sec?`<div style="font-size:12px;margin-top:5px">Guards here are sharper${sec>=2?' and faster':''}${sec>=3?'. Police shoot at 2★':''}.</div>`:''}`;
@@ -530,7 +557,7 @@ function runOver(banked){const r=RUN;r.active=false;saveRun(r);
     <button class="btn" id="board" type="button" style="background:#8a5a3a">Rana's case board · ${getBoard().strength}%</button>
     <button class="btn" id="again" type="button" style="background:#e0242b">New run</button><a class="btn alt" href="index.html">Safehouse</a>`);
   c.querySelector('#again').onclick=startNewRun;c.querySelector('#board').onclick=()=>showBoard(()=>runOver(banked));}
-window.__run={PH,incoming:()=>incoming(),endCall:a=>endCall(a),togglePhone:()=>togglePhone(),CT,spawnContact:()=>{RUN.leg=Math.max(RUN.leg,2);const o=Math.random;Math.random=()=>0;try{spawnContact();}finally{Math.random=o;}},W,WORLD,newsFlash:(t,s)=>newsFlash(t,s),gateOpen:()=>gateOpen(),switchWpn:()=>switchWpn(),shootGun:()=>shootGun(),addStars:(n)=>addStars(n,'test'),runEnd:(...a)=>runEnd(...a),shootDart:()=>shootDart(),get RUN(){return RUN;},HUNT,RT};
+window.__run={CR,crowdStart:()=>crowdStart(),PH,incoming:()=>incoming(),endCall:a=>endCall(a),togglePhone:()=>togglePhone(),CT,spawnContact:()=>{RUN.leg=Math.max(RUN.leg,2);const o=Math.random;Math.random=()=>0;try{spawnContact();}finally{Math.random=o;}},W,WORLD,newsFlash:(t,s)=>newsFlash(t,s),gateOpen:()=>gateOpen(),switchWpn:()=>switchWpn(),shootGun:()=>shootGun(),addStars:(n)=>addStars(n,'test'),runEnd:(...a)=>runEnd(...a),shootDart:()=>shootDart(),get RUN(){return RUN;},HUNT,RT};
 /*RUN-END*/
 const CAREER=loadCareer();
 
