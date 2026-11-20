@@ -38,8 +38,7 @@ rep('const RPF={body:0x5b4a3a,legs:0x3a2f24,skin:0x9a6644,hair:0x111111,cap:0x8a
 rep('function canSee(g,x,z){const dx=x-g.pos.x,dz=z-g.pos.z,d=Math.hypot(dx,dz);',
     'function canSee(g,x,z){const dx=x-g.pos.x,dz=z-g.pos.z,d=Math.hypot(dx,dz);if(g.smell){if(!g.g.visible)return 0;if(d<g.range)return Math.max(d,.01);}')
 # camera looks north, towards the quay and the ship
-rep('else{pos=new T.Vector3(tx-5.5,9.5,tz+10.5);look=new T.Vector3(tx+1.5,0,tz-.5);}',
-    'else{const port=innerHeight>innerWidth;pos=new T.Vector3(tx+4,port?13:10.5,tz-(port?12.5:11));look=new T.Vector3(tx-1,0,tz+1.5);}')
+rep('let CAMY0=Math.atan2(-7,11)', 'let CAMY0=Math.atan2(4,-11)')
 rep("'PF4 CAM '+c.id", "'PORT CAM '+c.id")
 rep("const ts='23:'+String(31+", "const ts='03:'+String(21+")
 rep("<b>PF4 CAM ${c.id} · ${ts}</b>", "<b>PORT CAM ${c.id} · ${ts}</b>")

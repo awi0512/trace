@@ -424,7 +424,7 @@ function buildPlatform(){
   for(let x=-60;x<=60;x+=6){mesh(new T.BoxGeometry(3.2,2.2,.1),m(0x5b3a28),x,3.2,-5.15);mesh(new T.BoxGeometry(3,2,.12),glow(0xffcf87,.7),x,3.2,-5.12);}  // arched windows glow
   box(-66,-64,-5.2,5,7,m(0xc9a978));box(64,66,-5.2,5,7,m(0xc9a978));
   for(let x=-56;x<=56;x+=12){box(x-.25,x+.25,-2.75,-2.25,6,m(0x2f5d4a),{tall:true,cast:true});}   // green iron pillars
-  mesh(new T.BoxGeometry(130,.3,10),m(0x2f3a4a),0,6.1,0);
+  mesh(new T.BoxGeometry(130,.3,10),new T.MeshStandardMaterial({color:0x2f3a4a,transparent:true,opacity:.22,depthWrite:false}),0,6.1,0);
   {const g=new T.BoxGeometry(4,.08,.4),n=11*2,im=new T.InstancedMesh(g,glow(0xfff1d0,1.6),n);const o=new T.Object3D();let k=0;for(let x=-54;x<=54;x+=11)for(const z of [-1,2]){o.position.set(x,5.9,z);o.updateMatrix();im.setMatrixAt(k++,o.matrix);}im.count=k;scene.add(im);}
   sign('MUMBAI TERMINUS · मुंबई टर्मिनस',-30,5.0,-5.1,0,12,1.3);sign('PLATFORM 4 · प्लेटफॉर्म 4',22,5.0,-5.1,0,9,1.3);
   // coach position indicators (green LED) hanging over the edge
@@ -456,7 +456,9 @@ function buildStation(){
   for(const z of [9.05,16.55,21.45])mesh(new T.BoxGeometry(130,.12,.3),m(0xf5d000),0,.01,z);
   COL.push({x0:-66,x1:66,z0:8.6,z1:9.15,on:true,tall:false,area:'platform'},{x0:-66,x1:66,z0:16.45,z1:17,on:true,tall:false,area:'platform'},{x0:-66,x1:66,z0:21,z1:21.55,on:true,tall:false,area:'platform'});
   box(-66,66,30,30.6,6,m(0xc9a978),{tall:true});box(-66,-64,9,30,4,m(0xc9a978));box(64,66,9,30,4,m(0xc9a978));
-  sign('PLATFORM 5 · 6',30,3.6,12.8,0,6,1);sign('PLATFORM 7',30,3.6,29.6,0,5,1);
+  for(const x of [-44,-4,36]){sign('PLATFORM 6 ↓',x,3.6,12.85,0,5,.9,'#1d2340','#ffd166');sign('PLATFORM 5 ↓',x,3.6,12.75,Math.PI,5,.9,'#1d2340','#ffd166');mesh(new T.CylinderGeometry(.08,.08,3.2,6),m(0x2f5d4a),x-2.2,1.6,12.8);mesh(new T.CylinderGeometry(.08,.08,3.2,6),m(0x2f5d4a),x+2.2,1.6,12.8);}
+  for(const x of [-44,-4,36]){sign('PLATFORM 7',x,3.6,29.5,0,5,1);sign('PLATFORM 4',x,4.6,-2.4,Math.PI,5,.9,'#1d2340','#ffd166');sign('PLATFORM 4',x,4.6,-2.35,0,5,.9,'#1d2340','#ffd166');}
+  CAMB=[-63.5,63.5,-4.5,29.5];
   for(const z of [12.8,25.5])for(let x=-50;x<=50;x+=20){mesh(new T.CylinderGeometry(.1,.12,4,8),m(0x2f5d4a),x,2,z);mesh(new T.SphereGeometry(.3,8,6),glow(0xffcf87,2),x,4.1,z);}
   for(const x of [-44,0,36])for(const z of [12.8,27.5]){box(x-1.6,x+1.6,z-.3,z+.3,.45,m(0x6d7ff0),{tall:false});}
   // parked local train on the other track
@@ -770,11 +772,13 @@ function updNPC(dt,t){const st=a=>a==='platform'||a==='bridge';for(const n of NP
   anim(n,dt,mv?n.speed:0,t);}}
 
 /* ---------------- input ---------------- */
-const joy=$('#joy'),knob=joy.firstElementChild;let joyId=null,joyO=null;
-canvas.addEventListener('pointerdown',e=>{if(!(S.phase==='platform'||S.phase==='train'))return;if(e.clientX<innerWidth*.5&&e.clientY>innerHeight*.35&&joyId===null){joyId=e.pointerId;joyO=[e.clientX,e.clientY];joy.style.left=e.clientX+'px';joy.style.top=e.clientY+'px';knob.style.transform='';canvas.setPointerCapture(e.pointerId);}});
-canvas.addEventListener('pointermove',e=>{if(e.pointerId!==joyId)return;let dx=e.clientX-joyO[0],dy=e.clientY-joyO[1];const d=Math.hypot(dx,dy);if(d>50){dx=dx/d*50;dy=dy/d*50;}knob.style.transform=`translate(${dx}px,${dy}px)`;input.x=dx/50;input.y=-dy/50;});
-const endP=e=>{if(e.pointerId===joyId){joyId=null;joy.style.left=joy.style.top='';knob.style.transform='';input.x=input.y=0;}};
+const joy=$('#joy'),knob=joy.firstElementChild;let joyId=null,joyO=null,lookId=null,lookLast=null;
+canvas.addEventListener('pointerdown',e=>{if(!(S.phase==='platform'||S.phase==='train'))return;if(e.clientX<innerWidth*.5&&e.clientY>innerHeight*.35&&joyId===null&&e.pointerType!=='mouse'){joyId=e.pointerId;joyO=[e.clientX,e.clientY];joy.style.left=e.clientX+'px';joy.style.top=e.clientY+'px';knob.style.transform='';canvas.setPointerCapture(e.pointerId);}
+  else if(lookId===null&&S.area!=='train'){lookId=e.pointerId;lookLast=[e.clientX,e.clientY];canvas.setPointerCapture(e.pointerId);}});
+canvas.addEventListener('pointermove',e=>{if(e.pointerId===lookId){camYaw-=(e.clientX-lookLast[0])*.006;camPitch=clamp(camPitch+(e.clientY-lookLast[1])*.004,.3,1.25);lookLast=[e.clientX,e.clientY];return;}if(e.pointerId!==joyId)return;let dx=e.clientX-joyO[0],dy=e.clientY-joyO[1];const d=Math.hypot(dx,dy);if(d>50){dx=dx/d*50;dy=dy/d*50;}knob.style.transform=`translate(${dx}px,${dy}px)`;input.x=dx/50;input.y=-dy/50;});
+const endP=e=>{if(e.pointerId===lookId)lookId=null;if(e.pointerId===joyId){joyId=null;joy.style.left=joy.style.top='';knob.style.transform='';input.x=input.y=0;}};
 canvas.addEventListener('pointerup',endP);canvas.addEventListener('pointercancel',endP);
+canvas.addEventListener('wheel',e=>{camDist=clamp(camDist+e.deltaY*.01,8,22);},{passive:true});
 addEventListener('keydown',e=>{input.keys[e.code]=true;if(e.code==='KeyE')doAct();if((e.code==='Space'||e.code==='Enter')&&advance){e.preventDefault();advance();}});
 addEventListener('keyup',e=>input.keys[e.code]=false);
 $('#run').addEventListener('click',e=>{e.stopPropagation();input.run=!input.run;$('#run').classList.toggle('on',input.run);});
@@ -790,9 +794,12 @@ function drawMap(){mg.clearRect(0,0,236,168);mg.fillStyle='rgba(255,255,255,.18)
   mg.fillStyle='#fff';mg.beginPath();mg.arc(mx(P.pos.x),mz(P.pos.z),5,0,7);mg.fill();}
 
 /* ---------------- camera & loop ---------------- */
+/* orbit camera outside the vehicles: drag the right side to look around. CAMY0 = default heading, CAMB = optional bounds */
+let CAMY0=Math.atan2(-7,11),CAMB=null,camYaw=0,camPitch=.63,camDist=16;
 function updCam(dt){const tx=P.pos.x,tz=P.pos.z;let pos,look;
   if(S.area==='train'){const port=innerHeight>innerWidth;pos=new T.Vector3(tx,port?7.6:6.2,TZ+(port?9.6:8.2));look=new T.Vector3(tx,.7,TZ-.5);const sh=S.escape>0?.01:.03;pos.y+=Math.sin(clk.elapsedTime*13)*sh;pos.x+=Math.sin(clk.elapsedTime*7)*sh;}
-  else{pos=new T.Vector3(tx-5.5,9.5,tz+10.5);look=new T.Vector3(tx+1.5,0,tz-.5);}
+  else{const cy=CAMY0+camYaw,py=P.pos.y>1?P.pos.y:0;let d=camDist;for(;d>4;d-=.5){const r0=d*Math.cos(camPitch),cx=tx+Math.sin(cy)*r0,cz=tz+Math.cos(cy)*r0;if((!CAMB||cx>CAMB[0]&&cx<CAMB[1]&&cz>CAMB[2]&&cz<CAMB[3])&&!losBlocked(tx,tz,cx,cz))break;}
+    const rr=d*Math.cos(camPitch);pos=new T.Vector3(tx+Math.sin(cy)*rr,d*Math.sin(camPitch),tz+Math.cos(cy)*rr);look=new T.Vector3(tx,.8,tz);}
   if(S.area!=='train'&&P.pos.y>1){pos.y+=P.pos.y;look.y+=P.pos.y;}
   camera.position.lerp(pos,Math.min(1,dt*6));camera.lookAt(look);sun.position.set(tx+8,22,tz+10);sun.target.position.set(tx,0,tz);}
 const clk=new T.Clock();let frames=0;
