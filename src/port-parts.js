@@ -113,11 +113,11 @@ const ui=on=>['#hud','#pads','#joy','#map'].forEach(s=>$(s).hidden=!on);
 function setObj(t){if($('#objText').textContent!==t)$('#objText').textContent=t;}
 async function title(){
   $('#loading').hidden=true;const C=getC();const story=!!(C&&C.active&&C.ch>=4);
-  await new Promise(res=>{const c=sheet(`<div class="eyebrow">TRACE · ${story?'CHAPTER 4':'LEVEL 4'}</div><h2>Bandar ka Akhri Jahaz</h2>
+  await new Promise(res=>{const c=sheet(`<div class="eyebrow">TRACE · ${story?'CHAPTER 4':'LEVEL 4'}</div><h2>The Last Ship</h2>
     <div class="dossier"><h3>MV SITARA · Dubai</h3><dl><dt>Naam</dt><dd>${esc(L.given)} ${esc(L.surname)}</dd><dt>Jahaz</dt><dd>Raat 4 baje nikalta hai (5 minute)</dd>
     <dt>Kaam</dt><dd><b>Dock office</b> (upar-right, quay ke paas) se Ismail bhai ka crew pass lo, phir <b>gangway</b> se jahaz pe chadho.</dd><dt>Khatra</dt><dd>Ghoomti <b>searchlights</b>, port security, aur thodi der mein <b>sniffer kutte</b>. Kutte deewar ke peeche bhi soongh lete hain.</dd>
     <dt>Tip</dt><dd>Neeche-left ke locker shed se dock worker ki jacket lo. Containers ke beech chhupo.</dd></dl><span class="stampx">TOP SECRET</span></div>
-    <button class="btn" id="go" type="button">Port mein ghuso</button><a class="btn alt" href="index.html">Safehouse</a>`);
+    <button class="btn" id="go" type="button">Enter the docks</button><a class="btn alt" href="index.html">Safehouse</a>`);
     c.querySelector('#go').onclick=()=>{auInit();AU.ctx&&AU.ctx.resume();closeSheet();res();};});
   await comic('start');startPlatform();}
 function startPlatform(){S.phase='platform';S.area='platform';S.timeLeft=300;buildPlayer(new T.Vector3(-46,0,-28),0);ui(true);locked=false;sfx.horn();runStart();
@@ -135,8 +135,8 @@ async function nameQ(who){await say(who,'Naam kya hai?');const ans=`${L.given} $
   const r=await choose(opts.map(o=>({label:o})),{timer:7000});return r===ans;}
 function finish(win,who,why){if(runEnd(win,who,why))return;S.phase='over';locked=true;ui(false);const C=getC();const story=!!(C&&C.active&&C.ch>=4);
   CAREER.missions=(CAREER.missions||0)+1;saveCareer();
-  const c=sheet(`<div class="eyebrow">${story?'CHAPTER 4':'LEVEL 4'} · BANDAR KA AKHRI JAHAZ</div><h2>Mission fail</h2><p>${who?esc(who)+' ne pakad liya.':esc(why||'Jahaz chhoot gaya.')}</p>
-    <button class="btn" id="again" type="button">${story?'Chapter dobara khelo':'Dobara khelo'}</button><a class="btn alt" href="index.html">Safehouse</a>`);
+  const c=sheet(`<div class="eyebrow">${story?'CHAPTER 4':'LEVEL 4'} · THE LAST SHIP</div><h2>Mission fail</h2><p>${who?esc(who)+' ne pakad liya.':esc(why||'Jahaz chhoot gaya.')}</p>
+    <button class="btn" id="again" type="button">${story?'Replay chapter':'Play again'}</button><a class="btn alt" href="index.html">Safehouse</a>`);
   c.querySelector('#again').onclick=()=>location.reload();}
 /* ---------------- finale: "Dubai, 3 din baad" interrogation, using the whole journey's evidence ---------------- */
 async function finale(){
@@ -170,11 +170,11 @@ async function finale(){
   CAREER.endings=Array.from(new Set((CAREER.endings||[]).concat([ending])));saveCareer();
   if(story){C.active=false;C.ending=ending;C.done=Date.now();saveC(C);}
   const c=sheet(`<div class="eyebrow">${story?'KAHANI KHATAM · MUMBAI SE BHAAGO':'LEVEL 4 · FINALE'}</div><h2 style="color:${E[2]}">${E[0]}</h2><p>${E[1]}</p>
-    <div class="stats"><div class="stat"><span>Inaam</span><b>${inr(reward)}</b></div><div class="stat"><span>Nishaan</span><b>${log.length}</b></div><div class="stat"><span>Alerts</span><b>${alerts}</b></div></div>
+    <div class="stats"><div class="stat"><span>Reward</span><b>${inr(reward)}</b></div><div class="stat"><span>Nishaan</span><b>${log.length}</b></div><div class="stat"><span>Alerts</span><b>${alerts}</b></div></div>
     <p class="eyebrow">ENDINGS MILE: ${(CAREER.endings||[]).length}/3 ${['ghost','deport','caught'].map(e=>(CAREER.endings||[]).includes(e)?'●':'○').join(' ')}</p>
     ${photos.length?`<p class="eyebrow">TUMHARE SAFAR KI CCTV PHOTOS</p><div class="gallery">${photos.map(p=>`<div class="snap"><img alt="${esc(p.label)}" src="${p.url}"><b>${esc(p.label)}</b></div>`).join('')}</div>`:''}
-    <p class="eyebrow">POORA DIGITAL FOOTPRINT</p><ul class="traces">${log.length?log.map(t=>`<li>Ch ${t.ch} · ${esc(t.text)}</li>`).join(''):'<li class="ok">Koi nishaan nahi.</li>'}</ul>
-    <button class="btn" id="newstory" type="button">Nayi kahani shuru karo</button><a class="btn alt" href="index.html">Safehouse</a>`);
+    <p class="eyebrow">POORA DIGITAL FOOTPRINT</p><ul class="traces">${log.length?log.map(t=>`<li>Ch ${t.ch} · ${esc(t.text)}</li>`).join(''):'<li class="ok">No traces.</li>'}</ul>
+    <button class="btn" id="newstory" type="button">Start a new story</button><a class="btn alt" href="index.html">Safehouse</a>`);
   c.querySelector('#newstory').onclick=()=>{saveC({active:true,ch:1,log:[],photos:[],alerts:0,started:Date.now()});location.href='cab.html';};}
 /* ---------------- per-phase logic ---------------- */
 let annT=0,clackT=0;
