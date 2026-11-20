@@ -161,7 +161,7 @@ function setObj(t){if($('#objText').textContent!==t)$('#objText').textContent=t;
 let coverMesh=null;
 async function title(){
   $('#loading').hidden=true;
-  await new Promise(res=>{const c=sheet(`<div class="eyebrow">TRACE · LEVEL 3</div><h2>Highway Bus</h2>
+  await new Promise(res=>{const c=sheet(`<div class="eyebrow">${RUN?"ESCAPE · LEG "+RUN.leg:"TRACE · LEVEL 3"}</div><h2>Highway Bus</h2>
     <div class="dossier"><h3>Raasta · ${esc(MY_DEST)}</h3><dl><dt>Naam</dt><dd>${esc(L.given)} ${esc(L.surname)}</dd><dt>Bus</dt><dd><b>${esc(MY_DEST)}</b> wali, adde se subah 6:20</dd>
     <dt>Kaam</dt><dd>Raaste ke dhabe pe <b>neeli pagdi</b> wala contact naya passport dega. Bus sirf 70 second rukegi.</dd><dt>Khatra</dt><dd>Toll naka pe police chehre check karti hai. Adde pe tumhara <b>WANTED</b> poster laga hai.</dd></dl><span class="stampx">TOP SECRET</span></div>
     <p class="eyebrow">Look badalna is level ki chaabi hai. Heat ${Math.round(CAREER.heat||0)}/100 saath hai.</p>

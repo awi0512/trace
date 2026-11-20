@@ -119,7 +119,7 @@ const ui=on=>['#hud','#pads','#joy','#map'].forEach(s=>$(s).hidden=!on);
 function setObj(t){if($('#objText').textContent!==t)$('#objText').textContent=t;}
 async function title(){
   $('#loading').hidden=true;const C=getC();const story=!!(C&&C.active&&C.ch>=4);
-  await new Promise(res=>{const c=sheet(`<div class="eyebrow">TRACE · ${story?'CHAPTER 4':'LEVEL 4'}</div><h2>The Last Ship</h2>
+  await new Promise(res=>{const c=sheet(`<div class="eyebrow">${RUN?'ESCAPE · LEG '+RUN.leg:'TRACE · '+(story?'CHAPTER 4':'LEVEL 4')}</div><h2>The Last Ship</h2>
     <div class="dossier"><h3>MV SITARA · Dubai</h3><dl><dt>Naam</dt><dd>${esc(L.given)} ${esc(L.surname)}</dd><dt>Jahaz</dt><dd>Raat 4 baje nikalta hai (5 minute)</dd>
     <dt>Kaam</dt><dd><b>Dock office</b> (upar-right, quay ke paas) se Ismail bhai ka crew pass lo, phir <b>gangway</b> se jahaz pe chadho.</dd><dt>Khatra</dt><dd>Ghoomti <b>searchlights</b>, port security, aur thodi der mein <b>sniffer kutte</b>. Kutte deewar ke peeche bhi soongh lete hain.</dd>
     <dt>Tip</dt><dd>Neeche-left ke locker shed se dock worker ki jacket lo. Containers ke beech chhupo.</dd></dl><span class="stampx">TOP SECRET</span></div>

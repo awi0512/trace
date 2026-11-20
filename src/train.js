@@ -38,7 +38,9 @@ function storyRecord(ch,traces,photos,alerts,label,next){const C=getC();if(!C||!
    Edit src/run.js only: scripts/sync-run.py copies this block into index.html and src/train.js. */
 const RKEY='trace_run',HKEY='trace_hunter';
 const ZONES={airport:{url:'index.html#bhaag',name:'Airport',sub:'Terminal, security, boarding gates',col:'#e0242b'},train:{url:'train.html',name:'Night Train',sub:'Platform 4 + moving sleeper train',col:'#1f4f9a'},
-  bus:{url:'bus.html',name:'Highway Bus',sub:'Bus stand, dhaba, police checkpost',col:'#d35400'},port:{url:'port.html',name:'Docks',sub:'Containers, searchlights, cargo ship',col:'#2fa37a'}};
+  bus:{url:'bus.html',name:'Highway Bus',sub:'Bus stand, dhaba, police checkpost',col:'#d35400'},port:{url:'port.html',name:'Docks',sub:'Containers, searchlights, cargo ship',col:'#2fa37a'},
+  plane:{url:'flight.html',name:'Flight',sub:'Cabin, air marshal, immigration',col:'#6d4bd6',special:true}};
+const GROUND=Object.keys(ZONES).filter(z=>!ZONES[z].special);
 const MODS={blackout:{name:'Blackout',d:'Power cuts on and off. CCTV goes dark, guards see less.',good:true},
   traitor:{name:'Traitor',d:'Someone will sell your look to the police. No idea when.'},
   rush:{name:'Rush',d:'30% less time.'},
@@ -51,7 +53,7 @@ function rjson(k){try{return JSON.parse(localStorage.getItem(k)||'null');}catch(
 function wjson(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
 const getRun=()=>rjson(RKEY),saveRun=r=>wjson(RKEY,r);
 const getHunter=()=>{const h=Object.assign({runs:0,best:0,learned:[]},rjson(HKEY)||{});h.habits=Object.assign({run:0,crowd:0,disguise:0,dart:0,cams:0,flight:0},h.habits||{});return h;};
-const ZONE_ID=(()=>{const f=(location.pathname.split('/').pop()||'index.html').replace('.html','');return f==='train'||f==='bus'||f==='port'?f:'airport';})();
+const ZONE_ID=(()=>{const f=(location.pathname.split('/').pop()||'index.html').replace('.html','');return f==='train'||f==='bus'||f==='port'?f:f==='flight'?'plane':'airport';})();
 const RUN=(()=>{const r=getRun();if(!r||!r.active||r.zone!==ZONE_ID)return null;if(ZONE_ID==='airport'&&location.hash!=='#bhaag')return null;return r;})();
 const HUNTER=getHunter();
 /* the world remembers: violence in a zone raises its security in later runs, and makes the news */
@@ -67,8 +69,8 @@ if(RUN){for(const k of RUN.counters||[]){if(k==='run')HUNT.run=1.8;if(k==='crowd
 const habitNorm={run:60,crowd:90,disguise:3,dart:3,cams:8,flight:2};
 function pickCounters(){const h=HUNTER.habits;return Object.keys(habitNorm).map(k=>[k,(h[k]||0)/habitNorm[k]]).filter(x=>x[1]>=1).sort((a,b)=>b[1]-a[1]).slice(0,Math.min(3,1+Math.floor(HUNTER.runs/3))).map(x=>x[0]);}
 function rollMods(leg){const n=leg<=1?0:leg<=3?1:leg<=6?2:3;return shuffle(Object.keys(MODS)).slice(0,n);}
-function nextZones(cur){return shuffle(Object.keys(ZONES).filter(z=>z!==cur)).slice(0,2);}
-function newRun(){const counters=pickCounters();for(const k in WORLD.zones)WORLD.zones[k]=+(WORLD.zones[k]*.75).toFixed(2);wjson(WKEY,WORLD);const z=pick(Object.keys(ZONES));
+function nextZones(cur){return shuffle(GROUND.filter(z=>z!==cur)).slice(0,2);}
+function newRun(){const counters=pickCounters();for(const k in WORLD.zones)WORLD.zones[k]=+(WORLD.zones[k]*.75).toFixed(2);wjson(WKEY,WORLD);const z=pick(GROUND);
   const r={active:true,leg:1,zone:z,mods:[],counters,darts:2+(CAREER.dartUp||0),score:0,cash:0,legs:[],lh:{run:0,crowd:0,disguise:0,dart:0,cams:0,flight:0},started:Date.now()};saveRun(r);return r;}
 function startNewRun(){const r=newRun();location.href=ZONES[r.zone].url;if(ZONE_ID==='airport'&&r.zone==='airport')location.reload();}
 /* ---- in-zone ---- */
@@ -208,11 +210,12 @@ function newsFlash(text,sec){const d=document.createElement('div');d.style.cssTe
   d.innerHTML=`<div style="font:800 11px 'Space Grotesk',sans-serif;letter-spacing:2px;border-bottom:2px solid #111;padding-bottom:3px;margin-bottom:6px;display:flex;justify-content:space-between"><span>BREAKING NEWS</span><span style="color:#e0242b">SECURITY: ${SEC_NAMES[sec].toUpperCase()}</span></div>${text?`<div style="font:700 17px/1.2 'Space Grotesk',sans-serif">${esc(text)}</div>`:''}${sec?`<div style="font-size:12px;margin-top:5px">Guards here are sharper${sec>=2?' and faster':''}${sec>=3?'. Police shoot at 2★':''}.</div>`:''}`;
   document.body.appendChild(d);setTimeout(()=>{d.style.transition='opacity .5s';d.style.opacity=0;setTimeout(()=>d.remove(),600);},5200);}
 function recordWorld(win){const z=ZONE_ID;const kills=W.kills,shots=W.shots;const delta=kills*3+(shots?1.5:0)+S.alerts*.8+(RT.body?1:0);
-  if(delta<=0)return;WORLD.zones[z]=(WORLD.zones[z]||0)+delta;const place={airport:'Airport',train:'Night Express',bus:'Highway',port:'Docks'}[z];
+  if(delta<=0)return;WORLD.zones[z]=(WORLD.zones[z]||0)+delta;const place={airport:'Airport',train:'Night Express',bus:'Highway',port:'Docks',plane:'Flight'}[z];
   const t=kills?`${place} pe goli-baari: ${kills===1?'ek jawan maara gaya':kills+' jawan maare gaye'}, hamlawar mahila faraar`:shots?`${place} pe goli chali, kai ghante tak sab band`:RT.body?`${place} pe guard behosh mila, police ko sazish ka shak`:S.alerts>=2?`${place} pe sandigdh mahila CCTV mein, talaash jaari`:null;
   if(t){WORLD.news.push({zone:z,text:t,at:Date.now()});WORLD.news=WORLD.news.slice(-8);}wjson(WKEY,WORLD);}
 /* ---- how you left a zone decides where you can go next ---- */
-const EXITS={flight:{title:'Flight caught! ✈',text:'Clean exit. You land in a new city: wanted cleared, double cash, +1 dart. Rana loses your trail for now.',cash:2,next:['port','airport'],via:{port:'Fly to Goa →',airport:'Fly to Delhi →'}},
+const EXITS={flight:{title:'Boarding! ✈',text:'Clean exit from the airport: wanted cleared, double cash, +1 dart. But the cabin has its own eyes.',cash:2,next:['plane'],via:{plane:'Board the flight to Delhi →'}},
+  landed:{title:'Landed in Delhi',text:'Through immigration with a stamp and a straight face. New city, cold trail. +50% cash, wanted cleared.',cash:1.5,next:['train','bus','port','airport'],via:{train:'Metro to New Delhi station →',bus:'Cab to the ISBT bus stand →',port:'Connecting flight to Mumbai docks →',airport:'Back through Delhi T3 →'}},
   jump:{title:'Jumped the train!',text:'You roll into the dark fields by the highway. Ground route only.',cash:1,next:['bus','port'],via:{bus:'Hitch to the bus stand →',port:'Hitch a truck to the docks →'}},
   station:{title:'Walked out with the crowd',text:'Clean exit at the station. Nobody looked twice. +50% cash, wanted cleared.',cash:1.5,next:['airport','bus','port'],via:{airport:'Cab to the airport →',bus:'Walk to the bus stand →',port:'Local train to the docks →'}},
   truck:{title:'Hid in a truck',text:'You skipped the police checkpost in the back of a cargo truck. It is heading for the coast.',cash:.8,next:['port','train'],via:{port:'Ride to the docks →',train:'Jump off near a station →'}},
@@ -226,7 +229,7 @@ function runEnd(win,who,why){if(!RT.on)return false;RT.on=false;S.phase='over';l
   const nCam=S.camsSeen?S.camsSeen.size:0;RUN.lh.cams+=nCam;recordWorld(win);
   const legScore=win?Math.round(100+RUN.leg*40+(S.alerts?0:60)+Math.max(0,S.timeLeft)|0):0;const cash=win?40000+RUN.leg*15000:0;
   RUN.legs.push({zone:ZONE_ID,win,traces:S.traces.length,alerts:S.alerts});
-  const EX=RT.exit&&EXITS[RT.exit];if(EX&&win){RUN.cash+=cash*(EX.cash-1);if(RT.exit==='flight'){RUN.lh.flight++;W.stars=0;RUN.wanted=0;RUN.darts++;}if(RT.exit==='station'||RT.exit==='city'||RT.exit==='ship'){W.stars=0;RUN.wanted=0;}}
+  const EX=RT.exit&&EXITS[RT.exit];if(EX&&win){RUN.cash+=cash*(EX.cash-1);if(RT.exit==='flight'){RUN.lh.flight++;W.stars=0;RUN.wanted=0;RUN.darts++;}if(RT.exit==='station'||RT.exit==='city'||RT.exit==='ship'||RT.exit==='landed'){W.stars=0;RUN.wanted=0;}}
   if(win){RUN.score+=legScore;RUN.cash+=cash;const opts=(EX?shuffle(EX.next).slice(0,2):nextZones(ZONE_ID)).map(z=>({z,mods:rollMods(RUN.leg+1)}));RUN.offer=opts;saveRun(RUN);
     const c=sheet(`<div class="eyebrow">ESCAPE · LEG ${RUN.leg} CLEARED</div><h2>${EX?EX.title:'Escaped!'}</h2>${EX?`<p>${EX.text}</p>`:''}
       <div class="stats"><div class="stat"><span>Score</span><b>${RUN.score}</b></div><div class="stat"><span>Run cash</span><b>${inr(RUN.cash)}</b></div><div class="stat"><span>Darts / Ammo</span><b>${RUN.darts} / ${RUN.ammo}</b></div></div>${RUN.wanted?`<p class="eyebrow" style="color:#ffd166">WANTED ${'★'.repeat(RUN.wanted)} carries into the next zone</p>`:''}
@@ -611,7 +614,7 @@ const ui=on=>['#hud','#pads','#joy','#map'].forEach(s=>$(s).hidden=!on);
 function setObj(t){if($('#objText').textContent!==t)$('#objText').textContent=t;}
 async function title(){
   $('#loading').hidden=true;
-  await new Promise(res=>{const c=sheet(`<div class="eyebrow">TRACE · LEVEL 2</div><h2>Night Train</h2>
+  await new Promise(res=>{const c=sheet(`<div class="eyebrow">${RUN?"ESCAPE · LEG "+RUN.leg:"TRACE · LEVEL 2"}</div><h2>Night Train</h2>
     <div class="dossier"><h3>Ticket · 12951 Raat Express</h3><dl><dt>Naam</dt><dd>${esc(L.given)} ${esc(L.surname)}</dd><dt>Coach</dt><dd><b>S${MY_COACH}</b>, berth ${MY_BERTH}</dd><dt>Gaadi</dt><dd>23:40, Platform 4 → Delhi</dd>
     <dt>Kaam</dt><dd>${JOB==='drop'?'Coach S1 mein <b>hari shawl, safed topi</b> wale contact ko packet do.':'Coach S2 mein ek berth ke neeche <b>kaala bag</b> hai. Utha lo.'}</dd><dt>Phir</dt><dd>Gaadi signal pe dheemi hogi. Darwaze se kood jaana.</dd></dl><span class="stampx">TOP SECRET</span></div>
     <p class="eyebrow">Ek RPF jawan (laal armband) ke paas tumhari photo hai. Airport ki heat ${Math.round(CAREER.heat||0)}/100 saath hai.</p>
