@@ -396,7 +396,7 @@ function canSee(g,x,z){const dx=x-g.pos.x,dz=z-g.pos.z,d=Math.hypot(dx,dz);if(d<
 let worst='calm';
 function goAlert(g,why){if(g.state==='alert')return;g.state='alert';g.sus=100;g.lost=0;S.alerts++;S.wanted=lookKey();sfx.alert();slowmo();vib([90,50,90]);
   toast(`${g.name}: "RUKO!" ${why?'('+why+')':''}`);for(const o of G){if(o!==g&&o.area===g.area&&o.state!=='alert'){o.sus=Math.max(o.sus,62);o.state='search';o.lastSeen=[P.pos.x,P.pos.z];o.searchT=10;}}
-  if(S.alerts===1)trace('RPF ne pehchaana, walkie-talkie pe bataya');}
+  if(S.alerts===1)trace(`${g.name} ne pehchaana, walkie-talkie pe bataya`);}
 function flags(){let crowd=0;for(const n of NPC){if(!n.inArea||n.inArea!==S.area)continue;if(Math.hypot(n.pos.x-P.pos.x,n.pos.z-P.pos.z)<2)crowd++;}
   return {running:P.running,action:!!(S.hold&&S.hold.illegal),wanted:S.wanted===lookKey(),crowd,seated:S.seat&&S.seat.kind==='sit',lying:S.seat&&S.seat.kind==='lie'};}
 function updGuards(dt,t){const F=flags();worst='calm';
@@ -483,7 +483,7 @@ const ROW_X=r=>6.2-r*1.05;
 function buildTrain(){
   const wallM=m(0xf4f1ea,{roughness:.6}),seatM=m(0x1d3a6b,{roughness:.8});
   mesh(new T.BoxGeometry(17,.2,3.2),m(0x4a4f5a),0,-.1,TZ);
-  mesh(new T.PlaneGeometry(17,.9),m(0x2b6fd6),0,.02,TZ).rotation.x=-Math.PI/2;      // aisle carpet
+  mesh(new T.PlaneGeometry(17,1),m(0x2b6fd6),0,.02,TZ).rotation.x=-Math.PI/2;      // aisle carpet
   box(-8.5,8.5,TZ-1.6,TZ-1.5,2.6,wallM,{tall:true});
   for(let r=0;r<ROWS;r++)mesh(new T.CircleGeometry(.22,16),new T.MeshBasicMaterial({color:0xbfe4ff,toneMapped:false}),ROW_X(r),1.5,TZ-1.49);
   box(-8.6,-8.5,TZ-1.6,TZ+1.6,2.6,wallM,{tall:true});box(8.5,8.6,TZ-1.6,TZ+1.6,2.6,m(0xdfe3ea),{tall:true});
@@ -493,8 +493,9 @@ function buildTrain(){
   seatbeltSign=mesh(new T.PlaneGeometry(.5,.25),glow(0x333333,1),4,2.55,TZ-1.48);
   // seats 2+2, facing the nose (+x)
   for(let r=0;r<ROWS;r++){const x=ROW_X(r);
-    for(const z of [TZ-1.05,TZ-.55,TZ+.55,TZ+1.05]){mesh(rb(.5,.12,.46,.05),seatM,x,.45,z);mesh(rb(.1,.7,.46,.05),seatM,x-.24,.85,z);SEATS.push({kind:'sit',x,z,y:.42,yaw:Math.PI/2,taken:false,row:r});}
-    COL.push({x0:x-.3,x1:x+.26,z0:TZ-1.3,z1:TZ-.3,on:true,tall:false});COL.push({x0:x-.3,x1:x+.26,z0:TZ+.3,z1:TZ+1.3,on:true,tall:false});}
+    for(const z of [TZ-1.18,TZ-.72,TZ+.72,TZ+1.18]){mesh(rb(.44,.12,.42,.05),seatM,x,.45,z);mesh(rb(.1,.7,.42,.05),seatM,x-.22,.85,z);SEATS.push({kind:'sit',x,z,y:.42,yaw:Math.PI/2,taken:false,row:r});}
+    COL.push({x0:x-.28,x1:x+.22,z0:TZ-1.45,z1:TZ-.5,on:true,tall:false});COL.push({x0:x-.28,x1:x+.22,z0:TZ+.5,z1:TZ+1.45,on:true,tall:false});}
+  COL.push({x0:-8.6,x1:8.6,z0:TZ+1.5,z1:TZ+1.7,on:true,tall:false});   // invisible near-side wall of the cut-away cabin
   for(const s of SEATS){if(chance(.62)){s.taken=true;const c=npc(paxOpts(),s.x,s.z,'train','static');sitPose(c,s.y);c.yaw=s.yaw;c.g.rotation.y=s.yaw;}}
   // rear galley: trolley and the lavatory door, crew jacket hanging on a hook
   box(-8.4,-7.4,TZ-1.5,TZ-.6,1.1,m(0xb8bec8),{cast:true});
@@ -506,7 +507,7 @@ function buildTrain(){
   for(let i=0;i<26;i++){const g=new T.Group();for(let k=0;k<4;k++)mesh(new T.SphereGeometry(rnd(1.2,2.4),10,8),m(0xffffff,{roughness:1}),rnd(-2,2),rnd(-.4,.6),rnd(-1,1),g);
     g.position.set(rnd(-90,90),rnd(-6,-1),TZ-rnd(6,30));scene.add(g);outside.push(g);}
   // the flight attendant (re-uses the "tc" walker) and the air marshal at the rear galley
-  tc=chibi({body:0x1d2340,legs:0x1d2340,skin:0xe2b48f,hair:0x2a1d14,longHair:true,scarf:0xe0242b,shadow:true});tc.pos.set(7.6,0,TZ);tc.yaw=-Math.PI/2;tc.inArea='train';tc.bay=0;tc.icon=iconSprite();tc.sus=0;
+  tc=chibi({body:0x1d2340,legs:0x1d2340,skin:0xe2b48f,hair:0x2a1d14,longHair:true,scarf:0xe0242b,shadow:true});tc.pos.set(7.6,0,TZ);tc.yaw=-Math.PI/2;tc.inArea='train';tc.bay=0;tc.icon=iconSprite();tc.sus=0;tc.ghost=true;
 }
 /* ---------------- player ---------------- */
 let P;
@@ -524,7 +525,7 @@ function updPlayer(dt,t){if(S.seat){anim(P,dt,0,t);return;}
   const run=input.run||input.keys.ShiftLeft||input.keys.ShiftRight;const spd=(run?4.6:2.3)*mag*(S.area==='train'?.85:1);
   camera.getWorldDirection(tv);const cy=Math.atan2(tv.x,tv.z);const fx=Math.sin(cy),fz=Math.cos(cy),rx=-Math.cos(cy),rz=Math.sin(cy);let vx=fx*iy+rx*ix,vz=fz*iy+rz*ix;const l=Math.hypot(vx,vz);vx/=l;vz/=l;
   P.pos.x+=vx*spd*dt;P.pos.z+=vz*spd*dt;collide(P.pos);
-  for(const n of NPC.concat(G,tc?[tc]:[])){if(n.inArea&&n.inArea!==S.area||n.area&&n.area!==S.area)continue;if(n.pose)continue;const dx=P.pos.x-n.pos.x,dz=P.pos.z-n.pos.z,d=Math.hypot(dx,dz);if(d<.55&&d>1e-4){P.pos.x=n.pos.x+dx/d*.55;P.pos.z=n.pos.z+dz/d*.55;}}
+  for(const n of NPC.concat(G,tc?[tc]:[])){if(n.inArea&&n.inArea!==S.area||n.area&&n.area!==S.area)continue;if(n.pose||n.ghost)continue;const dx=P.pos.x-n.pos.x,dz=P.pos.z-n.pos.z,d=Math.hypot(dx,dz);if(d<.55&&d>1e-4){P.pos.x=n.pos.x+dx/d*.55;P.pos.z=n.pos.z+dz/d*.55;}}
   faceTo(P,Math.atan2(vx,vz),dt,12);P.speed=spd;P.running=run&&mag>.5;anim(P,dt,spd,t);P.stepT=(P.stepT||0)-dt*spd;if(P.stepT<=0){sfx.step();P.stepT=1.3;}}
 
 /* ---------------- dialogue / comic / sheets ---------------- */
@@ -589,7 +590,7 @@ inter({area:'platform',label:'Buy a cap + sunglasses · ₹600',r:2.4,on:()=>S.l
 inter({area:'platform',label:'Board: show your boarding pass',r:2,pos:()=>[16.4,0],run:async()=>board()});
 /* ---- cabin ---- */
 function seatNear(){let best=null,bd=1.4;for(const s of SEATS){if(s.taken)continue;const d=Math.hypot(P.pos.x-s.x,P.pos.z-s.z);if(d<bd){bd=d;best=s;}}return best;}
-inter({area:'train',label:'Sit down',r:3,on:()=>!S.seat&&!!seatNear(),pos:()=>{const s=seatNear();return s?[s.x,s.z]:[1e9,0];},run:async()=>{const s=seatNear();if(!s)return;s.taken=true;S.seat={kind:'sit',ref:s,back:P.pos.clone()};P.pos.set(s.x,s.y,s.z);P.yaw=s.yaw;P.g.rotation.y=s.yaw;sitPose(P,s.y);P.ring.visible=false;}});
+inter({area:'train',label:'Sit down',r:3,on:()=>!S.seat&&!!seatNear()&&(S.done||Math.abs(P.pos.x-ROW_X(MY_ROW))>.8),pos:()=>{const s=seatNear();return s?[s.x,s.z]:[1e9,0];},run:async()=>{const s=seatNear();if(!s)return;s.taken=true;S.seat={kind:'sit',ref:s,back:P.pos.clone()};P.pos.set(s.x,s.y,s.z);P.yaw=s.yaw;P.g.rotation.y=s.yaw;sitPose(P,s.y);P.ring.visible=false;}});
 inter({area:'train',label:()=>S.covered?'Take off the eye mask':'Put on an eye mask (hide face)',r:99,on:()=>!!S.seat,pos:()=>[P.pos.x+.01,P.pos.z],run:async()=>{S.covered=!S.covered;coverMesh.visible=S.covered;toast(S.covered?'Eye mask on. Harder to recognise, but you see nothing.':'Mask off.','info');}});
 inter({area:'train',label:'Stand up',r:99,on:()=>!!S.seat,pos:()=>[P.pos.x,P.pos.z],run:async()=>standUp()});
 function standUp(){if(!S.seat)return;S.seat.ref.taken=false;const b=S.seat.back;S.seat=null;S.covered=false;coverMesh.visible=false;P.pose=null;P.root.rotation.z=0;P.root.position.y=0;P.g.position.set(b.x,0,b.z);P.ring.visible=true;}
