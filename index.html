@@ -193,7 +193,7 @@ const COMPS={
   face:{t:'Pehchaana chehra',d:'Ek CISF jawan (laal armband) ke paas tumhari photo hai. Uske saamne look badal ke jao.'},
   crowd:{t:'Flight delay',d:'Do flights late hain. Bheed zyaada hai, chhupna aasaan.'},
   cams:{t:'Naye camere',d:'CCTV ki range badha di gayi hai.'}};
-let M;const TUT=!CAREER.tutDone;
+let M;const INTRO_V=2;const TUT=!(CAREER.tutV>=INTRO_V);
 function newMission(){
   const n=pick(NAMES);let type=pick(Object.keys(OBJ));
   let comps=shuffle(Object.keys(COMPS)).slice(0,chance(.5)?2:1);if(TUT){type='steal';comps=[];}
@@ -727,12 +727,14 @@ function hub(){$('#loading').hidden=true;const h=Math.round(CAREER.heat);
     <button class="btn" id="go" type="button">Naya mission</button>
     <button class="btn alt" id="pp" type="button" ${CAREER.money<100000||h<10?'disabled':''}>Naya passport (heat −50) · ${inr(100000)}</button>
     <a class="btn alt" href="cab.html">Story: Ghar se airport</a>
+    <button class="btn alt" id="replay" type="button">Kahani shuru se (intro + tutorial)</button>
     <p style="opacity:.7;font-size:13px">Phone: neeche-left gola se chalo, right side se camera, RUN se bhaago. Computer: WASD, Shift, mouse drag, E.</p>`);
   c.querySelector('#go').onclick=()=>{auInit();AU.ctx&&AU.ctx.resume();start();};
+  c.querySelector('#replay').onclick=()=>{CAREER.introV=0;CAREER.tutV=0;saveCareer();location.hash='';location.reload();};
   c.querySelector('#pp').onclick=()=>{CAREER.money-=100000;CAREER.heat=Math.max(0,CAREER.heat-50);saveCareer();hub();};}
 async function start(){
   closeSheet();
-  if(!CAREER.seenIntro){await comic('cold');CAREER.seenIntro=true;saveCareer();}
+  if(!(CAREER.introV>=INTRO_V)){await comic('cold');CAREER.introV=INTRO_V;saveCareer();}
   if(!TUT)await new Promise(res=>{const c=sheet(`${briefHTML()}<button class="btn" id="ok" type="button">Mission shuru</button>`);c.querySelector('#ok').onclick=()=>{closeSheet();res();};});
   ['#hud','#map','#pads','#joy'].forEach(s=>$(s).hidden=false);
   S.phase='play';locked=false;S.timeLeft=M.time;
@@ -783,7 +785,7 @@ const LBL=[{t:'GUARD',c:'',p:()=>[G[0].pos.x,2.7,G[0].pos.z]},{t:'GUARD',c:'',p:
 function drawLabels(){const box=$('#lbls');if(!box.children.length)box.innerHTML=LBL.map(l=>`<div class="lbl ${l.c}">${l.t}</div>`).join('');
   [...box.children].forEach((el,i)=>{const p=LBL[i].p();tv.set(p[0],p[1],p[2]).project(camera);const on=tv.z<1&&Math.abs(tv.x)<.92&&Math.abs(tv.y)<.9;el.style.display=on?'':'none';if(on){el.style.left=((tv.x+1)/2*innerWidth)+'px';el.style.top=((1-tv.y)/2*innerHeight)+'px';}});}
 function splash(){$('#loading').hidden=true;S.phase='splash';const sp=$('#splash');sp.hidden=false;
-  sp.addEventListener('pointerdown',async()=>{sp.hidden=true;$('#lbls').innerHTML='';auInit();AU.ctx&&AU.ctx.resume();S.phase='intro';await comic('cold');CAREER.seenIntro=true;saveCareer();location.href='cab.html';},{once:true});}
+  sp.addEventListener('pointerdown',async()=>{sp.hidden=true;$('#lbls').innerHTML='';auInit();AU.ctx&&AU.ctx.resume();S.phase='intro';await comic('cold');CAREER.introV=INTRO_V;saveCareer();location.href='cab.html';},{once:true});}
 
 /* ===================== thriller tutorial (first mission only) ===================== */
 let TS=null;
@@ -796,7 +798,7 @@ function updTutorial(dt){if(!TS||S.phase!=='play')return;TS.t+=dt;const g=G[0];
   else if(TS.step===1){const inC=Math.hypot(P.pos.x-TS.cluster[0],P.pos.z-TS.cluster[1])<2.1||playerFlags().crowd>=3;TS.crowdT=inC?TS.crowdT+dt:0;
     if(TS.crowdT>1.4&&g.sus<15){TS.step=2;g.scripted=false;g.state='search';g.searchT=30;g.lastSeen=[19,19];g.sus=40;g.path=null;S.wanted=lookKey();sfx.ok();toast('Bheed ne chhupa liya.','good');
       banner('Washroom mein look badlo →');}}
-  else if(TS.step===2&&lookKey()!==S.startLook){TS.step=3;banner('Staff ke peeche STAFF ONLY mein ghuso →');CAREER.tutDone=true;saveCareer();}
+  else if(TS.step===2&&lookKey()!==S.startLook){TS.step=3;banner('Staff ke peeche STAFF ONLY mein ghuso →');CAREER.tutV=INTRO_V;saveCareer();}
   else if(TS.step===3&&region(P.pos.x,P.pos.z)==='STAFF'){TS.step=4;banner('Peeli nazar se bacho. Laptop tak hari line →');setTimeout(()=>{if(TS&&TS.step===4)banner(null);},7000);}}
 
 /* ===================== camera & loop ===================== */
@@ -839,5 +841,5 @@ camera.position.set(0,8,30);
 window.__ready=true;
 window.__trace={get TS(){return TS;},S,M,G,CAMS,NPC,get P(){return P;},CAREER,start,doAct,get cur(){return current&&(typeof current.label==='function'?current.label():current.label);},tp:(x,z)=>{P.pos.set(x,0,z);}};
 frame();
-if(!CAREER.seenIntro)splash();else if(location.hash==='#play'){$('#loading').hidden=true;auInit();start();}else hub();
+if(!(CAREER.introV>=INTRO_V))splash();else if(location.hash==='#play'){$('#loading').hidden=true;auInit();start();}else hub();
 </script>

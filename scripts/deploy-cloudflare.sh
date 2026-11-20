@@ -15,7 +15,7 @@ idx = open('site/index.html', encoding='utf-8').read()
 cab = open('site/cab.html', encoding='utf-8').read()
 src = """const INDEX=%s;
 const CAB=%s;
-const page=s=>new Response(s,{headers:{'content-type':'text/html; charset=utf-8','cache-control':'public, max-age=300'}});
+const page=s=>new Response(s,{headers:{'content-type':'text/html; charset=utf-8','cache-control':'no-cache'}});
 export default{async fetch(req){const p=new URL(req.url).pathname;
   if(p==='/'||p==='/index.html')return page(INDEX);
   if(p==='/cab'||p==='/cab.html')return page(CAB);
