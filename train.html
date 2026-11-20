@@ -180,6 +180,16 @@ function vib(p){try{navigator.vibrate&&navigator.vibrate(p);}catch(e){}}
 const SAVE_KEY='trace_career_v1';
 const CAREER=(()=>{try{const c=JSON.parse(localStorage.getItem(SAVE_KEY)||'null');if(c&&typeof c.money==='number')return c;}catch(e){}return {money:150000,missions:0,wins:0,heat:0,best:0};})();
 const saveCareer=()=>{try{localStorage.setItem(SAVE_KEY,JSON.stringify(CAREER));}catch(e){}};
+/* ---------------- story campaign "Mumbai se Bhaago" (shared by every chapter page) ---------------- */
+const CKEY='trace_campaign';
+function getC(){try{return JSON.parse(localStorage.getItem(CKEY)||'null');}catch(e){return null;}}
+function saveC(c){try{localStorage.setItem(CKEY,JSON.stringify(c));}catch(e){try{c.photos=(c.photos||[]).slice(-2);localStorage.setItem(CKEY,JSON.stringify(c));}catch(e2){}}}
+function newStory(){saveC({active:true,ch:1,next:'cab.html',log:[],photos:[],al:{},alerts:0,started:Date.now()});}
+function storyRecord(ch,traces,photos,alerts,label,next){const C=getC();if(!C||!C.active)return null;
+  C.log=(C.log||[]).filter(x=>x.ch!==ch).concat(traces.map(t=>({ch,text:t.text})));
+  C.photos=(C.photos||[]).filter(p=>p.ch!==ch).concat(photos.slice(0,1).map(p=>({ch,url:p.url,label:label+' '+p.id})));
+  C.al=Object.assign({},C.al||{},{[ch]:alerts});C.alerts=Object.values(C.al).reduce((a,b)=>a+b,0);
+  if(next){C.ch=ch+1;C.next=next;}saveC(C);return C;}
 const NAMES=[['Ananya','Sethi'],['Kavya','Arora'],['Riya','Joshi'],['Meera','Khanna'],['Aditi','Rao'],['Sana','Mirza'],['Isha','Bhatt']];
 const CITIES=['Indore','Pune','Lucknow','Jaipur','Surat','Nagpur','Bhopal'];
 const JOBS=['Sales manager','Software tester','Purchase executive','Logistics coordinator','Fashion buyer'];
@@ -570,13 +580,14 @@ async function nameQ(who){await say(who,'Ticket pe naam kya hai?');const ans=`${
 function finish(win,who,why){S.phase='over';locked=true;ui(false);const nCam=S.camsSeen.size;let stars=0,reward=0;
   if(win){stars=1;if(S.alerts===0)stars++;if(S.traces.length<=3&&nCam<=2)stars++;reward=[0,80000,140000,220000][stars];}
   const heatAdd=Math.min(40,S.traces.length*3+S.alerts*8+nCam);const before=CAREER.heat||0;CAREER.heat=Math.min(100,before+heatAdd);CAREER.missions=(CAREER.missions||0)+1;if(win){CAREER.wins=(CAREER.wins||0)+1;CAREER.money+=reward;CAREER.best=Math.max(CAREER.best||0,stars);CAREER.trainDone=true;}saveCareer();
-  const c=sheet(`<div class="eyebrow">LEVEL 2 · RAAT KI GAADI</div><h2>${win?['','Bach nikli','Saaf kaam','Ghost'][stars]:'Mission fail'}</h2>
+  const C=win?storyRecord(3,S.traces,S.photos,S.alerts,'Station cam','port.html'):getC();const story=!!(C&&C.active);
+  const c=sheet(`<div class="eyebrow">${story?'CHAPTER 3':'LEVEL 2'} · RAAT KI GAADI</div><h2>${win?['','Bach nikli','Saaf kaam','Ghost'][stars]:'Mission fail'}</h2>
     ${win?`<p style="font-family:var(--sfx);font-size:30px;color:var(--accent)">${'★'.repeat(stars)}<span style="opacity:.3">${'★'.repeat(3-stars)}</span></p>`:`<p>${who?esc(who)+' ne pakad liya.':esc(why||'Gaadi chhoot gayi.')}</p>`}
     <div class="stats"><div class="stat"><span>Inaam</span><b>${inr(reward)}</b></div><div class="stat"><span>Alerts</span><b>${S.alerts}</b></div><div class="stat"><span>Camere</span><b>${nCam}/${CAMS.length}</b></div></div>
     <p class="eyebrow">HEAT: ${Math.round(before)} → ${Math.round(CAREER.heat)}</p><div class="heat"><i style="width:${CAREER.heat}%"></i></div>
     ${S.photos.length?`<p class="eyebrow">CCTV NE YE PHOTOS LI</p><div class="gallery">${S.photos.map(p=>`<div class="snap"><img alt="CCTV cam ${p.id}" src="${p.url}"><b>PF4 CAM ${p.id} · ${esc(p.t)}</b></div>`).join('')}</div>`:''}
     <p class="eyebrow">TUMHARA DIGITAL FOOTPRINT</p><ul class="traces">${S.traces.length?S.traces.map(t=>`<li>${esc(t.text)}</li>`).join(''):'<li class="ok">Koi nishaan nahi.</li>'}</ul>
-    ${win?`<a class="btn" href="bus.html" style="background:#d35400">Agla level: Highway ki Bus →</a>`:''}<button class="btn" id="again" type="button">Dobara khelo</button><a class="btn alt" href="index.html">Safehouse</a>`);
+    ${win?(story?`<a class="btn" href="port.html" style="background:#2fa37a">Chapter 4 (final): Bandargah →</a>`:`<a class="btn" href="bus.html" style="background:#d35400">Agla level: Highway ki Bus →</a>`):''}<button class="btn" id="again" type="button">${story?'Chapter dobara khelo':'Dobara khelo'}</button><a class="btn alt" href="index.html">Safehouse</a>`);
   c.querySelector('#again').onclick=()=>location.reload();}
 
 /* ---------------- per-phase logic ---------------- */

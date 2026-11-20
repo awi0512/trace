@@ -189,13 +189,14 @@ async function nameQ(who){await say(who,'Naam kya hai?');const ans=`${L.given} $
 function finish(win,who,why){S.phase='over';locked=true;ui(false);const nCam=S.camsSeen.size;let stars=0,reward=0;
   if(win){stars=1;if(S.alerts===0)stars++;if(S.traces.length<=3&&nCam<=2)stars++;reward=[0,90000,160000,250000][stars];}
   const heatAdd=Math.min(40,S.traces.length*3+S.alerts*8+nCam);const before=CAREER.heat||0;CAREER.heat=Math.min(100,before+heatAdd);CAREER.missions=(CAREER.missions||0)+1;if(win){CAREER.wins=(CAREER.wins||0)+1;CAREER.money+=reward;CAREER.best=Math.max(CAREER.best||0,stars);CAREER.busDone=true;}saveCareer();
-  const c=sheet(`<div class="eyebrow">LEVEL 3 · HIGHWAY KI BUS</div><h2>${win?['','Bach nikli','Saaf kaam','Ghost'][stars]:'Mission fail'}</h2>
+  const C=win?storyRecord(3,S.traces,S.photos,S.alerts,'Adda cam','port.html'):getC();const story=!!(C&&C.active);
+  const c=sheet(`<div class="eyebrow">${story?'CHAPTER 3':'LEVEL 3'} · HIGHWAY KI BUS</div><h2>${win?['','Bach nikli','Saaf kaam','Ghost'][stars]:'Mission fail'}</h2>
     ${win?`<p style="font-family:var(--sfx);font-size:30px;color:var(--accent)">${'★'.repeat(stars)}<span style="opacity:.3">${'★'.repeat(3-stars)}</span></p>`:`<p>${who?esc(who)+' ne pakad liya.':esc(why||'Bus chhoot gayi.')}</p>`}
     <div class="stats"><div class="stat"><span>Inaam</span><b>${inr(reward)}</b></div><div class="stat"><span>Alerts</span><b>${S.alerts}</b></div><div class="stat"><span>Camere</span><b>${nCam}/${CAMS.length}</b></div></div>
     <p class="eyebrow">HEAT: ${Math.round(before)} → ${Math.round(CAREER.heat)}</p><div class="heat"><i style="width:${CAREER.heat}%"></i></div>
     ${S.photos.length?`<p class="eyebrow">CCTV NE YE PHOTOS LI</p><div class="gallery">${S.photos.map(p=>`<div class="snap"><img alt="CCTV cam ${p.id}" src="${p.url}"><b>ADDA CAM ${p.id} · ${esc(p.t)}</b></div>`).join('')}</div>`:''}
     <p class="eyebrow">TUMHARA DIGITAL FOOTPRINT</p><ul class="traces">${S.traces.length?S.traces.map(t=>`<li>${esc(t.text)}</li>`).join(''):'<li class="ok">Koi nishaan nahi.</li>'}</ul>
-    <button class="btn" id="again" type="button">Dobara khelo</button><a class="btn alt" href="index.html">Safehouse</a>`);
+    ${win?(story?`<a class="btn" href="port.html" style="background:#2fa37a">Chapter 4 (final): Bandargah →</a>`:`<a class="btn" href="port.html" style="background:#2fa37a">Agla level: Bandar ka Akhri Jahaz →</a>`):''}<button class="btn" id="again" type="button">${story?'Chapter dobara khelo':'Dobara khelo'}</button><a class="btn alt" href="index.html">Safehouse</a>`);
   c.querySelector('#again').onclick=()=>location.reload();}
 
 /* ---------------- per-phase logic ---------------- */

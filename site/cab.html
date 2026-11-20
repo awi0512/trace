@@ -151,6 +151,16 @@ const S={t:55,money:240000,traces:[],legendUses:3,
   phase:'intro',cabType:null,said:{}};
 const clockStr=()=>{const m=Math.floor(S.t)%1440;return String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0');};
 function toast(t,k='bad'){const d=document.createElement('div');d.className='toast'+(k==='info'?' info':'');d.textContent=t;$('#toasts').appendChild(d);setTimeout(()=>d.remove(),4200);while($('#toasts').children.length>3)$('#toasts').firstChild.remove();}
+/* ---------------- story campaign "Mumbai se Bhaago" (shared by every chapter page) ---------------- */
+const CKEY='trace_campaign';
+function getC(){try{return JSON.parse(localStorage.getItem(CKEY)||'null');}catch(e){return null;}}
+function saveC(c){try{localStorage.setItem(CKEY,JSON.stringify(c));}catch(e){try{c.photos=(c.photos||[]).slice(-2);localStorage.setItem(CKEY,JSON.stringify(c));}catch(e2){}}}
+function newStory(){saveC({active:true,ch:1,next:'cab.html',log:[],photos:[],al:{},alerts:0,started:Date.now()});}
+function storyRecord(ch,traces,photos,alerts,label,next){const C=getC();if(!C||!C.active)return null;
+  C.log=(C.log||[]).filter(x=>x.ch!==ch).concat(traces.map(t=>({ch,text:t.text})));
+  C.photos=(C.photos||[]).filter(p=>p.ch!==ch).concat(photos.slice(0,1).map(p=>({ch,url:p.url,label:label+' '+p.id})));
+  C.al=Object.assign({},C.al||{},{[ch]:alerts});C.alerts=Object.values(C.al).reduce((a,b)=>a+b,0);
+  if(next){C.ch=ch+1;C.next=next;}saveC(C);return C;}
 function trace(t){S.traces.push({t:clockStr(),text:t});toast('Nishaan: '+t);}
 function hudUpdate(){$('#clock').innerHTML=`${clockStr()}<small>IST</small>`;$('#money').textContent=inr(S.money);}
 function setObj(t){$('#objText').textContent=t;}
@@ -647,14 +657,14 @@ async function arrival(){
   await comic('arrive');
   endCard();
 }
-function endCard(){
+function endCard(){const C=storyRecord(1,S.traces,[],0,'','index.html#story');const story=!!C;
   const kind=S.traces.length<=1?'Saaf safar':S.traces.length<=3?'Kuch nishaan chhoote':'Peechha shuru ho chuka hai';
-  const c=sheet(`<h2>Chapter 1 khatam</h2><p class="typ" style="color:var(--accent)">${esc(kind.toUpperCase())}</p>
+  const c=sheet(`<h2>Chapter 1 khatam</h2>${story?'<p class="typ" style="opacity:.7">MUMBAI SE BHAAGO · 1/4</p>':''}<p class="typ" style="color:var(--accent)">${esc(kind.toUpperCase())}</p>
     <p>Tum ${clockStr()} pe Terminal 2 pahunchi. Paise bache: ${inr(S.money)}.</p>
     <p class="typ" style="color:var(--paper)">Tumhara digital footprint:</p>
     <ul class="traces">${S.traces.length?S.traces.map(t=>`<li>${esc(t.t)} · ${esc(t.text)}</li>`).join(''):'<li class="ok">Koi nishaan nahi. Ghost.</li>'}</ul>
     <p style="opacity:.8">Ab airport ke andar. Ye nishaan wahan tumhara peechha karenge.</p>
-    <a class="btn" href="index.html#play" style="text-align:center;text-decoration:none">Airport mein ghuso →</a><button class="btn" id="again" type="button" style="background:#1d2340">Dobara khelo</button>`);
+    <a class="btn" href="${story?'index.html#story':'index.html#play'}" style="text-align:center;text-decoration:none">${story?'Chapter 2: Airport →':'Airport mein ghuso →'}</a><button class="btn" id="again" type="button" style="background:#1d2340">Dobara khelo</button>`);
   try{localStorage.setItem('trace_cover',JSON.stringify({given:S.L.given,surname:S.L.surname,city:S.L.city,job:S.L.job.title,purpose:S.L.purpose,hotel:S.L.hotel,days:S.L.days}));}catch(e){}
   c.querySelector('#again').onclick=()=>location.reload();
 }

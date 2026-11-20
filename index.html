@@ -175,6 +175,16 @@ const TIMEOUT=Symbol('t');
 const SAVE_KEY='trace_career_v1';
 function loadCareer(){try{const c=JSON.parse(localStorage.getItem(SAVE_KEY)||'null');if(c&&typeof c.money==='number')return c;}catch(e){}return {money:150000,missions:0,wins:0,heat:0,best:0,seenIntro:false};}
 function saveCareer(){try{localStorage.setItem(SAVE_KEY,JSON.stringify(CAREER));}catch(e){}}
+/* ---------------- story campaign "Mumbai se Bhaago" (shared by every chapter page) ---------------- */
+const CKEY='trace_campaign';
+function getC(){try{return JSON.parse(localStorage.getItem(CKEY)||'null');}catch(e){return null;}}
+function saveC(c){try{localStorage.setItem(CKEY,JSON.stringify(c));}catch(e){try{c.photos=(c.photos||[]).slice(-2);localStorage.setItem(CKEY,JSON.stringify(c));}catch(e2){}}}
+function newStory(){saveC({active:true,ch:1,next:'cab.html',log:[],photos:[],al:{},alerts:0,started:Date.now()});}
+function storyRecord(ch,traces,photos,alerts,label,next){const C=getC();if(!C||!C.active)return null;
+  C.log=(C.log||[]).filter(x=>x.ch!==ch).concat(traces.map(t=>({ch,text:t.text})));
+  C.photos=(C.photos||[]).filter(p=>p.ch!==ch).concat(photos.slice(0,1).map(p=>({ch,url:p.url,label:label+' '+p.id})));
+  C.al=Object.assign({},C.al||{},{[ch]:alerts});C.alerts=Object.values(C.al).reduce((a,b)=>a+b,0);
+  if(next){C.ch=ch+1;C.next=next;}saveC(C);return C;}
 const CAREER=loadCareer();
 
 /* ===================== mission generator ===================== */
@@ -762,32 +772,52 @@ function finish(win,who,why){S.phase='over';locked=true;sfx.chime();
   const heatAdd=Math.min(40,S.traces.length*3+S.alerts*8+nCam);const before=CAREER.heat;CAREER.heat=Math.min(100,CAREER.heat+heatAdd);
   CAREER.lastType=M.type;if(TUT)CAREER.tutV=INTRO_V;
   CAREER.missions++;if(win){CAREER.wins++;CAREER.money+=reward;CAREER.best=Math.max(CAREER.best,stars);}saveCareer();
-  const show=()=>{const c=sheet(`<div class="eyebrow">${esc(M.code)} · ${esc(OBJ[M.type].title)}</div><h2>${win?['','Kaam ho gaya','Saaf kaam','Ghost'][stars]:'Mission fail'}</h2>
+  const STORY=location.hash==='#story'&&getC()&&getC().active;let route=null;
+  if(STORY&&win){const C=storyRecord(2,S.traces,S.photos,S.alerts,'Airport cam',null);const score=C.log.length+C.alerts*3+nCam;route=score>=8?'bus':'train';C.route=route;C.score=score;C.ch=3;C.next=route+'.html';saveC(C);}
+  const show=()=>{const c=sheet(`<div class="eyebrow">${STORY?'CHAPTER 2 · ':''}${esc(M.code)} · ${esc(OBJ[M.type].title)}</div><h2>${win?['','Kaam ho gaya','Saaf kaam','Ghost'][stars]:'Mission fail'}</h2>
     ${win?`<p style="font-family:var(--sfx);font-size:30px;color:var(--accent)">${'★'.repeat(stars)}<span style="opacity:.3">${'★'.repeat(3-stars)}</span></p>`:`<p>${who?esc(who)+' ne pakad liya. Agency ne tumhe nahi pehchaana.':esc(why||'Waqt khatam: tumhara naam alert list mein aa gaya.')}</p>`}
     <div class="stats"><div class="stat"><span>Inaam</span><b>${inr(reward)}</b></div><div class="stat"><span>Alerts</span><b>${S.alerts}</b></div><div class="stat"><span>Camere</span><b>${nCam}/${CAMS.length}</b></div></div>
     <p class="eyebrow">HEAT: ${Math.round(before)} → ${Math.round(CAREER.heat)} (guards tumhe jaldi pehchaanenge)</p><div class="heat"><i style="width:${CAREER.heat}%"></i></div>
     ${S.photos.length?`<p class="eyebrow">CCTV NE YE PHOTOS LI</p><div class="gallery">${S.photos.map((ph,i)=>`<div class="snap" style="--r:${i%2?3:-2}deg"><img alt="CCTV cam ${ph.id}" src="${ph.url}"><b>CAM ${ph.id} · ${esc(ph.t)}</b></div>`).join('')}</div>`:''}
     <p class="eyebrow">TUMHARA DIGITAL FOOTPRINT</p><ul class="traces">${S.traces.length?S.traces.map(t=>`<li>${esc(t.t)} · ${esc(t.text)}</li>`).join(''):'<li class="ok">Koi nishaan nahi.</li>'}</ul>
-    <button class="btn" id="again" type="button">Agla mission</button>${win?`<a class="btn" href="train.html" style="background:#1f4f9a">Agla level: Raat ki Gaadi →</a>`:''}<button class="btn alt" id="hub" type="button">Safehouse</button>`);
-    c.querySelector('#again').onclick=()=>{location.hash='play';location.reload();};c.querySelector('#hub').onclick=()=>{location.hash='';location.reload();};};
+    ${STORY?(win?`<button class="btn" id="twist" type="button" style="background:#e0242b">Aage kya hua? →</button>`:`<button class="btn" id="again" type="button">Chapter dobara khelo</button>`):`<button class="btn" id="again" type="button">Agla mission</button>${win?`<a class="btn" href="train.html" style="background:#1f4f9a">Agla level: Raat ki Gaadi →</a>`:''}`}<button class="btn alt" id="hub" type="button">Safehouse</button>`);
+    if(c.querySelector('#twist'))c.querySelector('#twist').onclick=()=>routeCard(route);
+    if(c.querySelector('#again'))c.querySelector('#again').onclick=()=>{location.hash=STORY?'story':'play';location.reload();};c.querySelector('#hub').onclick=()=>{location.hash='';location.reload();};};
   if(win)comic('win').then(show);else show();}
 
+/* ===================== story: the twist after the airport, and the road the heat picks ===================== */
+function routeCard(route){const C=getC();const bus=route==='bus';
+  const c=sheet(`<div class="eyebrow">MUMBAI SE BHAAGO · 2/4</div><h2>Flight cancel!</h2>
+    <p>Handler ka call aata hai: <i>"Gate pe tumhari CCTV photo pahunch gayi hai. Flight bhool jao. Device ko Gujarat ke bandargah tak le jao. Wahan se ek jahaz Dubai jaata hai, raat 4 baje."</i></p>
+    <div class="dossier"><h3>Tumhara heat: ${C?C.score:0}</h3><dl><dt>Nishaan</dt><dd>${C?C.log.length:0}</dd><dt>Alerts</dt><dd>${C?C.alerts:0}</dd>
+    <dt>Raasta</dt><dd>${bus?'<b>Railway stations pe tumhari photo lag chuki hai.</b> Train ab khatarnak hai. Highway ki bus pakdo.':'<b>Police abhi airport mein dhoondh rahi hai.</b> Stations abhi saaf hain. Raat ki gaadi se nikal jao.'}</dd></dl>
+    <span class="stampx">${bus?'HIGHWAY':'RAILWAY'}</span></div>
+    <p style="opacity:.75;font-size:13px">Kam nishaan chhodogi to agli baar doosra raasta khulega.</p>
+    <a class="btn" href="${bus?'bus.html':'train.html'}" style="background:${bus?'#d35400':'#1f4f9a'}">Chapter 3: ${bus?'Highway ki Bus':'Raat ki Gaadi'} →</a>`);}
 /* ===================== hub ===================== */
 function hub(){$('#loading').hidden=true;const h=Math.round(CAREER.heat);
   const c=sheet(`<h1>TRACE</h1><p class="eyebrow">MUMBAI AIRPORT · RAAT 2 BAJE</p>
     <p>Har mission alag. Har galti ek nishaan, aur nishaan saath rehte hain.</p>
     <div class="stats"><div class="stat"><span>Missions</span><b>${CAREER.wins}/${CAREER.missions}</b></div><div class="stat"><span>Paisa</span><b>${inr(CAREER.money)}</b></div><div class="stat"><span>Best</span><b>${'★'.repeat(CAREER.best)||'–'}</b></div></div>
     <p class="eyebrow">HEAT ${h}/100</p><div class="heat"><i style="width:${h}%"></i></div>
-    <button class="btn" id="go" type="button">Naya mission</button>
+    ${storyBtns()}
+    <button class="btn" id="go" type="button">Naya mission (airport)</button>
     <button class="btn alt" id="pp" type="button" ${CAREER.money<100000||h<10?'disabled':''}>Naya passport (heat −50) · ${inr(100000)}</button>
     <a class="btn" href="train.html" style="background:#1f4f9a">Level 2: Raat ki Gaadi</a>
     <a class="btn" href="bus.html" style="background:#d35400">Level 3: Highway ki Bus</a>
-    <a class="btn alt" href="cab.html">Story: Ghar se airport</a>
-    <button class="btn alt" id="replay" type="button">Kahani shuru se (intro + tutorial)</button>
+    <a class="btn" href="port.html" style="background:#2fa37a">Level 4: Bandar ka Akhri Jahaz</a>
+    <a class="btn alt" href="cab.html">Sirf cab ride (chapter 1)</a>
+    <button class="btn alt" id="replay" type="button">Intro + tutorial dobara</button>
     <p style="opacity:.7;font-size:13px">Phone: neeche-left gola se chalo, right side se camera, RUN se bhaago. Computer: WASD, Shift, mouse drag, E.</p>`);
   c.querySelector('#go').onclick=()=>{auInit();AU.ctx&&AU.ctx.resume();start();};
+  c.querySelector('#newstory').onclick=()=>{newStory();location.href='cab.html';};
   c.querySelector('#replay').onclick=()=>{CAREER.introV=0;CAREER.tutV=0;saveCareer();location.hash='';location.reload();};
   c.querySelector('#pp').onclick=()=>{CAREER.money-=100000;CAREER.heat=Math.max(0,CAREER.heat-50);saveCareer();hub();};}
+function storyBtns(){const C=getC();const ends=CAREER.endings||[];
+  return `<div class="dossier" style="margin:4px 0"><h3>KAHANI · MUMBAI SE BHAAGO</h3><p style="margin:4px 0 8px;font-size:14px">Cab → Airport → Train ya Bus (heat tay karega) → Bandargah ka jahaz. 4 chapter, 3 endings.</p>
+    ${C&&C.active&&C.ch>1?`<a class="btn" href="${esc(C.next)}" style="background:#e0242b">Kahani jaari rakho · Chapter ${C.ch}/4</a>`:''}
+    <button class="btn" id="newstory" type="button" ${C&&C.active&&C.ch>1?'style="background:#1d2340"':'style="background:#e0242b"'}>${C&&C.active&&C.ch>1?'Kahani shuru se':'Kahani shuru karo'}</button>
+    <p class="eyebrow" style="margin-top:8px">ENDINGS: ${['ghost','deport','caught'].map(e=>ends.includes(e)?'●':'○').join(' ')}</p></div>`;}
 async function start(){
   closeSheet();
   if(!(CAREER.introV>=INTRO_V)){await comic('cold');CAREER.introV=INTRO_V;saveCareer();}
@@ -842,7 +872,7 @@ const LBL=[{t:'GUARD',c:'',p:()=>[G[0].pos.x,2.7,G[0].pos.z]},{t:'GUARD',c:'',p:
 function drawLabels(){const box=$('#lbls');if(!box.children.length)box.innerHTML=LBL.map(l=>`<div class="lbl ${l.c}">${l.t}</div>`).join('');
   [...box.children].forEach((el,i)=>{const p=LBL[i].p();tv.set(p[0],p[1],p[2]).project(camera);const on=tv.z<1&&Math.abs(tv.x)<.92&&Math.abs(tv.y)<.9;el.style.display=on?'':'none';if(on){el.style.left=((tv.x+1)/2*innerWidth)+'px';el.style.top=((1-tv.y)/2*innerHeight)+'px';}});}
 function splash(){$('#loading').hidden=true;S.phase='splash';const sp=$('#splash');sp.hidden=false;
-  sp.addEventListener('pointerdown',async()=>{sp.hidden=true;$('#lbls').innerHTML='';auInit();AU.ctx&&AU.ctx.resume();S.phase='intro';await comic('cold');CAREER.introV=INTRO_V;saveCareer();location.href='cab.html';},{once:true});}
+  sp.addEventListener('pointerdown',async()=>{sp.hidden=true;$('#lbls').innerHTML='';auInit();AU.ctx&&AU.ctx.resume();S.phase='intro';await comic('cold');CAREER.introV=INTRO_V;saveCareer();newStory();location.href='cab.html';},{once:true});}
 
 /* ===================== thriller tutorial (first mission only) ===================== */
 let TS=null;
@@ -898,5 +928,5 @@ camera.position.set(0,8,30);
 window.__ready=true;
 window.__trace={fireEvent,get inf(){return inf;},get target(){return target;},get TS(){return TS;},S,M,G,CAMS,NPC,get P(){return P;},CAREER,start,doAct,get cur(){return current&&(typeof current.label==='function'?current.label():current.label);},tp:(x,z)=>{P.pos.set(x,0,z);}};
 frame();
-if(!(CAREER.introV>=INTRO_V))splash();else if(location.hash==='#play'){$('#loading').hidden=true;auInit();start();}else hub();
+if(!(CAREER.introV>=INTRO_V))splash();else if(location.hash==='#play'||location.hash==='#story'){$('#loading').hidden=true;auInit();start();}else hub();
 </script>
