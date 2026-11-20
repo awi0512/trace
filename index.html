@@ -33,7 +33,7 @@ button{font:inherit;color:inherit}
 .tools{display:flex;gap:6px;pointer-events:auto;flex-wrap:wrap}
 .tb{background:rgba(21,26,51,.82);border:0;border-radius:999px;padding:6px 11px;font-family:var(--display);font-weight:700;font-size:12.5px;cursor:pointer}
 #map{position:fixed;z-index:5;top:calc(env(safe-area-inset-top,0px) + 10px);right:max(14px,env(safe-area-inset-right,0px));width:118px;height:84px;border-radius:10px;background:rgba(21,26,51,.85);border:2px solid rgba(255,255,255,.2)}
-#toasts{position:fixed;z-index:6;left:50%;transform:translateX(-50%);top:calc(env(safe-area-inset-top,0px) + 170px);display:flex;flex-direction:column;gap:6px;align-items:center;width:min(92vw,420px);pointer-events:none}
+#toasts{position:fixed;z-index:6;left:50%;transform:translateX(-50%);top:calc(env(safe-area-inset-top,0px) + 232px);display:flex;flex-direction:column;gap:6px;align-items:center;width:min(92vw,420px);pointer-events:none}
 .toast{background:var(--noir);color:var(--paper);font-family:var(--type);font-size:13px;padding:7px 12px;border-left:4px solid var(--red);animation:tin .25s ease-out}
 .toast.info{border-left-color:var(--accent)} .toast.good{border-left-color:var(--good)}
 @keyframes tin{from{opacity:0;transform:translateY(-6px)}}
@@ -103,6 +103,27 @@ body.talking #pads,body.talking #joy{visibility:hidden}
 .traces li{background:#1b1b1b;border-left:4px solid var(--red);padding:6px 10px}
 .traces li.ok{border-left-color:var(--good)}
 .shop{display:flex;flex-direction:column;gap:8px}
+#splash{position:fixed;inset:0;z-index:15;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;text-align:center;gap:8px;cursor:pointer;
+  padding:max(16px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) calc(env(safe-area-inset-bottom,0px) + 56px) max(16px,env(safe-area-inset-left,0px));background:linear-gradient(rgba(10,12,24,.15),transparent 35%,rgba(10,12,24,.88))}
+#splash h1{margin:0;font-family:var(--sfx);font-weight:400;font-size:clamp(84px,26vw,150px);letter-spacing:.14em;text-indent:.14em;line-height:.85;color:var(--paper);text-shadow:0 8px 30px rgba(0,0,0,.6);animation:pop .6s cubic-bezier(.2,1.5,.4,1)}
+#splash .tag{font-family:var(--type);color:var(--accent);font-size:15px}
+#splash .tapgo{margin-top:20px;font-family:var(--display);font-weight:700;letter-spacing:.32em;font-size:14px;animation:blink 1.4s infinite}
+#lbls .lbl{position:fixed;z-index:14;transform:translate(-50%,-100%);font-family:var(--sfx);font-size:18px;letter-spacing:.08em;padding:2px 10px;background:var(--noir);color:var(--paper);border-left:4px solid var(--accent);pointer-events:none;white-space:nowrap}
+#lbls .lbl.cam{border-left-color:var(--red)} #lbls .lbl.tgt{border-left-color:var(--good)}
+#banner{position:fixed;z-index:6;left:50%;translate:-50% 0;top:calc(env(safe-area-inset-top,0px) + 92px);width:min(92vw,440px);background:var(--accent);color:#1d1a10;font-family:var(--display);font-weight:700;font-size:16px;line-height:1.3;padding:10px 14px;box-shadow:5px 5px 0 var(--noir);text-align:center;pointer-events:none;animation:pop .3s}
+#banner.danger{background:var(--red);color:#fff;animation:bpulse 1s infinite}
+@keyframes bpulse{50%{scale:1.04}}
+body.banner #obj,body.banner .tools{visibility:hidden}
+body.banner #snaps{top:calc(env(safe-area-inset-top,0px) + 186px)}
+#flash{position:fixed;inset:0;z-index:7;background:#fff;opacity:0;pointer-events:none}
+#snaps{position:fixed;z-index:5;right:max(14px,env(safe-area-inset-right,0px));top:calc(env(safe-area-inset-top,0px) + 104px);display:flex;flex-direction:column;gap:6px;pointer-events:none}
+.snap{background:#f4f1ea;padding:4px 4px 10px;box-shadow:0 4px 12px rgba(0,0,0,.45);transform:rotate(var(--r,3deg))}
+.snap img{display:block;width:84px;height:63px;object-fit:cover}
+.snap b{display:block;font-family:var(--type);font-weight:400;font-size:9px;color:#333;margin-top:3px}
+.snap.big{position:fixed;left:50%;top:40%;z-index:9;transform:translate(-50%,-50%) rotate(-3deg);animation:pop .35s cubic-bezier(.2,1.5,.4,1)}
+.snap.big img{width:min(72vw,300px);height:auto}.snap.big b{font-size:13px}
+.gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:12px}.gallery .snap img{width:100%;height:auto}
+details{font-size:13px}summary{cursor:pointer;color:#7a4b1a}
 #loading{position:fixed;inset:0;z-index:30;display:grid;place-items:center;background:var(--noir);color:var(--paper);font-family:var(--type)}
 @media (prefers-reduced-motion:reduce){*{animation:none!important}}
 </style>
@@ -122,6 +143,11 @@ body.talking #pads,body.talking #joy{visibility:hidden}
 <div id="dlg" hidden><div class="in"><div id="dbox"><div id="who"></div><div id="line"></div><div id="next" hidden>tap ▸</div></div><div id="timer" hidden><i></i></div><div id="choices"></div></div></div>
 <div id="comic" hidden></div>
 <div id="sheet" hidden></div>
+<div id="splash" hidden><h1>TRACE</h1><div class="tag">Har kadam ek nishaan chhodta hai.</div><div class="tapgo">TAP KARO</div></div>
+<div id="lbls"></div>
+<div id="banner" hidden></div>
+<div id="flash"></div>
+<div id="snaps"></div>
 <div id="loading">Mumbai airport, raat 2 baje…</div>
 
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
@@ -166,12 +192,12 @@ const COMPS={
   face:{t:'Pehchaana chehra',d:'Ek CISF jawan (laal armband) ke paas tumhari photo hai. Uske saamne look badal ke jao.'},
   crowd:{t:'Flight delay',d:'Do flights late hain. Bheed zyaada hai, chhupna aasaan.'},
   cams:{t:'Naye camere',d:'CCTV ki range badha di gayi hai.'}};
-let M;
+let M;const TUT=!CAREER.tutDone;
 function newMission(){
-  const n=pick(NAMES);const type=pick(Object.keys(OBJ));
-  let comps=shuffle(Object.keys(COMPS)).slice(0,chance(.5)?2:1);
+  const n=pick(NAMES);let type=pick(Object.keys(OBJ));
+  let comps=shuffle(Object.keys(COMPS)).slice(0,chance(.5)?2:1);if(TUT){type='steal';comps=[];}
   M={type,comps,L:{given:n[0],surname:n[1],city:pick(CITIES),job:pick(JOBS),purpose:pick(PURPOSES),hotel:pick(HOTELS)},
-     time:comps.includes('alert')?360:600,code:'OP-'+ri(100,999)};
+     time:comps.includes('alert')?360:600,code:TUT?'OP-001':'OP-'+ri(100,999)};
 }
 
 /* ===================== state ===================== */
@@ -194,8 +220,9 @@ function burst(d,f,v=.5,type='lowpass'){if(!AU.ctx||!AU.on)return;const t=AU.ctx
 const sfx={chime(){tone(784,1.2,'sine',.12);tone(659,1.2,'sine',.12,.35);tone(523,1.4,'sine',.12,.7);},step(){burst(.05,420,.1);},q(){tone(520,.12,'triangle',.12);tone(700,.14,'triangle',.1,.1);},
   alert(){tone(110,.9,'sawtooth',.12);tone(165,.9,'sawtooth',.08);burst(.4,900,.6);tone(880,.15,'square',.07,.05);},thak(){burst(.14,800,.9);tone(70,.25,'sine',.5);},
   door(){burst(.18,1200,.25,'bandpass');},ok(){tone(660,.1,'triangle',.12);tone(990,.18,'triangle',.12,.1);},beep(ok=true){tone(ok?1480:420,.16,'square',.07);if(!ok)tone(420,.16,'square',.07,.22);},
-  siren(){for(let i=0;i<6;i++){tone(i%2?640:880,.35,'square',.05,i*.35);}},tick(){tone(1800,.03,'square',.03);}};
+  shutter(){burst(.05,5000,.5,'highpass');burst(.08,2500,.35,'bandpass');tone(2400,.03,'square',.03,.06);},siren(){for(let i=0;i<6;i++){tone(i%2?640:880,.35,'square',.05,i*.35);}},tick(){tone(1800,.03,'square',.03);}};
 
+function vib(p){try{navigator.vibrate&&navigator.vibrate(p);}catch(e){}}
 /* ===================== renderer ===================== */
 const canvas=$('#gl');
 const renderer=new T.WebGLRenderer({canvas,antialias:true,powerPreference:'high-performance'});
@@ -378,6 +405,7 @@ function updNPC(dt,t){
       case 'path':{if(!n.path.length){n.beh='wander';break;}const [x,z]=n.path[0];if(stepTo(n,x,z,dt,n.walk))n.path.shift();mv=true;break;}
       case 'route':{const r=n.route[n.ri];if(r[0]==='w'){n.wait=(n.wait>0?n.wait:r[1])-dt;n.speed=0;if(n.wait<=.01){n.wait=0;n.ri=(n.ri+1)%n.route.length;}}else if(stepTo(n,r[0],r[1],dt,n.walk))n.ri=(n.ri+1)%n.route.length;else mv=true;break;}
       case 'target':{n.tick(dt,t);mv=n.speed>.1;break;}
+      case 'idle':{n.yaw+=Math.sin(t*.5+n.ph)*dt*.2;n.g.rotation.y=n.yaw;break;}
     }
     anim(n,dt,mv?n.speed:0,t);}
 }
@@ -449,7 +477,7 @@ function playerFlags(){const reg=region(P.pos.x,P.pos.z);const staff=S.look.outf
   return {reg,running:P.running,illegal,action:!!(S.hold&&S.hold.illegal),wanted:S.wanted===lookKey(),crowd,staff};}
 function canSee(g,x,z){const dx=x-g.pos.x,dz=z-g.pos.z,d=Math.hypot(dx,dz);if(d<2.2)return losBlocked(g.pos.x,g.pos.z,x,z)?0:Math.max(d,.01);if(d>g.range)return 0;if(Math.abs(angDiff(Math.atan2(dx,dz),g.yaw))>g.fov)return 0;return losBlocked(g.pos.x,g.pos.z,x,z)?0:d;}
 let anyAlertT=0,worst='calm';
-function goAlert(g,why){if(g.state==='alert')return;g.state='alert';g.sus=100;g.lost=0;S.alerts++;S.wanted=lookKey();sfx.alert();slowmo();
+function goAlert(g,why){if(g.state==='alert')return;g.state='alert';g.sus=100;g.lost=0;S.alerts++;S.wanted=lookKey();sfx.alert();slowmo();vib([90,50,90]);
   toast(`${g.name}: "RUKO!" ${why?'('+why+')':''}`);for(const o of G){if(o!==g&&o.state!=='alert'){o.sus=Math.max(o.sus,62);o.state='search';o.lastSeen=[P.pos.x,P.pos.z];o.searchT=10;}}
   if(S.alerts===1)trace('Guard ne pehchaana, radio pe sabko bataya');}
 function updGuards(dt,t){
@@ -458,17 +486,22 @@ function updGuards(dt,t){
     const d=locked&&!S.hold?0:canSee(g,P.pos.x,P.pos.z);
     // suspicion gain
     let gain=0,why='';
+    if(g.scripted){const inC=F.crowd>=3||(TS&&Math.hypot(P.pos.x-TS.cluster[0],P.pos.z-TS.cluster[1])<2.1);g.sus=clamp(g.sus+(inC?-30:15)*dt,0,95);g.state=g.sus>5?'sus':'patrol';
+      faceTo(g,Math.atan2(P.pos.x-g.pos.x,P.pos.z-g.pos.z),dt,4);let mv=0;
+      if(g.sus>=95&&!inC){const dx=P.pos.x-g.pos.x,dz=P.pos.z-g.pos.z,dd=Math.hypot(dx,dz);if(dd>1.7){g.pos.x+=dx/dd*1.3*dt;g.pos.z+=dz/dd*1.3*dt;mv=1.3;}}
+      anim(g,dt,mv,t);gVis(g);continue;}
     if(d){const near=clamp(1.25-d/g.range,.35,1.25);
       if(F.running){gain+=32;why='bhaag rahi thi';}
       if(F.illegal){gain+=g.name==='Security officer'?30:45;why='mana jagah';}
       if(F.action){gain+=85;why='kuch kar rahi thi';}
-      if(F.wanted){gain+=40;why='wahi look';}
+      if(F.wanted){gain+=(TS&&TS.step<3)?14:40;why='wahi look';}
       if(g.knows&&lookKey()===S.startLook){gain+=26;why='photo se match';}
       if(F.staff&&g.name==='Staff guard'&&F.reg==='STAFF')gain+=7;
       gain*=near*(1+CAREER.heat/160);
       if(!F.action&&!F.running&&F.crowd>=2)gain*=.3;}
     if(gain>0){g.sus=Math.min(100,g.sus+gain*dt);g.lastSeen=[P.pos.x,P.pos.z];g.lost=0;}
     else if(g.state!=='alert')g.sus=Math.max(0,g.sus-(d?6:9)*dt);
+    if(TS&&TS.step<3&&g.sus>88)g.sus=88;
     // state machine
     if(g.state!=='alert'&&g.sus>=100)goAlert(g,why);
     else if(g.state==='patrol'&&g.sus>=35){g.state='sus';sfx.q();}
@@ -489,13 +522,13 @@ function updGuards(dt,t){
       else{const r=g.route[g.ri];if(moveG(g,r[0],r[1],dt,g.walk,t)===true&&Math.hypot(r[0]-g.pos.x,r[1]-g.pos.z)<.4){g.ri=(g.ri+1)%g.route.length;g.path=null;}moving=true;}
     }
     anim(g,dt,moving?g.speed:0,t);
-    // cone + icon
-    g.cone.piv.position.x=g.pos.x;g.cone.piv.position.z=g.pos.z;g.cone.piv.rotation.y=g.yaw-Math.PI/2;
-    g.cone.me.material.color.set(g.state==='alert'?0xff3030:g.state==='patrol'?0xffe08a:0xff9f1c);g.cone.me.material.opacity=g.state==='patrol'?.13:.24;
-    g.icon.sp.position.set(g.pos.x,2.3,g.pos.z);drawIcon(g.icon,g.state,g.sus);
-    if(g.state==='alert')worst='alert';else if((g.state==='sus'||g.state==='search')&&worst!=='alert')worst='sus';
+    gVis(g);
   }
 }
+function gVis(g){g.cone.piv.position.x=g.pos.x;g.cone.piv.position.z=g.pos.z;g.cone.piv.rotation.y=g.yaw-Math.PI/2;
+  g.cone.me.material.color.set(g.state==='alert'?0xff3030:g.state==='patrol'?0xffe08a:0xff9f1c);g.cone.me.material.opacity=g.state==='patrol'?.13:.24;
+  g.icon.sp.position.set(g.pos.x,2.3,g.pos.z);drawIcon(g.icon,g.state,g.sus);
+  if(g.state==='alert')worst='alert';else if((g.state==='sus'||g.state==='search')&&worst!=='alert')worst='sus';}
 function moveG(g,tx,tz,dt,spd,t){g.pathT-=dt;if(!g.path||g.pathT<=0||g.pathTo!==tx+','+tz){g.path=navPath(g.pos.x,g.pos.z,tx,tz);g.pathT=.6;g.pathTo=tx+','+tz;}
   const p=g.path[0];if(!p)return true;const dx=p[0]-g.pos.x,dz=p[1]-g.pos.z,dd=Math.hypot(dx,dz);
   if(dd<.35){g.path.shift();if(!g.path.length)return true;return false;}
@@ -504,9 +537,29 @@ function moveG(g,tx,tz,dt,spd,t){g.pathT-=dt;if(!g.path||g.pathT<=0||g.pathTo!==
 function updCams(dt){const F=playerFlags();
   for(const c of CAMS){c.ph+=dt*.32;c.yaw=c.base+Math.sin(c.ph)*c.sweep;c.head.rotation.y=c.yaw;c.cone.piv.position.set(c.x,.025,c.z);c.cone.piv.rotation.y=c.yaw-Math.PI/2;c.cd-=dt;
     const seen=!locked&&camSees(c,P.pos.x,P.pos.z);c.cone.me.material.opacity=seen?.26:.1;
-    if(seen){if(!S.camsSeen.has(c.id)){S.camsSeen.add(c.id);}
+    if(seen){if(!S.camsSeen.has(c.id)){S.camsSeen.add(c.id);snapshot(c);}
       if((F.action||F.illegal||F.wanted||worst==='alert')&&c.cd<=0){c.cd=8;const g=G.slice().sort((a,b)=>Math.hypot(a.pos.x-P.pos.x,a.pos.z-P.pos.z)-Math.hypot(b.pos.x-P.pos.x,b.pos.z-P.pos.z))[0];
         g.sus=Math.max(g.sus,75);g.state=g.state==='alert'?'alert':'search';g.lastSeen=[P.pos.x,P.pos.z];g.searchT=12;toast(`Control room: "Cam ${c.id} pe kuch dikha. ${g.name}, check karo."`);trace(`CCTV cam ${c.id}: ${F.action?'tumhe kuch karte hue record kiya':F.illegal?'mana jagah mein record kiya':'tumhara chehra record kiya'}`);}}}}
+const snapRT=new T.WebGLRenderTarget(256,192),snapCam=new T.PerspectiveCamera(46,4/3,.1,90);S.photos=[];let snapN=0;
+function fakeTime(){const s=2*3600+14*60+Math.floor(M.time-S.timeLeft);return `02:${String(Math.floor(s/60)%60).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;}
+function snapshot(c){try{
+  snapCam.position.set(c.x,6.1,c.z);snapCam.lookAt(P.pos.x,1.1,P.pos.z);snapCam.updateMatrixWorld();
+  const hid=[];const hide=o=>{if(o.visible){o.visible=false;hid.push(o);}};CAMS.forEach(k=>hide(k.cone.piv));G.forEach(g=>{hide(g.cone.piv);hide(g.icon.sp);});hide(trailMesh);
+  renderer.setRenderTarget(snapRT);renderer.render(scene,snapCam);renderer.setRenderTarget(null);hid.forEach(o=>o.visible=true);
+  const W=256,H=192,px=new Uint8Array(W*H*4);renderer.readRenderTargetPixels(snapRT,0,0,W,H,px);
+  const cv=document.createElement('canvas');cv.width=W;cv.height=H;const g2=cv.getContext('2d');const img=g2.createImageData(W,H);
+  for(let y=0;y<H;y++)for(let x=0;x<W;x++){const si=((H-1-y)*W+x)*4,di=(y*W+x)*4;const l=(px[si]*.3+px[si+1]*.59+px[si+2]*.11)/255;let v=Math.pow(Math.min(1,l*1.2),1/2.2)*255;v=v*(y%3?1:.86)+(Math.random()*16-8);img.data[di]=v*.9;img.data[di+1]=v;img.data[di+2]=v*.88;img.data[di+3]=255;}
+  g2.putImageData(img,0,0);const gr=g2.createRadialGradient(W/2,H/2,H*.3,W/2,H/2,H*.78);gr.addColorStop(0,'rgba(0,0,0,0)');gr.addColorStop(1,'rgba(0,0,0,.6)');g2.fillStyle=gr;g2.fillRect(0,0,W,H);
+  tv.set(P.pos.x,1.1,P.pos.z).project(snapCam);const bx=(tv.x+1)/2*W,by=(1-tv.y)/2*H;g2.strokeStyle='#ff3b30';g2.lineWidth=2;g2.strokeRect(bx-18,by-32,36,54);
+  g2.font='bold 12px monospace';g2.fillStyle='#fff';g2.fillText('CAM '+String(c.id).padStart(2,'0'),8,17);const ts=fakeTime();g2.fillText(ts,W-8-g2.measureText(ts).width,17);
+  g2.fillStyle='#ff3b30';g2.fillText('● REC',8,H-10);g2.fillStyle='#fff';const mt='FACE MATCH '+ri(71,94)+'%';g2.fillText(mt,W-8-g2.measureText(mt).width,H-10);
+  const url=cv.toDataURL('image/jpeg',.78);S.photos.push({url,id:c.id,t:ts});polaroid(url,c.id,ts);
+}catch(e){console.warn('snapshot failed',e);}}
+function polaroid(url,id,ts){const f=$('#flash');f.style.transition='none';f.style.opacity=.85;requestAnimationFrame(()=>requestAnimationFrame(()=>{f.style.transition='opacity .45s';f.style.opacity=0;}));
+  sfx.shutter();vib(35);slowT=Math.max(slowT,.3);
+  const el=document.createElement('div');el.className='snap big';el.style.setProperty('--r',(snapN%2?4:-3)+'deg');el.innerHTML=`<img alt="CCTV cam ${id} ki photo" src="${url}"><b>CAM ${id} · ${ts}</b>`;document.body.appendChild(el);
+  if(snapN===0)setTimeout(()=>toast('CCTV ne tumhari photo le li. Har photo ek nishaan hai.','info'),500);snapN++;
+  setTimeout(()=>{el.classList.remove('big');const box=$('#snaps');box.prepend(el);while(box.children.length>3)box.lastChild.remove();},1150);}
 let slowT=0;function slowmo(){slowT=.7;$('#vig').style.opacity=1;setTimeout(()=>$('#vig').style.opacity=0,900);}
 
 /* ===================== dialogue / comic / sheets ===================== */
@@ -557,6 +610,9 @@ function dossierHTML(){const o=OBJ[M.type],L=M.L;
     <dl><dt>Musibat</dt><dd>${M.comps.map(c=>`<b>${esc(COMPS[c].t)}:</b> ${esc(COMPS[c].d)}`).join('<br>')}</dd><dt>Waqt</dt><dd>${Math.round(M.time/60)} minute</dd>
     <dt>Naam</dt><dd>${esc(L.given)} ${esc(L.surname)}</dd><dt>Shehar</dt><dd>${esc(L.city)}</dd><dt>Kaam</dt><dd>${esc(L.job)}</dd><dt>Maqsad</dt><dd>${esc(L.purpose)}</dd><dt>Hotel</dt><dd>${esc(L.hotel)}</dd></dl>
     <span class="stampx">TOP SECRET</span></div>`;}
+function briefHTML(){const L=M.L,short={handoff:'Gulaabi dupatte wale contact ko device do, phir Gate 72 se board karo.',steal:'Security office ka laptop churao, phir taxi stand se niklo.',bug:'Businessman ke briefcase mein bug lagao, phir taxi stand se niklo.'}[M.type];
+  return `<div class="dossier"><h3>${esc(M.code)} · ${esc(OBJ[M.type].title)}</h3><div><b>${esc(short)}</b></div>${M.comps.length?`<div>Musibat: ${M.comps.map(c=>`<b>${esc(COMPS[c].t)}</b>`).join(' · ')}</div>`:''}
+    <details><summary>Cover story (officer poochh sakte hain)</summary><dl><dt>Naam</dt><dd>${esc(L.given)} ${esc(L.surname)}</dd><dt>Shehar</dt><dd>${esc(L.city)}</dd><dt>Kaam</dt><dd>${esc(L.job)}</dd><dt>Maqsad</dt><dd>${esc(L.purpose)}</dd><dt>Hotel</dt><dd>${esc(L.hotel)}</dd></dl></details><span class="stampx">TOP SECRET</span></div>`;}
 $('#bDossier').onclick=()=>{if(S.phase!=='play')return;locked=true;const c=sheet(`${dossierHTML()}<button class="btn" id="cl" type="button">Wapas</button>`);c.querySelector('#cl').onclick=()=>{closeSheet();locked=false;};};
 $('#bLegend').onclick=()=>{if(S.legendUses<=0||S.phase!=='play')return;S.legendUses--;$('#bLegend').textContent=`Kahani (${S.legendUses})`;locked=true;const L=M.L;const c=sheet(`<h2>Mann mein dohrao</h2><div class="dossier"><dl><dt>Naam</dt><dd>${esc(L.given)} ${esc(L.surname)}</dd><dt>Shehar</dt><dd>${esc(L.city)}</dd><dt>Kaam</dt><dd>${esc(L.job)}</dd><dt>Maqsad</dt><dd>${esc(L.purpose)}</dd><dt>Hotel</dt><dd>${esc(L.hotel)}</dd></dl></div><button class="btn" id="cl" type="button">Theek hai</button>`);const done=()=>{closeSheet();locked=false;};c.querySelector('#cl').onclick=done;setTimeout(()=>{if(!$('#sheet').hidden)done();},5000);};
 $('#bMute').onclick=()=>{AU.on=!AU.on;if(AU.m)AU.m.gain.value=AU.on?.8:0;$('#bMute').textContent=AU.on?'Mute':'Unmute';};
@@ -637,6 +693,8 @@ function objPos(){if(!S.done){if(M.type==='handoff')return [contact.pos.x,contac
 
 /* ===================== caught & finish ===================== */
 async function caught(g){if(S.phase!=='play')return;locked=true;S.phase='talk';
+  if(M.code==='OP-001'&&!S.pardoned){S.pardoned=true;await say(g.name,'Ruko! Yahan kya kar rahi ho?');await say('','Tum ghabra ke kehti ho: "Sorry sir, raasta bhatak gayi. Washroom dhoondh rahi thi."',true);await say(g.name,'Ye staff ka area hai. Chalo bahar. Agli baar dikhi to seedha andar.');closeDlg();
+    P.pos.set(-15,0,-2.5);for(const o of G){o.state='patrol';o.sus=0;o.path=null;}S.wanted=null;toast('Pehli galti maaf. Agli baar nahi.','info');S.phase='play';locked=false;return;}
   await say(g.name,'Ruko! Kahan bhaag rahi thi? Naam batao.');
   const serious=S.wanted===lookKey()&&(S.hold||playerFlags().illegal||S.done&&M.type!=='handoff');
   const ok=await legendQ(g.name,shuffle(['city','purpose']).slice(0,1));
@@ -652,6 +710,7 @@ function finish(win,who){S.phase='over';locked=true;sfx.chime();
     ${win?`<p style="font-family:var(--sfx);font-size:30px;color:var(--accent)">${'★'.repeat(stars)}<span style="opacity:.3">${'★'.repeat(3-stars)}</span></p>`:`<p>${esc(who||'Waqt khatam')}${who?' ne pakad liya. Agency ne tumhe nahi pehchaana.':': tumhara naam alert list mein aa gaya.'}</p>`}
     <div class="stats"><div class="stat"><span>Inaam</span><b>${inr(reward)}</b></div><div class="stat"><span>Alerts</span><b>${S.alerts}</b></div><div class="stat"><span>Camere</span><b>${nCam}/${CAMS.length}</b></div></div>
     <p class="eyebrow">HEAT: ${Math.round(before)} → ${Math.round(CAREER.heat)} (guards tumhe jaldi pehchaanenge)</p><div class="heat"><i style="width:${CAREER.heat}%"></i></div>
+    ${S.photos.length?`<p class="eyebrow">CCTV NE YE PHOTOS LI</p><div class="gallery">${S.photos.map((ph,i)=>`<div class="snap" style="--r:${i%2?3:-2}deg"><img alt="CCTV cam ${ph.id}" src="${ph.url}"><b>CAM ${ph.id} · ${esc(ph.t)}</b></div>`).join('')}</div>`:''}
     <p class="eyebrow">TUMHARA DIGITAL FOOTPRINT</p><ul class="traces">${S.traces.length?S.traces.map(t=>`<li>${esc(t.t)} · ${esc(t.text)}</li>`).join(''):'<li class="ok">Koi nishaan nahi.</li>'}</ul>
     <button class="btn" id="again" type="button">Agla mission</button><button class="btn alt" id="hub" type="button">Safehouse</button>`);
     c.querySelector('#again').onclick=()=>{location.hash='play';location.reload();};c.querySelector('#hub').onclick=()=>{location.hash='';location.reload();};};
@@ -660,7 +719,7 @@ function finish(win,who){S.phase='over';locked=true;sfx.chime();
 /* ===================== hub ===================== */
 function hub(){$('#loading').hidden=true;const h=Math.round(CAREER.heat);
   const c=sheet(`<h1>TRACE</h1><p class="eyebrow">MUMBAI AIRPORT · RAAT 2 BAJE</p>
-    <p>Har mission alag. Guards, camere, bheed. Tum kaise karogi, ye tumhara plan. Har galti ek nishaan chhodti hai, aur nishaan agle mission tak saath rehte hain.</p>
+    <p>Har mission alag. Har galti ek nishaan, aur nishaan saath rehte hain.</p>
     <div class="stats"><div class="stat"><span>Missions</span><b>${CAREER.wins}/${CAREER.missions}</b></div><div class="stat"><span>Paisa</span><b>${inr(CAREER.money)}</b></div><div class="stat"><span>Best</span><b>${'★'.repeat(CAREER.best)||'–'}</b></div></div>
     <p class="eyebrow">HEAT ${h}/100</p><div class="heat"><i style="width:${h}%"></i></div>
     <button class="btn" id="go" type="button">Naya mission</button>
@@ -672,11 +731,12 @@ function hub(){$('#loading').hidden=true;const h=Math.round(CAREER.heat);
 async function start(){
   closeSheet();
   if(!CAREER.seenIntro){await comic('cold');CAREER.seenIntro=true;saveCareer();}
-  await new Promise(res=>{const c=sheet(`${dossierHTML()}<p class="eyebrow">Cover story yaad kar lo. Officer poochh sakte hain.</p><button class="btn" id="ok" type="button">Mission shuru</button>`);c.querySelector('#ok').onclick=()=>{closeSheet();res();};});
+  if(!TUT)await new Promise(res=>{const c=sheet(`${briefHTML()}<button class="btn" id="ok" type="button">Mission shuru</button>`);c.querySelector('#ok').onclick=()=>{closeSheet();res();};});
   ['#hud','#map','#pads','#joy'].forEach(s=>$(s).hidden=false);
   S.phase='play';locked=false;S.timeLeft=M.time;
   const tips=['Neeche-left gole se chalo. RUN se bhaago, par guards bhaagna notice karte hain.','Peeli roshni = guard ki nazar. Laal = CCTV. Bheed ke beech chalogi to kam dikhogi.','"?" matlab guard ko shak hai. "!" matlab wo peeche aa raha hai. Washroom mein look badal ke bacho.'];
-  if(CAREER.missions<2)tips.forEach((tp,i)=>setTimeout(()=>{if(S.phase==='play')toast(tp,'info');},1500+i*5500));
+  if(TUT){tutorialStart();setTimeout(()=>{if(S.phase==='play')toast('Neeche-left gole se chalo. Right side ghaseeto: camera.','info');},600);}
+  else if(CAREER.missions<3)tips.forEach((tp,i)=>setTimeout(()=>{if(S.phase==='play')toast(tp,'info');},1500+i*5500));
 }
 
 /* ===================== input ===================== */
@@ -701,17 +761,54 @@ function drawMap(){mg.clearRect(0,0,236,168);mg.fillStyle='rgba(255,255,255,.35)
   const o=objPos();mg.strokeStyle='#2fe39a';mg.lineWidth=4;mg.beginPath();mg.arc(mx(o[0]),mz(o[1]),9,0,7);mg.stroke();
   mg.save();mg.translate(mx(P.pos.x),mz(P.pos.z));mg.rotate(-P.yaw+Math.PI);mg.fillStyle='#fff';mg.beginPath();mg.moveTo(0,-9);mg.lineTo(7,7);mg.lineTo(-7,7);mg.closePath();mg.fill();mg.restore();}
 
+/* ===================== glowing floor trail ===================== */
+const TRAIL_N=40;const trailGeo=new T.CircleGeometry(.22,14);trailGeo.rotateX(-Math.PI/2);
+const trailMesh=new T.InstancedMesh(trailGeo,new T.MeshBasicMaterial({color:0x3dffb0,transparent:true,opacity:.95,toneMapped:false,depthWrite:false}),TRAIL_N);trailMesh.frustumCulled=false;trailMesh.count=0;scene.add(trailMesh);
+let trailPts=null,trailCD=0;const m4=new T.Matrix4();
+function trailTarget(){if(TS&&TS.step===1)return TS.cluster;if(TS&&TS.step===2)return [-31.5,13.5];if(TS&&TS.step===3)return [-15,-4.4];return objPos();}
+function updTrail(dt,t){trailMesh.visible=S.phase==='play'&&!locked;if(!trailMesh.visible)return;trailCD-=dt;const tg=trailTarget();
+  if(trailCD<=0){trailCD=.4;trailPts=[[P.pos.x,P.pos.z]].concat(navPath(P.pos.x,P.pos.z,tg[0],tg[1]));}
+  trailPts[0]=[P.pos.x,P.pos.z];let k=0,need=1.3-((t*1.8)%1.1);
+  for(let i=0;i<trailPts.length-1&&k<TRAIL_N;i++){const a=trailPts[i],b=trailPts[i+1],L=Math.hypot(b[0]-a[0],b[1]-a[1]);let d=need;
+    while(d<L&&k<TRAIL_N){const f=d/L;m4.makeTranslation(a[0]+(b[0]-a[0])*f,.05,a[1]+(b[1]-a[1])*f);trailMesh.setMatrixAt(k++,m4);d+=1.1;}need=d-L;}
+  trailMesh.count=Math.max(0,k-1);trailMesh.instanceMatrix.needsUpdate=true;}
+
+/* ===================== title flyover & labels ===================== */
+const FLY=[[0,30,38,0,0,4],[-30,12,22,-22,1,14],[-10,10,-1,-26,1,-16],[20,11,-1,2,1,-16],[-1.5,6.5,25,-1.5,1,15.5]];let flyT=0;
+function flyCam(dt){flyT+=dt;const n=FLY.length-1,k=(flyT/4.2)%n,i=Math.floor(k),f=k-i,e=f<.5?2*f*f:1-Math.pow(-2*f+2,2)/2,a=FLY[i],b=FLY[i+1];
+  camera.position.set(lerp(a[0],b[0],e),lerp(a[1],b[1],e),lerp(a[2],b[2],e));camera.lookAt(lerp(a[3],b[3],e),lerp(a[4],b[4],e),lerp(a[5],b[5],e));}
+const LBL=[{t:'GUARD',c:'',p:()=>[G[0].pos.x,2.7,G[0].pos.z]},{t:'GUARD',c:'',p:()=>[G[3].pos.x,2.7,G[3].pos.z]},{t:'CCTV',c:'cam',p:()=>[CAMS[0].x,6.9,CAMS[0].z]},{t:'CCTV',c:'cam',p:()=>[CAMS[6].x,6.9,CAMS[6].z]},{t:'TUM',c:'tgt',p:()=>[P.pos.x,2.5,P.pos.z]},{t:'TARGET',c:'tgt',p:()=>{const o=objPos();return [o[0],1.9,o[1]];}}];
+function drawLabels(){const box=$('#lbls');if(!box.children.length)box.innerHTML=LBL.map(l=>`<div class="lbl ${l.c}">${l.t}</div>`).join('');
+  [...box.children].forEach((el,i)=>{const p=LBL[i].p();tv.set(p[0],p[1],p[2]).project(camera);const on=tv.z<1&&Math.abs(tv.x)<.92&&Math.abs(tv.y)<.9;el.style.display=on?'':'none';if(on){el.style.left=((tv.x+1)/2*innerWidth)+'px';el.style.top=((1-tv.y)/2*innerHeight)+'px';}});}
+function splash(){$('#loading').hidden=true;S.phase='splash';const sp=$('#splash');sp.hidden=false;
+  sp.addEventListener('pointerdown',async()=>{sp.hidden=true;$('#lbls').innerHTML='';auInit();AU.ctx&&AU.ctx.resume();S.phase='intro';await comic('cold');CAREER.seenIntro=true;saveCareer();start();},{once:true});}
+
+/* ===================== thriller tutorial (first mission only) ===================== */
+let TS=null;
+function banner(text,danger){const b=$('#banner');if(!text){b.hidden=true;document.body.classList.remove('banner');return;}b.textContent=text;b.className=danger?'danger':'';b.hidden=false;document.body.classList.add('banner');}
+function tutorialStart(){TS={step:0,t:0,crowdT:0,cluster:[6.5,12]};
+  for(let i=0;i<5;i++){const a=i*1.2566;const c=npc(paxOpts(),TS.cluster[0]+Math.cos(a)*1.15,TS.cluster[1]+Math.sin(a)*1.15,'HALL');c.beh='idle';c.special=true;c.yaw=a+Math.PI;c.g.rotation.y=c.yaw;}
+  const g=G[0];g.pos.set(-8.5,0,13.5);g.yaw=Math.atan2(P.pos.x-g.pos.x,P.pos.z-g.pos.z);g.g.rotation.y=g.yaw;g.state='patrol';g.sus=0;S.wardrobe.add('tourist');}
+function updTutorial(dt){if(!TS||S.phase!=='play')return;TS.t+=dt;const g=G[0];
+  if(TS.step===0&&TS.t>2.2){TS.step=1;g.scripted=true;sfx.q();vib(60);banner('Guard ko tum pe shak ho raha hai! Hari line pe chalo, logon ke jhund mein ghus jao',true);}
+  else if(TS.step===1){const inC=Math.hypot(P.pos.x-TS.cluster[0],P.pos.z-TS.cluster[1])<2.1||playerFlags().crowd>=3;TS.crowdT=inC?TS.crowdT+dt:0;
+    if(TS.crowdT>1.4&&g.sus<15){TS.step=2;g.scripted=false;g.state='search';g.searchT=30;g.lastSeen=[19,19];g.sus=40;g.path=null;S.wanted=lookKey();sfx.ok();toast('Bheed ne chhupa liya.','good');
+      banner('Wo ab bhi tumhara trench coat dhoondh raha hai. Washroom mein kapde badlo (bag mein spare jacket hai)');}}
+  else if(TS.step===2&&lookKey()!==S.startLook){TS.step=3;banner('Shabaash. Ab asli kaam: laptop Security office mein hai. Staff wale ke peeche STAFF ONLY darwaze se ghuso');CAREER.tutDone=true;saveCareer();}
+  else if(TS.step===3&&region(P.pos.x,P.pos.z)==='STAFF'){TS.step=4;banner('Staff guard ki peeli nazar se bacho. Locker mein staff jacket hai. Laptop tak hari line.');setTimeout(()=>{if(TS&&TS.step===4)banner(null);},7000);}}
+
 /* ===================== camera & loop ===================== */
 function updCam(dt){const tx=P.pos.x,tz=P.pos.z,ty=1.1;let dist=camDist;
   for(;dist>2.5;dist-=.5){const cx=tx-Math.sin(camYaw)*dist*Math.cos(camPitch),cz=tz-Math.cos(camYaw)*dist*Math.cos(camPitch);if(cx>-35.6&&cx<35.6&&cz>-25.6&&cz<23.6&&!losBlocked(tx,tz,cx,cz))break;}
   const pos=new T.Vector3(tx-Math.sin(camYaw)*dist*Math.cos(camPitch),ty+dist*Math.sin(camPitch),tz-Math.cos(camYaw)*dist*Math.cos(camPitch));
   pos.y=Math.min(pos.y,7.4);camera.position.lerp(pos,Math.min(1,dt*7));camera.lookAt(tx,ty,tz);sun.position.set(tx+10,30,tz+14);sun.target.position.set(tx,0,tz);}
-let clockT=0,boardT=0,frames=0;
+let clockT=0,boardT=0,frames=0,annT=0;
 const clk=new T.Clock();
 function frame(){
   let dt=Math.min(window.__dtcap||.05,clk.getDelta());if(slowT>0){slowT-=dt;dt*=.3;}clockT+=dt;const t=clockT;
   if(S.phase==='play'||S.phase==='talk'){
-    if(S.phase==='play'){updPlayer(dt,t);updHold(dt);S.timeLeft-=dt;if(S.timeLeft<=0){finish(false);}}
+    if(S.phase==='play'){updPlayer(dt,t);updHold(dt);updTutorial(dt);S.timeLeft-=dt;if(S.timeLeft<=0){finish(false);}
+      if((annT+=dt)>48){annT=0;sfx.chime();toast(pick(['Announcement: ZR 501 Dubai ki boarding Gate 72 se jaldi shuru hogi.','Announcement: Kripya apna saamaan laawaaris na chhodein.','Announcement: Passenger Kapoor, please report to Gate 61.','Announcement: Security check pe line mein rahein.']),'info');}}
     updNPC(dt,t);updGuards(dt,t);updCams(dt);
     updDoor(staffDoor,dt,NPC.concat(G).some(n=>(n.staff||G.includes(n))&&nearDoor(staffDoor,n.pos.x,n.pos.z))||(S.look.outfit==='staff'&&nearDoor(staffDoor,P.pos.x,P.pos.z)));
     updDoor(airDoor,dt,NPC.concat(G).some(n=>(n.staff||G.includes(n))&&nearDoor(airDoor,n.pos.x,n.pos.z))||(S.look.outfit==='staff'&&nearDoor(airDoor,P.pos.x,P.pos.z)));
@@ -722,8 +819,10 @@ function frame(){
     const ot=objText();if($('#objText').textContent!==ot)$('#objText').textContent=ot;
     if((frames++)%3===0)drawMap();
     if((boardT+=dt)>4){boardT=0;drawBoard();}
+  } else if(S.phase==='splash'){updNPC(dt,t);updGuards(dt,t);updCams(dt);flyCam(dt);drawLabels();
   } else if(P){anim(P,dt,0,t);camYaw+=dt*.05;}
-  if(P)updCam(dt);
+  updTrail(dt,t);
+  if(P&&S.phase!=='splash')updCam(dt);
   composer.render();requestAnimationFrame(frame);
 }
 
@@ -736,7 +835,7 @@ setupObjective();
 buildPlayer();drawBoard();
 camera.position.set(0,8,30);
 window.__ready=true;
-window.__trace={S,M,G,CAMS,NPC,get P(){return P;},CAREER,start,doAct,get cur(){return current&&(typeof current.label==='function'?current.label():current.label);},tp:(x,z)=>{P.pos.set(x,0,z);}};
+window.__trace={get TS(){return TS;},S,M,G,CAMS,NPC,get P(){return P;},CAREER,start,doAct,get cur(){return current&&(typeof current.label==='function'?current.label():current.label);},tp:(x,z)=>{P.pos.set(x,0,z);}};
 frame();
-if(location.hash==='#play'){$('#loading').hidden=true;auInit();start();}else hub();
+if(!CAREER.seenIntro)splash();else if(location.hash==='#play'){$('#loading').hidden=true;auInit();start();}else hub();
 </script>

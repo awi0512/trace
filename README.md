@@ -11,7 +11,10 @@ Stylized 3D spy sandbox at Mumbai airport with noir comic story panels (three.js
 - **CCTV:** sweeping cameras feed a control room that sends the nearest guard
 - **Tools:** blend into crowds, change outfit in the washroom (no cameras), buy disguises at duty free, take a staff jacket from the locker, tailgate staff through locked doors, pull a fire alarm, or answer the emigration officer from your cover story
 - **Career:** money, stars and heat persist in the browser. Heat makes guards recognise you faster; a new passport lowers it
-- Noir cold open on first play, plus caught and mission-complete panels
+- First play: title flyover with GUARD / CCTV / TARGET labels, noir cold open, then a thriller tutorial (a guard grows suspicious within seconds; hide in a crowd, change your look, sneak into the staff area) where the first mistake is forgiven
+- Every CCTV camera that spots you takes a real black-and-white snapshot from its own point of view (CAM, timestamp, REC, face-match box) that pins to the screen as a polaroid and shows up in the end-of-mission footprint
+- A glowing floor trail leads to the current goal; phones vibrate on detection; airport announcements play
+- Caught and mission-complete noir panels
 
 ## Story chapter (`cab.html`)
 
