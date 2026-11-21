@@ -17,7 +17,7 @@ canvas{display:block;touch-action:none}
 </head>
 <body>
 <div id="load">Station ban raha hai…</div>
-<div id="cap">TRACE · station sample (game me nahi). Ungli se ghumao, do ungli se zoom.</div>
+<div id="cap">TRACE · station sample (game me nahi). Ungli se ghumao, do ungli se zoom.<br><span style="font-weight:400;opacity:.75;font-size:11px">Asli awaazein: freesound.org · "train-station-Rajasthan" by xserra (CC BY 4.0), baaki CC0 (barryshamir, egovind, sama66, thma, chhavi)</span></div>
 <div id="ui"><button id="day" class="on" type="button">☀ Din</button><button id="night" type="button">🌙 Raat</button><button id="auto" class="on" type="button">↻ Auto</button><button id="walk" type="button">🚶 Platform pe</button><button id="snd" type="button">🔊 Awaaz</button></div>
 <script type="module">
 import * as T from 'three';
@@ -135,13 +135,19 @@ const LINES=[['चाय चाय! गरम चाय!','Chaai chaai! Garam ch
 const AU={ctx:null,on:false,voice:null,crowd:null};
 function pickVoice(){try{const vs=speechSynthesis.getVoices();AU.voice=vs.find(v=>/^hi[-_]IN/i.test(v.lang))||vs.find(v=>/^en[-_]IN/i.test(v.lang))||null;}catch(e){}}
 try{speechSynthesis.onvoiceschanged=pickVoice;pickVoice();}catch(e){}
-function speak(text,vol,rate=1.08,pitch=1.15){if(!AU.on||!('speechSynthesis' in window))return;try{if(speechSynthesis.speaking)return;const u=new SpeechSynthesisUtterance(text);if(AU.voice){u.voice=AU.voice;u.lang=AU.voice.lang;}else u.lang='hi-IN';u.volume=vol;u.rate=rate;u.pitch=pitch;speechSynthesis.speak(u);}catch(e){}}
+function speak(){return;}function _ttsUnused(text,vol,rate=1.08,pitch=1.15){if(!AU.on||!('speechSynthesis' in window))return;try{if(speechSynthesis.speaking)return;const u=new SpeechSynthesisUtterance(text);if(AU.voice){u.voice=AU.voice;u.lang=AU.voice.lang;}else u.lang='hi-IN';u.volume=vol;u.rate=rate;u.pitch=pitch;speechSynthesis.speak(u);}catch(e){}}
 function tone(f,d,type='sine',v=.15,w=0){if(!AU.ctx)return;const c=AU.ctx,t0=c.currentTime+w,o=c.createOscillator(),g=c.createGain();o.type=type;o.frequency.value=f;g.gain.setValueAtTime(0,t0);g.gain.linearRampToValueAtTime(v,t0+.02);g.gain.exponentialRampToValueAtTime(.0001,t0+d);o.connect(g).connect(c.destination);o.start(t0);o.stop(t0+d+.05);}
-function horn(){tone(311,1.6,'sawtooth',.06);tone(370,1.6,'sawtooth',.05);}
+function horn(){if(REC.horn&&REC.horn.buffer){if(REC.horn.isPlaying)REC.horn.stop();REC.horn.play();}}
 function chime(){tone(659,.9,'sine',.12);tone(523,.9,'sine',.12,.35);tone(392,1.2,'sine',.12,.7);}
 function crowdNoise(){const c=AU.ctx,len=c.sampleRate*2,b=c.createBuffer(1,len,c.sampleRate),d=b.getChannelData(0);for(let i=0;i<len;i++)d[i]=(Math.random()*2-1)*.5;const src=c.createBufferSource();src.buffer=b;src.loop=true;const f=c.createBiquadFilter();f.type='bandpass';f.frequency.value=600;f.Q.value=.6;const g=c.createGain();g.gain.value=.035;src.connect(f).connect(g).connect(c.destination);src.start();AU.crowd=g;}
-document.getElementById('snd').onclick=e=>{if(!AU.ctx){try{AU.ctx=new (window.AudioContext||window.webkitAudioContext)();crowdNoise();}catch(err){}}AU.on=!AU.on;e.target.classList.toggle('on',AU.on);
-  if(AU.ctx){AU.ctx.resume();if(AU.crowd)AU.crowd.gain.value=AU.on?.035:0;}if(AU.on){pickVoice();CH.talkT=.2;speak(LINES[0][0],1);bubble(LINES[0][1]);}else{try{speechSynthesis.cancel();}catch(err){}}};
+/* real recordings (freesound.org): positional vendors, station bed, announcement, horn */
+const listener=new T.AudioListener();cam.add(listener);const REC={};window.__rec=REC;const AL=new T.AudioLoader();const base='audio/';
+function loadRec(){if(REC.loading)return;REC.loading=true;const posA=(file,obj,vol,ref)=>{const a=new T.PositionalAudio(listener);AL.load(base+file,b=>{a.setBuffer(b);a.setLoop(true);a.setRefDistance(ref);a.setRolloffFactor(1.6);a.setDistanceModel('inverse');a.setVolume(vol);if(AU.on)a.play();});obj.add(a);return a;};
+  REC.chai=posA('chai_rajasthan.mp3',chai,1.6,5);REC.sam=posA('food_sellers.mp3',sam,1.3,5);
+  const flat=(file,vol,loop)=>{const a=new T.Audio(listener);AL.load(base+file,b=>{a.setBuffer(b);a.setLoop(loop);a.setVolume(vol);if(loop&&AU.on)a.play();});return a;};
+  REC.bed=flat('delhi_bed.mp3',.45,true);REC.pa=flat('mumbai_pa.mp3',.18,true);REC.ann=flat('announcement.mp3',.9,false);REC.horn=flat('horn.mp3',.8,false);}
+function recAll(on){for(const k of ['chai','sam','bed','pa']){const a=REC[k];if(!a||!a.buffer)continue;if(on&&!a.isPlaying)a.play();if(!on&&a.isPlaying)a.pause();}}
+document.getElementById('snd').onclick=e=>{AU.on=!AU.on;e.target.classList.toggle('on',AU.on);try{listener.context.resume();}catch(err){}if(AU.on){loadRec();recAll(true);CH.talkT=.5;}else{recAll(false);if(REC.ann&&REC.ann.isPlaying)REC.ann.stop();}};
 function chaiTick(dt){chai.position.x+=CH.dir*1.1*dt;if(chai.position.x<-40||chai.position.x>66)CH.dir*=-1;chai.rotation.y=CH.dir>0?Math.PI/2:-Math.PI/2;chai.position.y=1+Math.abs(Math.sin(performance.now()/140))*.05;
   if(CH.bubbleT>0){CH.bubbleT-=dt;if(CH.bubbleT<=0)bub.visible=false;}
   CH.talkT-=dt;if(CH.talkT<=0){CH.talkT=rnd(5,8);const L2=LINES[Math.floor(rnd(0,LINES.length))];const d=cam.position.distanceTo(chai.position);const vol=Math.max(.15,Math.min(1,1.15-d/45));bubble(L2[1]);speak(L2[0],vol);}}
@@ -159,7 +165,7 @@ const SLINES=[['गरम समोसा! गरमा गरम समोस�
 function samTick(dt){sam.position.x+=SM.dir*.9*dt;if(sam.position.x<-42||sam.position.x>66)SM.dir*=-1;sam.rotation.y=SM.dir>0?Math.PI/2:-Math.PI/2;sam.position.y=1+Math.abs(Math.sin(performance.now()/160))*.05;
   if(SM.bubbleT>0){SM.bubbleT-=dt;if(SM.bubbleT<=0)sbub.visible=false;}
   SM.talkT-=dt;if(SM.talkT<=0){SM.talkT=rnd(5,8);const L2=SLINES[Math.floor(rnd(0,SLINES.length))];const d=cam.position.distanceTo(sam.position);const vol=Math.max(.15,Math.min(1,1.15-d/45));sBubble(L2[1]);speak(L2[0],vol,1.15,.8);}}
-let lastPh=0;function stationSounds(ph){if(!AU.on){lastPh=ph;return;}if(lastPh>40&&ph<5||lastPh<1&&ph>=1&&ph<2){chime();setTimeout(()=>{try{speechSynthesis.cancel();}catch(e){}speak('यात्रीगण कृपया ध्यान दें। गाड़ी संख्या तीन सात दो पाँच छह, प्लेटफ़ॉर्म नंबर पाँच पर आ रही है।',.9,1,1);},1300);}
+let lastPh=0;function stationSounds(ph){if(!AU.on){lastPh=ph;return;}if(lastPh>40&&ph<5||lastPh<1&&ph>=1&&ph<2){chime();setTimeout(()=>{if(REC.ann&&REC.ann.buffer&&!REC.ann.isPlaying)REC.ann.play();},1300);}
   if(lastPh<10&&ph>=10)horn();if(lastPh<32&&ph>=32)horn();lastPh=ph;}
 addEventListener('resize',()=>{cam.aspect=innerWidth/innerHeight;cam.updateProjectionMatrix();R.setSize(innerWidth,innerHeight);});
 /* ---------- loop ---------- */
