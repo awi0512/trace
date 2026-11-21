@@ -98,7 +98,7 @@ function rollMods(leg){const n=leg<=1?0:leg<=3?1:leg<=6?2:3;return shuffle(Objec
 function nextZones(cur){return shuffle(GROUND.filter(z=>z!==cur)).slice(0,2);}
 function newRun(ch){ch=CHARS[ch]?ch:'agent';const counters=pickCounters();for(const k in WORLD.zones)WORLD.zones[k]=+(WORLD.zones[k]*.75).toFixed(2);wjson(WKEY,WORLD);const z='airport';const B=getBoard();const raid=B.strength>=100;
   const r={active:true,leg:1,zone:z,mods:raid?['patrol','alert']:[],raid,counters,char:ch,darts:(ch==='hacker'?1:ch==='soldier'||ch==='conman'?3:2)+(CAREER.dartUp||0),ammo:ch==='conman'?0:(ch==='hacker'?4:ch==='soldier'?10:6)+2*(CAREER.ammoUp||0),score:0,cash:ch==='agent'?50000:0,legs:[],lh:{run:0,crowd:0,disguise:0,dart:0,cams:0,flight:0},started:Date.now()};saveRun(r);return r;}
-function startNewRun(){pickChar(ch=>{closeSheet&&closeSheet();coldOpen(ch,()=>{const r=newRun(ch);location.href=ZONES[r.zone].url;if(ZONE_ID==='airport'&&r.zone==='airport')location.reload();});});}
+function startNewRun(){pickChar(ch=>{closeSheet&&closeSheet();((d)=>d())(()=>{const r=newRun(ch);let seen=false;try{seen=!!localStorage.getItem('trace_open_seen');}catch(e){}if(!seen){r.from='visarjan';saveRun(r);location.href='chase.html?story=1&next='+encodeURIComponent(ZONES[r.zone].url);return;}location.href=ZONES[r.zone].url;if(ZONE_ID==='airport'&&r.zone==='airport')location.reload();});});}
 /* ---- cold open: Ganpati visarjan night, a red dupatta, a fake trail (story bible, chapter 1) ---- */
 function storyScene(cards,done){const ov=document.createElement('div');ov.id='story';ov.style.cssText='position:fixed;inset:0;z-index:60;background:#07070a;color:#f1ece1;display:flex;align-items:center;justify-content:center;padding:24px;font-family:"Space Grotesk",sans-serif;text-align:center';
   document.body.appendChild(ov);let i=0,typing=null;const sk=document.createElement('button');sk.textContent='Skip ›';sk.type='button';sk.style.cssText='position:fixed;top:calc(14px + env(safe-area-inset-top));right:14px;z-index:61;background:#0000;border:1px solid #fff5;color:#fff;border-radius:999px;padding:6px 12px;font:700 12px sans-serif';document.body.appendChild(sk);
@@ -452,11 +452,11 @@ function rushHour(){const n=18;for(let i=0;i<n;i++){let c=null;
   if(c)c.walk=rnd(.9,1.2);}
   toast('Rush hour! The place is packed. Blend in.','info');}
 /* ---- arrival: a story card that says how you got here and what this zone is for ---- */
-async function arrivalCard(){if(!RUN)return false;const how=RUN.from&&ARRIVE[ZONE_ID]&&ARRIVE[ZONE_ID][RUN.from];
+async function arrivalCard(extra){if(!RUN)return false;const how=RUN.from&&ARRIVE[ZONE_ID]&&ARRIVE[ZONE_ID][RUN.from];
   const goal={airport:'Mission ka kaam karo, phir apne gate se Goa ki flight pakdo. Alert hua to airport lockdown: sirf taxi.',train:'Apne coach mein chadho, kaam karo. Saaf raho to Madgaon (Goa) pe utro; garbar hui to kood jao.',
     bus:'Goa wali bus pakdo. Dhabe pe passport, aage police naka.',port:'Dock office se crew pass lo aur gangway se jahaz pe chadho. Yahi aakhri padaav hai.',plane:'Overhead bin mein drive badlo, landing tak shaant raho, immigration paar karo.'}[ZONE_ID];
   await new Promise(res=>{const c=sheet(`<div class="eyebrow">ESCAPE · LEG ${RUN.leg} · ${esc(ZONES[ZONE_ID].name.toUpperCase())}</div><h2>${RUN.leg===1?'Mumbai se bhaago':esc(ZONES[ZONE_ID].name)}</h2>
-    ${RUN.leg===1?`<p>${esc(GOAL)}</p>`:''}${how?`<p style="font-style:italic">${esc(how)}</p>`:''}<div class="dossier"><h3>Is jagah ka kaam</h3><p style="margin:4px 0 0;color:#1b1b1b">${esc(goal)}</p></div>
+    ${RUN.leg===1&&!how?`<p>${esc(GOAL)}</p>`:''}${how?`<p style="font-style:italic">${esc(how)}</p>`:''}<div class="dossier"><h3>Is jagah ka kaam</h3><p style="margin:4px 0 0;color:#1b1b1b">${extra?`<b>${esc(extra)}</b><br>`:''}${esc(goal)}</p></div>
     <div class="route">${['Airport','Train / Bus / Flight','Goa Docks','Jahaz 🚢'].map((x,i)=>`<span style="opacity:${i<=({airport:0,train:1,bus:1,plane:1,port:2})[ZONE_ID]?1:.45}">${x}</span>`).join(' → ')}</div>
     <button class="btn" id="go2" type="button">Chalo</button>`);c.querySelector('#go2').onclick=()=>{auInit&&auInit();AU.ctx&&AU.ctx.resume();closeSheet();res();};});return true;}
 /* ---- news ---- */
@@ -477,7 +477,7 @@ const EXITS={flight:{title:'Boarding the Goa flight ✈',text:'Clean exit: nobod
   city:{title:'Through the checkpost',text:'The bus rolls into Goa. Clean pass: +50% cash, wanted cleared.',cash:1.5,next:['port'],via:{port:'Walk to the docks →'}},
   truck:{title:'Hid in a cargo truck',text:'You skipped the police checkpost under a tarpaulin. The truck is going straight to the docks.',cash:.8,next:['port'],via:{port:'Ride into the docks →'}}};
 /* where you came from, said in one line at the start of each zone */
-const ARRIVE={plane:{flight:'Gate se seedha jahaz mein. Ab 2 ghante ki flight, aur cabin mein ek air marshal.'},
+const ARRIVE={airport:{visarjan:'Visarjan ki bheed se bach ke taxi pakdi. Ab Mumbai Airport. Yahan se Goa ki flight, ya kuch aur.'},plane:{flight:'Gate se seedha jahaz mein. Ab 2 ghante ki flight, aur cabin mein ek air marshal.'},
   train:{taxi:'Airport lockdown ke baad taxi se Mumbai Central. Goa ki raat ki gaadi platform pe khadi hai.'},
   bus:{taxi:'Airport lockdown ke baad taxi se bus adda. Goa ki highway bus pakdo.',jump:'Chalti train se koodi, khet paar karke highway ke bus adde tak pahunchi.'},
   port:{landed:'Goa airport se taxi. Mormugao docks pe jahaz raat 4 baje nikalta hai.',station:'Madgaon station se auto. Docks saamne hain, jahaz raat 4 baje.',city:'Bus Goa pahunch gayi. Docks tak paidal.',truck:'Truck ne seedha docks ke andar utaara. Tarpaulin se bahar niklo.'}};
