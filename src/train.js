@@ -5,6 +5,8 @@ import {RenderPass} from 'three/addons/postprocessing/RenderPass.js';
 import {UnrealBloomPass} from 'three/addons/postprocessing/UnrealBloomPass.js';
 import {OutputPass} from 'three/addons/postprocessing/OutputPass.js';
 import {Pass,FullScreenQuad} from 'three/addons/postprocessing/Pass.js';
+import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
+import * as SkelU from 'three/addons/utils/SkeletonUtils.js';
 
 /* TRACE · Level 2 · Raat ki Gaadi
    Part 1: night platform at Mumbai Terminus (reach your coach before departure).
@@ -524,7 +526,8 @@ const sfx={chime(){tone(784,1.2,'sine',.12);tone(659,1.2,'sine',.12,.35);tone(52
 
 /* ---------------- renderer ---------------- */
 const canvas=$('#gl');
-const COMIC=/look=comic/.test(location.search);
+const COMIC=/look=(comic|real)/.test(location.search)&&!/look=realplain/.test(location.search);
+const REAL=/look=real/.test(location.search);
 const renderer=new T.WebGLRenderer({canvas,antialias:true,powerPreference:'high-performance'});
 renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.6));renderer.toneMapping=T.ACESFilmicToneMapping;renderer.toneMappingExposure=1.1;
 renderer.shadowMap.enabled=true;renderer.shadowMap.type=T.PCFSoftShadowMap;
@@ -575,7 +578,46 @@ function collide(p,r=.3){for(const c of COL){if(!c.on)continue;if((S.area==='bri
   if(d2<r*r){if(d2>1e-8){const d=Math.sqrt(d2);p.x=cx+dx/d*r;p.z=cz+dz/d*r;}else{const l=p.x-c.x0,rr=c.x1-p.x,f=p.z-c.z0,b=c.z1-p.z,mn=Math.min(l,rr,f,b);if(mn===l)p.x=c.x0-r;else if(mn===rr)p.x=c.x1+r;else if(mn===f)p.z=c.z0-r;else p.z=c.z1+r;}}}}
 
 /* ---------------- chibi characters ---------------- */
-function chibi(o){const g=new T.Group();const root=new T.Group();root.scale.setScalar(o.scale||.62);g.add(root);
+/* ---------------- real characters: CC0 Quaternius rigs, posed and animated in code ---------------- */
+const MODEL_BASE=/localhost|127\.0\.0\.1/.test(location.hostname)?'/assets/models/':'https://cdn.jsdelivr.net/gh/awi0512/trace@5fd242aabf431ba9e9b32de9d0d97b7537661fe4/assets/models/';
+const MODELS={},MODEL_W=['W_Casual','W_Formal','W_Suit','W_Worker'],MODEL_M=['M_Casual','M_Casual2','M_Suit','M_Worker'];let realCount=0;
+async function loadModels(){const L=new GLTFLoader();const el=$('#loading');let n=0;const all=MODEL_W.concat(MODEL_M,['M_Swat']);
+  await Promise.all(all.map(async k=>{try{const g=await L.loadAsync(MODEL_BASE+k+'.glb');MODELS[k]=g.scene;}catch(e){console.warn('model',k,e);}n++;if(el)el.textContent=`Loading people… ${Math.round(n/all.length*100)}%`;}));}
+const hashC=o=>Math.abs(((o.body||1)*31+(o.legs||2)*17+(o.skin||3)*7+(o.hair||5))|0);
+function realChibi(o){const fem=!!(o.longHair||o.shawl);let key;
+  if(o.coat)key=fem?'W_Formal':'M_Suit';else if(o.cap&&o.capPeak&&!fem)key=o.body===0xf28b0f?'M_Worker':'M_Suit';else{const L=fem?MODEL_W:MODEL_M;key=L[hashC(o)%L.length];}
+  if(!MODELS[key])return null;realCount++;
+  const g=new T.Group();const model=SkelU.clone(MODELS[key]);model.scale.setScalar(.95);g.add(model);const B={},rest={};
+  const cols=[o.body,o.legs||0x2c3150,o.shoes||0x1b1b24,o.shawl||o.body];const byName={};let ci=0;
+  model.traverse(k=>{if(k.isBone){B[k.name]=k;rest[k.name]=k.rotation.clone();}
+    if(k.isMesh){k.castShadow=!!o.shadow;k.receiveShadow=true;k.frustumCulled=false;const conv=mt=>{const nm=mt.name||'';if(!byName[nm]){let c=null;
+        if(/skin/i.test(nm))c=o.skin;else if(/hair|eyebrow/i.test(nm))c=o.hair;else if(/eye|visor/i.test(nm))c=null;else c=cols[Math.min(ci++,cols.length-1)];
+        const base=c==null?mt.color.getHex():c;byName[nm]=COMIC?new T.MeshToonMaterial({color:base,gradientMap:TOON_G}):new T.MeshStandardMaterial({color:base,roughness:.8,metalness:0});}return byName[nm];};
+      k.material=Array.isArray(k.material)?k.material.map(conv):conv(k.material);}});
+  for(const s of ['L','R']){if(B['UpperArm'+s])B['UpperArm'+s].rotation.x=rest['UpperArm'+s].x-1.35;}
+  g.updateMatrixWorld(true);
+  /* a head anchor sized like the old chibi head, so hats, veils and masks still fit */
+  const hb=B.Head;const head=new T.Group();if(hb){hb.add(head);const ws=new T.Vector3();hb.getWorldScale(ws);head.scale.setScalar(.25/ws.x);head.position.set(0,.13/ws.y*.95,.02/ws.z);}
+  const H=(geo,col,x,y,z)=>mesh(geo,m(col),x,y,z,head);
+  if(false){}
+  else if(o.scarf&&B.Neck){const nb=new T.Group();B.Neck.add(nb);const ws=new T.Vector3();B.Neck.getWorldScale(ws);nb.scale.setScalar(1/ws.x);mesh(new T.TorusGeometry(.085,.025,6,16),m(o.scarf),0,.02,0,nb).rotation.x=Math.PI/2;}
+  if(o.hat){H(new T.CylinderGeometry(.42,.46,.36,18),o.hat,0,.28,0);H(new T.CylinderGeometry(.78,.78,.05,24),o.hat,0,.12,0);H(new T.TorusGeometry(.44,.05,6,20),0xe0242b,0,.18,0).rotation.x=Math.PI/2;}
+  if(o.cap){H(new T.CylinderGeometry(.46,.5,.24,20),o.cap,0,.2,0);H(new T.CylinderGeometry(.5,.5,.05,20,1,false,-Math.PI/2.2,Math.PI/1.1),o.capPeak||0x15183a,0,.1,.2);}
+  if(o.turban){const tb=H(new T.SphereGeometry(.52,16,10,0,Math.PI*2,0,Math.PI/2),o.turban,0,.05,0);tb.scale.y=.8;}
+  if(o.topi)H(new T.CylinderGeometry(.42,.44,.3,16),o.topi,0,.25,0);
+  if(o.load){mesh(rb(.5,.3,.36,.05),m(o.load),0,1.62,0,g);}
+  if(o.bag)mesh(rb(.28,.34,.14,.04),m(o.bag),.24,.82,.06,g);
+  const dummy=()=>new T.Group();scene.add(g);
+  return {g,root:model,legL:dummy(),legR:dummy(),armL:dummy(),armR:dummy(),head,bag:!!o.bag,ph:rnd(0,6),pos:g.position,yaw:0,speed:0,opts:o,real:true,B,rest};}
+function realAnim(c,dt,speed,t){const B=c.B,R=c.rest,set=(n,ax,v)=>{if(B[n])B[n].rotation[ax]=R[n][ax]+v;};
+  if(c.pose==='sit'){set('UpperLegL','x',-1.5);set('UpperLegR','x',-1.5);set('LowerLegL','x',1.5);set('LowerLegR','x',1.5);set('UpperArmL','z',-.35);set('UpperArmR','z',.35);c.root.position.y=-.38;return;}
+  if(c.pose==='lie'){return;}
+  c.root.position.y=0;c.ph+=dt*(2.6+speed*2.1);const s=Math.min(1,speed/1.6),run=speed>3.2,sw=Math.sin(c.ph)*(run?.75:.5)*s;
+  set('UpperLegL','x',-sw);set('UpperLegR','x',sw);set('LowerLegL','x',(.1+Math.max(0,Math.sin(c.ph+1.2))*(run?1.1:.6))*s);set('LowerLegR','x',(.1+Math.max(0,-Math.sin(c.ph+1.2))*(run?1.1:.6))*s);
+  const br=Math.sin(t*1.8+c.ph)*.025*(1-s);
+  set('UpperArmL','z',sw*.9+br);set('UpperArmR','z',sw*.9-br);if(B.UpperArmL)B.UpperArmL.rotation.x=R.UpperArmL.x-1.35;if(B.UpperArmR)B.UpperArmR.rotation.x=R.UpperArmR.x-1.35;
+  set('LowerArmL','z',run?-.9:-.15);set('LowerArmR','z',run?.9:.15);set('Torso','x',run?.18:br);c.root.position.y=Math.abs(Math.sin(c.ph))*.035*s;}
+function chibi(o){if(REAL&&(realCount<55||o.shadow)){const rc=realChibi(o);if(rc)return rc;}const g=new T.Group();const root=new T.Group();root.scale.setScalar(o.scale||.62);g.add(root);
   const pivot=(x,y)=>{const p=new T.Group();p.position.set(x,y,0);root.add(p);return p;};
   const legL=pivot(-.18,.55),legR=pivot(.18,.55);
   for(const Lg of [legL,legR]){mesh(new T.CapsuleGeometry(.13,.26,4,8),m(o.legs||0x2c3150),0,-.27,0,Lg,{cast:o.shadow});mesh(rb(.26,.14,.36,.06),m(o.shoes||0x1b1b24),0,-.5,.06,Lg);}
@@ -602,7 +644,7 @@ function chibi(o){const g=new T.Group();const root=new T.Group();root.scale.setS
   if(o.board){mesh(new T.BoxGeometry(.06,.5,.38),m(0x3a2a1a),0,-.55,.18,armR);}
   let bag=null;if(o.bag){bag=new T.Group();mesh(rb(.5,.66,.3,.08),m(o.bag,{roughness:.4}),0,.42,0,bag,{cast:o.shadow});bag.position.set(.82,0,.05);root.add(bag);}
   scene.add(g);return {g,root,legL,legR,armL,armR,head,bag,ph:rnd(0,6),pos:g.position,yaw:0,speed:0,opts:o};}
-function anim(c,dt,speed,t){if(c.pose==='sit'){c.legL.rotation.x=c.legR.rotation.x=-1.45;c.root.position.y=0;return;}if(c.pose==='lie'){return;}
+function anim(c,dt,speed,t){if(c.real){realAnim(c,dt,speed,t);return;}if(c.pose==='sit'){c.legL.rotation.x=c.legR.rotation.x=-1.45;c.root.position.y=0;return;}if(c.pose==='lie'){return;}
   c.ph+=dt*(3+speed*3);const s=Math.min(1,speed/1.6),a=Math.sin(c.ph)*.7*s;c.legL.rotation.x=a;c.legR.rotation.x=-a;c.armL.rotation.x=-a*.9;c.armR.rotation.x=(c.bag||c.opts.kettle||c.opts.board)?0:a*.9;c.root.position.y=Math.abs(Math.sin(c.ph))*.06*s;}
 function faceTo(c,yaw,dt,k=10){c.yaw+=angDiff(yaw,c.yaw)*Math.min(1,dt*k);c.g.rotation.y=c.yaw;}
 function stepTo(c,tx,tz,dt,spd){const dx=tx-c.pos.x,dz=tz-c.pos.z,d=Math.hypot(dx,dz);if(d<.08){c.speed=0;return true;}const v=Math.min(spd,d/dt);c.pos.x+=dx/d*v*dt;c.pos.z+=dz/d*v*dt;c.speed=v;faceTo(c,Math.atan2(dx,dz),dt);return d<.2;}
@@ -1049,13 +1091,14 @@ function drawMap(){mg.clearRect(0,0,236,168);mg.fillStyle='rgba(255,255,255,.18)
 
 /* ---------------- camera & loop ---------------- */
 /* orbit camera outside the vehicles: drag the right side to look around. CAMY0 = default heading, CAMB = optional bounds */
-let CAMY0=Math.atan2(-7,11),CAMB=null,camYaw=0,camPitch=.63,camDist=16;
+let CAMY0=Math.atan2(-7,11),CAMB=null,camYaw=0,camPitch=.63,camDist=16;window.__cam=(d,p,y)=>{camDist=d;if(p!==undefined)camPitch=p;if(y!==undefined)camYaw=y;};let CAMFIX=null;window.__camfix=v=>{CAMFIX=v;};
 function updCam(dt){const tx=P.pos.x,tz=P.pos.z;let pos,look;
   if(S.area==='train'){const port=innerHeight>innerWidth;pos=new T.Vector3(tx,port?7.6:6.2,TZ+(port?9.6:8.2));look=new T.Vector3(tx,.7,TZ-.5);const sh=S.escape>0?.01:.03;pos.y+=Math.sin(clk.elapsedTime*13)*sh;pos.x+=Math.sin(clk.elapsedTime*7)*sh;}
   else{const cy=CAMY0+camYaw,py=P.pos.y>1?P.pos.y:0;let d=camDist;for(;d>4;d-=.5){const r0=d*Math.cos(camPitch),cx=tx+Math.sin(cy)*r0,cz=tz+Math.cos(cy)*r0;if((!CAMB||cx>CAMB[0]&&cx<CAMB[1]&&cz>CAMB[2]&&cz<CAMB[3])&&!losBlocked(tx,tz,cx,cz))break;}
     const rr=d*Math.cos(camPitch);pos=new T.Vector3(tx+Math.sin(cy)*rr,d*Math.sin(camPitch),tz+Math.cos(cy)*rr);look=new T.Vector3(tx,.8,tz);}
   if(S.area!=='train'&&P.pos.y>1){pos.y+=P.pos.y;look.y+=P.pos.y;}
   if(S.area==='train'&&camYaw){camYaw=clamp(camYaw,-.8,.8);const c=Math.cos(camYaw),sn=Math.sin(camYaw),dx=pos.x-look.x,dz=pos.z-look.z;pos.x=look.x+dx*c+dz*sn;pos.z=look.z-dx*sn+dz*c;}
+  if(CAMFIX){pos=new T.Vector3(tx+CAMFIX[0],CAMFIX[1],tz+CAMFIX[2]);look=new T.Vector3(tx,.85,tz);}
   camera.position.lerp(pos,Math.min(1,dt*6));camera.lookAt(look);sun.position.set(tx+8,22,tz+10);sun.target.position.set(tx,0,tz);}
 const clk=new T.Clock();let frames=0;
 function frame(){let dt=Math.min(window.__dtcap||.05,clk.getDelta());if(slowT>0){slowT-=dt;dt*=.3;}const t=clk.elapsedTime;
@@ -1071,6 +1114,7 @@ function frame(){let dt=Math.min(window.__dtcap||.05,clk.getDelta());if(slowT>0)
   composer.render();requestAnimationFrame(frame);}
 
 /* ---------------- boot ---------------- */
+if(REAL)await loadModels();
 setupPlatform();
 setupCams();
 function setupCams(){cctv(1,-56,-2.5,Math.PI*.55,.5,14);cctv(2,-20,-2.5,Math.PI*.5,.7,13);cctv(3,20,-2.5,Math.PI*.5,.7,13);}

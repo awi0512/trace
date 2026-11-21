@@ -209,6 +209,7 @@ function drawMap(){mg.clearRect(0,0,236,168);mg.fillStyle='rgba(120,140,170,.45)
   for(const g of G){if(!g.g.visible)continue;mg.fillStyle=g.smell?'#c58a4a':g.state==='alert'?'#ff3030':g.state==='patrol'?'#ffd166':'#ff9f1c';mg.beginPath();mg.arc(mx(g.pos.x),mz(g.pos.z),5,0,7);mg.fill();}
   mg.fillStyle='#fff';mg.beginPath();mg.arc(mx(P.pos.x),mz(P.pos.z),6,0,7);mg.fill();}
 //@@BOOT
+if(REAL)await loadModels();
 setupPlatform();
 setupCams();
 function setupCams(){cctv(1,-20,-30,Math.PI*.15,.7,22,.2);cctv(2,20,8,-Math.PI*.6,.8,22,.2);cctv(3,-46,6,Math.PI*.5,.6,20,.2);cctv(4,44,-28,-Math.PI*.2,.6,20,.2);}
