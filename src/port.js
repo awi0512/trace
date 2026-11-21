@@ -4,6 +4,7 @@ import {EffectComposer} from 'three/addons/postprocessing/EffectComposer.js';
 import {RenderPass} from 'three/addons/postprocessing/RenderPass.js';
 import {UnrealBloomPass} from 'three/addons/postprocessing/UnrealBloomPass.js';
 import {OutputPass} from 'three/addons/postprocessing/OutputPass.js';
+import {Pass,FullScreenQuad} from 'three/addons/postprocessing/Pass.js';
 
 /* TRACE · Chapter 4 · Bandar ka Akhri Jahaz (built by scripts/assemble-port.py from src/train.js + src/port-parts.js)
    Original header: TRACE · Level 2 · Raat ki Gaadi
@@ -522,6 +523,7 @@ const sfx={chime(){tone(784,1.2,'sine',.12);tone(659,1.2,'sine',.12,.35);tone(52
 
 /* ---------------- renderer ---------------- */
 const canvas=$('#gl');
+const COMIC=/look=comic/.test(location.search);
 const renderer=new T.WebGLRenderer({canvas,antialias:true,powerPreference:'high-performance'});
 renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.6));renderer.toneMapping=T.ACESFilmicToneMapping;renderer.toneMappingExposure=1.1;
 renderer.shadowMap.enabled=true;renderer.shadowMap.type=T.PCFSoftShadowMap;
@@ -530,13 +532,31 @@ const camera=new T.PerspectiveCamera(55,1,.1,300);
 let composer;
 function resize(){const w=innerWidth,h=innerHeight;renderer.setSize(w,h,false);camera.aspect=w/h;camera.fov=w<h?66:50;camera.updateProjectionMatrix();composer&&composer.setSize(w,h);}
 addEventListener('resize',resize);resize();
-composer=new EffectComposer(renderer,new T.WebGLRenderTarget(innerWidth,innerHeight,{type:T.HalfFloatType,samples:Math.min(4,renderer.capabilities.maxSamples||0)}));
-composer.setPixelRatio(renderer.getPixelRatio());composer.addPass(new RenderPass(scene,camera));composer.addPass(new UnrealBloomPass(new T.Vector2(innerWidth,innerHeight),.45,.45,.85));composer.addPass(new OutputPass());resize();
+composer=new EffectComposer(renderer,new T.WebGLRenderTarget(innerWidth,innerHeight,{type:T.HalfFloatType,samples:COMIC?0:Math.min(4,renderer.capabilities.maxSamples||0)}));
+composer.setPixelRatio(renderer.getPixelRatio());
+/* comic ink: the scene is rendered into its own target with a depth texture, then inked (black outlines where depth jumps) */
+class InkPass extends Pass{constructor(){super();this.rt=new T.WebGLRenderTarget(4,4,{type:T.HalfFloatType});this.rt.depthTexture=new T.DepthTexture(4,4);
+  this.mat=new T.ShaderMaterial({uniforms:{tDiffuse:{value:null},tDepth:{value:null},res:{value:new T.Vector2(4,4)},near:{value:.1},far:{value:300}},
+    vertexShader:'varying vec2 vUv;void main(){vUv=uv;gl_Position=vec4(position.xy,0.0,1.0);}',
+    fragmentShader:`uniform sampler2D tDiffuse,tDepth;uniform vec2 res;uniform float near,far;varying vec2 vUv;
+      float lin(vec2 uv){float z=texture2D(tDepth,uv).x*2.0-1.0;return 2.0*near*far/(far+near-z*(far-near));}
+      void main(){vec4 c=texture2D(tDiffuse,vUv);vec2 px=2.2/res;float d=lin(vUv);float e=0.0;
+        e=max(e,abs(lin(vUv+vec2(px.x,0.0))-d));e=max(e,abs(lin(vUv-vec2(px.x,0.0))-d));e=max(e,abs(lin(vUv+vec2(0.0,px.y))-d));e=max(e,abs(lin(vUv-vec2(0.0,px.y))-d));
+        e/=max(d*.045,.12);float ink=smoothstep(.25,.7,e);vec3 col=c.rgb;float l=dot(col,vec3(.299,.587,.114));col=mix(vec3(l),col,1.15);
+        gl_FragColor=vec4(mix(col,vec3(.03,.02,.04),ink*.92),1.0);}`});this.quad=new FullScreenQuad(this.mat);}
+  setSize(w,h){this.rt.setSize(w,h);this.mat.uniforms.res.value.set(w,h);}
+  render(r,write){r.setRenderTarget(this.rt);r.clear();r.render(scene,camera);this.mat.uniforms.tDiffuse.value=this.rt.texture;this.mat.uniforms.tDepth.value=this.rt.depthTexture;
+    this.mat.uniforms.near.value=camera.near;this.mat.uniforms.far.value=camera.far;r.setRenderTarget(this.renderToScreen?null:write);this.quad.render(r);}}
+composer.addPass(COMIC?new InkPass():new RenderPass(scene,camera));
+composer.addPass(new UnrealBloomPass(new T.Vector2(innerWidth,innerHeight),.45,.45,.85));composer.addPass(new OutputPass());resize();
 const hemi=new T.HemisphereLight(0xfff0dc,0x40406a,1.25);scene.add(hemi);
 const sun=new T.DirectionalLight(0xffe2b8,1.3);sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);Object.assign(sun.shadow.camera,{left:-18,right:18,top:18,bottom:-18,near:1,far:70});sun.shadow.bias=-.0006;scene.add(sun,sun.target);
 
 /* ---------------- helpers ---------------- */
-const mats={};const m=(c,o={})=>{const k=c+JSON.stringify(o);return mats[k]||(mats[k]=new T.MeshStandardMaterial(Object.assign({color:c,roughness:.75,metalness:0},o)));};
+const TOON_G=(()=>{const d=new Uint8Array([70,70,70,255,150,150,150,255,255,255,255,255]);const t=new T.DataTexture(d,3,1);t.minFilter=t.magFilter=T.NearestFilter;t.needsUpdate=true;return t;})();
+const mats={};const m=(c,o={})=>{const k=c+JSON.stringify(o);if(mats[k])return mats[k];
+  if(COMIC){const q={color:c,gradientMap:TOON_G};for(const a of ['map','side','transparent','opacity','depthWrite','emissive','emissiveIntensity'])if(o[a]!==undefined)q[a]=o[a];return mats[k]=new T.MeshToonMaterial(q);}
+  return mats[k]=new T.MeshStandardMaterial(Object.assign({color:c,roughness:.75,metalness:0},o));};
 const glow=(c,i=2)=>{const k='g'+c+i;if(!mats[k]){mats[k]=new T.MeshBasicMaterial({color:c,toneMapped:false});mats[k].color.multiplyScalar(i);}return mats[k];};
 const RB={};const rb=(w,h,d,r=.12)=>{const k=[w,h,d,r].join();return RB[k]||(RB[k]=new RoundedBoxGeometry(w,h,d,3,Math.min(r,w/2-.001,h/2-.001,d/2-.001)));};
 function mesh(geo,mat,x=0,y=0,z=0,parent=scene,o={}){const me=new T.Mesh(geo,mat);me.position.set(x,y,z);me.castShadow=o.cast??false;me.receiveShadow=o.recv??true;parent.add(me);return me;}
@@ -566,6 +586,7 @@ function chibi(o){const g=new T.Group();const root=new T.Group();root.scale.setS
   if(o.band)mesh(new T.CylinderGeometry(.13,.13,.12,10),m(0xe0242b),0,-.15,0,armL);
   const head=new T.Group();head.position.y=1.98;root.add(head);
   mesh(new T.SphereGeometry(.5,20,14),m(o.skin,{roughness:.6}),0,0,0,head,{cast:o.shadow});
+  if(COMIC){for(const sx of [-1,1]){const e=mesh(new T.SphereGeometry(.075,10,8),m(0x111111),sx*.17,.04,.45,head);e.scale.set(1,1.35,.6);mesh(new T.SphereGeometry(.025,6,4),glow(0xffffff,1),sx*.17+.02,.08,.5,head);const b=mesh(new T.BoxGeometry(.16,.035,.04),m(0x1a1210),sx*.17,.19,.46,head);b.rotation.z=sx*-.18;}}
   if(!o.bald){const hr=mesh(new T.SphereGeometry(.53,20,14,0,Math.PI*2,0,Math.PI*(o.longHair?.62:.52)),m(o.hair),0,.05,-.02,head);hr.rotation.x=-.3;}
   if(o.longHair)mesh(new T.CapsuleGeometry(.36,.4,4,10),m(o.hair),0,-.32,-.22,head);
   for(const s of [-1,1])mesh(new T.SphereGeometry(.07,8,6),m(0x1b1b28),s*.18,.02,.46,head);
