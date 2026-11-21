@@ -17,7 +17,7 @@ canvas{display:block;touch-action:none}
 </head>
 <body>
 <div id="load">Station ban raha hai…</div>
-<div id="cap">TRACE · station sample (game me nahi). Ungli se ghumao, do ungli se zoom.<br><span style="font-weight:400;opacity:.75;font-size:11px">Asli awaazein: freesound.org · "train-station-Rajasthan" by xserra (CC BY 4.0), baaki CC0 (barryshamir, egovind, sama66, thma, chhavi)</span></div>
+<div id="cap">TRACE · station sample (game me nahi). Ungli se ghumao, do ungli se zoom.<br><span style="font-weight:400;opacity:.75;font-size:11px">Asli awaazein: freesound.org · "train-station-Rajasthan" by xserra (CC BY 4.0), "Kurla local train station Mumbai" by sankalp (CC BY 4.0), baaki CC0 (barryshamir, egovind, sama66, thma, chhavi)</span></div>
 <div id="ui"><button id="day" class="on" type="button">☀ Din</button><button id="night" type="button">🌙 Raat</button><button id="auto" class="on" type="button">↻ Auto</button><button id="walk" type="button">🚶 Platform pe</button><button id="snd" type="button">🔊 Awaaz</button></div>
 <script type="module">
 import * as T from 'three';
@@ -141,14 +141,15 @@ function horn(){if(REC.horn&&REC.horn.buffer){if(REC.horn.isPlaying)REC.horn.sto
 function chime(){tone(659,.9,'sine',.12);tone(523,.9,'sine',.12,.35);tone(392,1.2,'sine',.12,.7);}
 function crowdNoise(){const c=AU.ctx,len=c.sampleRate*2,b=c.createBuffer(1,len,c.sampleRate),d=b.getChannelData(0);for(let i=0;i<len;i++)d[i]=(Math.random()*2-1)*.5;const src=c.createBufferSource();src.buffer=b;src.loop=true;const f=c.createBiquadFilter();f.type='bandpass';f.frequency.value=600;f.Q.value=.6;const g=c.createGain();g.gain.value=.035;src.connect(f).connect(g).connect(c.destination);src.start();AU.crowd=g;}
 /* real recordings (freesound.org): positional vendors, station bed, announcement, horn */
-const listener=new T.AudioListener();cam.add(listener);const REC={};window.__rec=REC;const AL=new T.AudioLoader();AL.setCrossOrigin('anonymous');const base=/pages\.dev$/.test(location.hostname)?'https://cdn.jsdelivr.net/gh/awi0512/trace@c0edbbc0564396156a186a4024d0d5e7ec03f1f9/samples/station/audio/':'audio/';
+const listener=new T.AudioListener();cam.add(listener);const REC={};window.__rec=REC;const AL=new T.AudioLoader();AL.setCrossOrigin('anonymous');const base=/pages\.dev$/.test(location.hostname)?'https://cdn.jsdelivr.net/gh/awi0512/trace@706fe60ed5ec84f50dceef92bd036ae5ad7aeb64/samples/station/audio/':'audio/';
 function loadRec(){if(REC.loading)return;REC.loading=true;const posA=(file,obj,vol,ref)=>{const a=new T.PositionalAudio(listener);AL.load(base+file,b=>{a.setBuffer(b);a.setLoop(true);a.setRefDistance(ref);a.setRolloffFactor(1.6);a.setDistanceModel('inverse');a.setVolume(vol);if(AU.on)a.play();});obj.add(a);return a;};
-  REC.chai=posA('chai_rajasthan.mp3',chai,1.6,5);REC.sam=posA('food_sellers.mp3',sam,1.3,5);
+  const near=(file,obj)=>{const a=new T.Audio(listener);a.userData.obj=obj;AL.load(base+file,b=>{a.setBuffer(b);a.setLoop(true);a.setVolume(.5);if(AU.on)a.play();});return a;};REC.chai=near('chai_vendor.mp3',chai);REC.sam=near('food_vendor.mp3',sam);
   const flat=(file,vol,loop)=>{const a=new T.Audio(listener);AL.load(base+file,b=>{a.setBuffer(b);a.setLoop(loop);a.setVolume(vol);if(loop&&AU.on)a.play();});return a;};
-  REC.bed=flat('delhi_bed.mp3',.45,true);REC.pa=flat('mumbai_pa.mp3',.18,true);REC.ann=flat('announcement.mp3',.9,false);REC.horn=flat('horn.mp3',.8,false);}
-function recAll(on){for(const k of ['chai','sam','bed','pa']){const a=REC[k];if(!a||!a.buffer)continue;if(on&&!a.isPlaying)a.play();if(!on&&a.isPlaying)a.pause();}}
+  REC.bed=flat('kurla_bed.mp3',.7,true);REC.bed2=flat('delhi_bed.mp3',.3,true);REC.pa=flat('mumbai_pa.mp3',.18,true);REC.ann=flat('announcement.mp3',.9,false);REC.horn=flat('horn.mp3',.8,false);}
+function recAll(on){for(const k of ['chai','sam','bed','bed2','pa']){const a=REC[k];if(!a||!a.buffer)continue;if(on&&!a.isPlaying)a.play();if(!on&&a.isPlaying)a.pause();}}
 document.getElementById('snd').onclick=e=>{AU.on=!AU.on;e.target.classList.toggle('on',AU.on);try{listener.context.resume();}catch(err){}if(AU.on){loadRec();recAll(true);CH.talkT=.5;}else{recAll(false);if(REC.ann&&REC.ann.isPlaying)REC.ann.stop();}};
-function chaiTick(dt){chai.position.x+=CH.dir*1.1*dt;if(chai.position.x<-40||chai.position.x>66)CH.dir*=-1;chai.rotation.y=CH.dir>0?Math.PI/2:-Math.PI/2;chai.position.y=1+Math.abs(Math.sin(performance.now()/140))*.05;
+function vendVol(){for(const k of ['chai','sam']){const a=REC[k];if(!a||!a.buffer)continue;const d=cam.position.distanceTo(a.userData.obj.position);a.setVolume(Math.max(.22,Math.min(1.6,1.9-d/22)));}}
+function chaiTick(dt){vendVol();chai.position.x+=CH.dir*1.1*dt;if(chai.position.x<-40||chai.position.x>66)CH.dir*=-1;chai.rotation.y=CH.dir>0?Math.PI/2:-Math.PI/2;chai.position.y=1+Math.abs(Math.sin(performance.now()/140))*.05;
   if(CH.bubbleT>0){CH.bubbleT-=dt;if(CH.bubbleT<=0)bub.visible=false;}
   CH.talkT-=dt;if(CH.talkT<=0){CH.talkT=rnd(5,8);const L2=LINES[Math.floor(rnd(0,LINES.length))];const d=cam.position.distanceTo(chai.position);const vol=Math.max(.15,Math.min(1,1.15-d/45));bubble(L2[1]);speak(L2[0],vol);}}
 
