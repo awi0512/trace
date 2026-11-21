@@ -6,7 +6,7 @@ Season 1 ki story bible: kahani, kirdaar, aur ye endless game mein kaise khelegi
 
 ## 1. Research se kya seekha
 
-Ye cheezein maine asli scripts padh ke nikaali hain (The Fugitive, Catch Me If You Can, Heat, Enemy of the State, Bourne Identity), aur Drishyam, Kahaani aur Hades ke analysis se.
+Shuruaat mein 5 scripts gehraai se padhi (The Fugitive, Catch Me If You Can, Heat, Enemy of the State, Bourne Identity), aur Drishyam, Kahaani aur Hades ke analysis. Uske baad **106 superhit action, thriller aur adventure scripts** ka poora study kiya. Wo **section 9** mein hai.
 
 | Film / game | Kya seekha | TRACE mein kahan aayega |
 |---|---|---|
@@ -92,6 +92,7 @@ Ye kahani **runs ke beech** thodi thodi khulegi (Hades jaisa). Har adhyaay tab k
   - Ye **Nemesis system ki awaaz** hai. Har run ke baad Rana ki line player ke asli khel se banti hai.
 - Har run mein ek **"sach ka tukda"** chhupa hota hai: server room, CCTV control room, kisi gawah ki baat. Inse dheere dheere pata chalta hai ki DRISHTI ne **kitne logon** ko phansaya.
 - Har kirdaar ki apni chhoti kahani khulti hai: Arjun ki taxi, Kavya ka deepfake.
+- **25% wala khulasa** (106 scripts mein khulase ~25% pe sabse zyada aate hain): pehla sach ka tukda dikhata hai ki DRISHTI **nakli** nishaan bana sakta hai. Ab player jaanta hai ki chase kyun hai.
 
 ### Adhyaay 3: "Chai pe Rana" (midpoint, aaina, Heat + Fugitive)
 - Ek scripted run: Rana Chhaya ko Madgaon station pe gher leta hai. **Do raaste:**
@@ -113,7 +114,8 @@ Ye kahani **runs ke beech** thodi thodi khulegi (Hades jaisa). Har adhyaay tab k
 
 ### Adhyaay 5: "Sabse bada nishaan" (climax)
 - Chhaya ek faisla leti hai: *"Agar nishaan kahani hain, to hum sabse badi kahani likhenge."*
-- **Final run:** Nayan Systems ka data centre (Navi Mumbai), Ganpati ke aakhri din, sheher bheed mein.
+- **Heist ki tarah** (Ocean's Eleven, Italian Job, Inception ka pattern): pehle safehouse mein **plan**. Chhe kirdaar, har ek ka kaam, aur player chunta hai kaun kya karega. Phir **amal**. Phir plan bigadta hai, aur aakhri mein **improvise**.
+- **Final run:** Nayan Systems ka data centre (Navi Mumbai), Ganpati ke aakhri din, sheher bheed mein. **Aakhri pal wapas Girgaon Chowpatty pe, visarjan ki raat** (jahan kahani shuru hui thi). 106 mein se ~43% filmein ant mein shuruaat wali jagah pe lautti hain, jaise 12 Monkeys ka airport aur Phone Booth.
   - Player ko **DRISHTI ke apne aujaar** (Rachna) se nakli nishaan banane hain. Police ko galat jagah bhejna hai, khud asli jagah pahunchna hai (Enemy of the State ka climax).
 - **Rana ka faisla:** wo data centre ke bahar khada hai. Pakde ya rasta de?
   - Agar player ne pichhle runs mein Rana ke saath "imaandari" dikhayi hai (koi qatl nahi, kam goli), to Rana kehta hai: *"Jao. Main kehdunga maine nishaan nahi dekha. Pehli baar."*
@@ -216,5 +218,50 @@ Hades + Nemesis ka mix. Teen parten:
 7. Bina wajah ke random popups hatao. Har event kahani se jude: baraat = visarjan, gaddaar = Didi ka test.
 
 ---
+
+---
+
+## 9. 106 superhit scripts ka study
+
+### Kaise kiya
+- 119 scripts download ki (GitHub pe IMSDb ka dataset). Inme se 106 poori aur saaf thi. Kuch naam: Die Hard, Raiders of the Lost Ark, Terminator 1 & 2, The Matrix, Aliens, Jaws, Star Wars (IV, V), Jurassic Park, Heat, The Fugitive, Bourne (Identity, Ultimatum), Mission: Impossible, Inception, The Dark Knight Rises, Gladiator, Se7en, The Usual Suspects, The Sixth Sense, Silence of the Lambs, Godfather (I, II), The Departed, The Prestige, Memento, Fight Club, Titanic, Avatar, Logan, Kill Bill, No Country for Old Men, Ocean's Eleven, The Italian Job, Minority Report, Eagle Eye, Enemy of the State, Catch Me If You Can, Argo, Zero Dark Thirty, Sicario, Saving Private Ryan, Lord of the Rings (I, III), Pirates of the Caribbean, Phone Booth, Cellular, Panic Room, Man on Fire, Drive, Ronin, Face/Off, The Rock, Speed, Escape from New York, Tinker Tailor Soldier Spy, Chinatown, Rear Window, Taxi Driver, Pulp Fiction…
+- **Data:** har script ko 10 hisson mein baanta, aur har hisse mein ginti ki: action shabd (run, chase, crash, gunfire), ghadi ki tick-tick (seconds, hurry, deadline), phone/radio, aur khulase (realizes, the truth, betrayed, framed).
+- **Padhai:** har film ki shuruaat, beech (50%) aur climax (~88%) ka asli scene text padha. Ahem filmon ke poore ahem scene bhi padhe.
+- *Imaandari:* 106 scripts ka har shabd nahi padha (~2 crore akshar). Dhaancha data se nikala, aur ahem hisse khud padhe.
+
+### Data kya kehta hai
+
+| Hissa → | 0–10 | 10–20 | 20–30 | 30–40 | 40–50 | 50–60 | 60–70 | 70–80 | 80–90 | 90–100 |
+|---|---|---|---|---|---|---|---|---|---|---|
+| **Action** (%) | 9 | 7 | 8 | 9 | 8 | 9 | 10 | 11 | 13 | **15** |
+| **Khulase** (%) | 8 | 8 | **10** | 9 | 8 | **12** | 11 | 10 | 11 | **12** |
+| **Ghadi / tension** (%) | 11 | 9 | 9 | 8 | 9 | 10 | 9 | 11 | 11 | 11 |
+| **Phone / radio** (%) | 10 | 9 | 10 | **12** | 10 | 11 | 11 | 10 | 11 | 7 |
+
+- **Ek film mein ~159 scene aur ~102 alag jagahein** (median). Har jagah aadhe se do minute. **Jagah lagataar badalti hai.**
+- **106 mein se 48 filmon mein sabse zyada action aakhri 20% mein hai.** Action shuru se dheere dheere badhta hai, aur ~10–20% (setup) aur ~40–50% (midpoint) pe thoda thamta hai.
+- **~39% filmein seedhe action se khulti hain** (Bourne Ultimatum, Die Hard 2, Sicario, Saving Private Ryan). Baaki ek **"hook image"** se: Jaws mein shark ki nazar, Memento ki polaroid, Fight Club mein muh mein bandook, Looper ki ghadi.
+- **~43% ant mein shuruaat wali jagah pe laut aati hain** (bookend).
+- **Ghadi ki tension poori film mein barabar rehti hai**, kabhi band nahi hoti.
+
+### 12 pattern jo baar baar dikhe (aur TRACE mein kaise)
+
+1. **Hook image se shuru:** Jaws, Memento, Looper. → TRACE: camera ki laal batti laal dupatte pe ghoomti hai.
+2. **Aam aadmi, ghair-aam musibat:** Die Hard, Enemy of the State, Cellular, Eagle Eye, Fugitive. → Chhaya ke chhe aam log.
+3. **System hi dushman** (Minority Report, Eagle Eye, Enemy of the State). Zyaadatar mein system "galat" hota hai. → **Hamara alag mod:** DRISHTI galat nahi, **jaan boojh ke jhooth banata hai**, aur ek imaandar insaan (Rana) us pe vishwas karta hai.
+4. **Shikari ka bhi parivaar ya dard** (Heat, Fugitive, Catch Me, Se7en). → Rana aur Pari.
+5. **Midpoint pe dushman aamne-saamne, baat se** (Heat ka diner, Silence of the Lambs ka cell). → "Chai pe Rana".
+6. **25% pe duniya ka niyam khulta hai** (Matrix: "ye duniya nakli hai"; Inception ki dream rules). → "DRISHTI nakli nishaan banata hai."
+7. **Ant se pehle sabse bura pal + dhokha** (Departed, Usual Suspects, Reservoir Dogs). → Didi ka twist aur Rana ka toota imaan.
+8. **Final = plan + heist + improvise** (Ocean's, Italian Job, Inception, Star Wars ka trench run). → Data centre ka aakhri run.
+9. **Hero dushman ke aujaar hi uske khilaaf use karta hai** (Enemy of the State, Die Hard ka walkie-talkie). → Rachna se nakli nishaan.
+10. **Communication hi tension hai** (Phone Booth, Cellular, Die Hard ka radio, Fugitive ka trace). Phone ka zikr poori film mein ~10% pe barabar. → Rana ka call, Didi ke messages, phone trace.
+11. **Jagah badalti raho** (~102 jagah per film). → Har adhyaay naya sheher, har run 3–4 zone, har zone ke andar chhoti chhoti jagahein.
+12. **Ant mein shuruaat pe lautna** (12 Monkeys, Phone Booth, Terminator). → Season finale visarjan ki raat, Chowpatty pe.
+
+### Game ke liye seedha sabak
+- **Har run ek mini-film hai:** hook image (zone ka arrival card), ~25% pe ek chhota khulasa (sach ka tukda), ~50% pe aamna-saamna (Rana ya Shinde), aur aakhri 20% mein **sabse bada action** (exit ka chase: lockdown, kood, speedboat).
+- **Tension kabhi zero na ho:** timer, phone ping aur CCTV, teeno barabar chalte rahein.
+- **Kahani text se nahi, jagah aur aamne-saamne se:** 106 mein se koi bhi film badi baat lambe narration se nahi kehti.
 
 *Ye original kahani hai. Filmon se sirf craft seekha gaya hai (structure, rishton ka dhaancha, clue lagane ka tareeka). Unke kirdaar, dialogue ya scene copy nahi kiye.*
