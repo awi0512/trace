@@ -7,8 +7,8 @@
 <style>
 html,body{margin:0;height:100%;background:#0b0d14;overflow:hidden;font-family:system-ui,sans-serif}
 canvas{display:block;touch-action:none}
-#ui{position:fixed;left:0;right:0;bottom:calc(16px + env(safe-area-inset-bottom));display:flex;gap:8px;justify-content:center;z-index:5}
-#ui button{border:3px solid #111;border-radius:14px;padding:10px 14px;font:700 15px system-ui;background:#ffd166;color:#111;box-shadow:0 3px 0 #111}
+#ui{position:fixed;left:0;right:0;flex-wrap:wrap;bottom:calc(16px + env(safe-area-inset-bottom));display:flex;gap:8px;justify-content:center;z-index:5}
+#ui button{border:3px solid #111;border-radius:14px;padding:9px 9px;font:700 13px system-ui;white-space:nowrap;background:#ffd166;color:#111;box-shadow:0 3px 0 #111}
 #ui button.on{background:#2fe39a}
 #cap{position:fixed;top:calc(12px + env(safe-area-inset-top));left:16px;right:16px;color:#fff;font:600 13px system-ui;text-shadow:0 1px 3px #000;z-index:5}
 #load{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;color:#fff;font:700 18px system-ui;background:#0b0d14;z-index:9}
@@ -18,7 +18,7 @@ canvas{display:block;touch-action:none}
 <body>
 <div id="load">Station ban raha hai…</div>
 <div id="cap">TRACE · station sample (game me nahi). Ungli se ghumao, do ungli se zoom.</div>
-<div id="ui"><button id="day" class="on" type="button">☀ Din</button><button id="night" type="button">🌙 Raat</button><button id="auto" class="on" type="button">↻ Auto</button><button id="walk" type="button">🚶 Platform pe</button></div>
+<div id="ui"><button id="day" class="on" type="button">☀ Din</button><button id="night" type="button">🌙 Raat</button><button id="auto" class="on" type="button">↻ Auto</button><button id="walk" type="button">🚶 Platform pe</button><button id="snd" type="button">🔊 Awaaz</button></div>
 <script type="module">
 import * as T from 'three';
 import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
@@ -122,12 +122,38 @@ setMode(false);
 document.getElementById('day').onclick=()=>setMode(false);document.getElementById('night').onclick=()=>setMode(true);
 document.getElementById('auto').onclick=e=>{ctl.autoRotate=!ctl.autoRotate;e.target.classList.toggle('on',ctl.autoRotate);};
 document.getElementById('walk').onclick=()=>{cam.position.set(76,2.7,2.6);ctl.target.set(50,2.3,1.2);ctl.autoRotate=false;document.getElementById('auto').classList.remove('on');};
+
+/* ---------- chaiwala + sound ---------- */
+const chai=new T.Group();{const body=new T.Mesh(new T.CylinderGeometry(.3,.32,.85,10),M(0xffffff));body.position.y=.92;body.castShadow=true;chai.add(body);const lungi=new T.Mesh(new T.CylinderGeometry(.33,.36,.55,10),M(0x2e6b3a));lungi.position.y=.3;chai.add(lungi);
+  const head=new T.Mesh(new T.SphereGeometry(.3,14,10),M(0x8f5d3e));head.position.y=1.58;chai.add(head);const cap=new T.Mesh(new T.CylinderGeometry(.24,.26,.16,12),M(0xf5f5f5));cap.position.y=1.86;chai.add(cap);
+  const kettle=new T.Mesh(new T.CylinderGeometry(.18,.22,.45,12),M(0xc9ccd1,{metalness:.8,roughness:.25}));kettle.position.set(.42,1.05,0);chai.add(kettle);const spout=new T.Mesh(new T.CylinderGeometry(.03,.04,.3,6),kettle.material);spout.rotation.z=-1;spout.position.set(.62,1.15,0);chai.add(spout);
+  const tray=new T.Mesh(new T.BoxGeometry(.5,.05,.35),M(0x9b7b4a));tray.position.set(-.42,1.1,0);chai.add(tray);for(let i=0;i<4;i++){const cup=new T.Mesh(new T.CylinderGeometry(.05,.04,.1,8),M(0xf2e6d0));cup.position.set(-.55+i*.09,1.18,(i%2)*.1-.05);chai.add(cup);}}
+chai.position.set(60,1,1.8);S.add(chai);const CH={dir:-1,talkT:2,bubbleT:0};
+const bubC=document.createElement('canvas');bubC.width=512;bubC.height=128;const bubT=new T.CanvasTexture(bubC);bubT.colorSpace=T.SRGBColorSpace;const bub=new T.Sprite(new T.SpriteMaterial({map:bubT,depthTest:false,transparent:true}));bub.scale.set(4.2,1.05,1);bub.position.set(0,2.75,0);bub.visible=false;chai.add(bub);
+function bubble(t){const g=bubC.getContext('2d');g.clearRect(0,0,512,128);g.fillStyle='#fffbe8';g.strokeStyle='#111';g.lineWidth=6;g.beginPath();g.roundRect(6,6,500,92,26);g.fill();g.stroke();g.beginPath();g.moveTo(230,96);g.lineTo(256,124);g.lineTo(280,96);g.fill();g.fillStyle='#b8261f';let fs=44;do{g.font=`bold ${fs}px sans-serif`;fs-=2;}while(g.measureText(t).width>460&&fs>20);g.textAlign='center';g.fillText(t,256,66);bubT.needsUpdate=true;bub.visible=true;CH.bubbleT=2.8;}
+const LINES=[['चाय चाय! गरम चाय!','Chaai chaai! Garam chaai!'],['चाय गरम! समोसा गरम!','Chaai garam! Samosa garam!'],['चाय लो चाय! गरम गरम चाय!','Chaai lo chaai!'],['समोसा! वड़ा पाव! चाय चाय!','Samosa! Vada pav!'],['चाय चाय चाय!','Chaai chaai chaai!']];
+const AU={ctx:null,on:false,voice:null,crowd:null};
+function pickVoice(){try{const vs=speechSynthesis.getVoices();AU.voice=vs.find(v=>/^hi[-_]IN/i.test(v.lang))||vs.find(v=>/^en[-_]IN/i.test(v.lang))||null;}catch(e){}}
+try{speechSynthesis.onvoiceschanged=pickVoice;pickVoice();}catch(e){}
+function speak(text,vol,rate=1.08,pitch=1.15){if(!AU.on||!('speechSynthesis' in window))return;try{if(speechSynthesis.speaking)return;const u=new SpeechSynthesisUtterance(text);if(AU.voice){u.voice=AU.voice;u.lang=AU.voice.lang;}else u.lang='hi-IN';u.volume=vol;u.rate=rate;u.pitch=pitch;speechSynthesis.speak(u);}catch(e){}}
+function tone(f,d,type='sine',v=.15,w=0){if(!AU.ctx)return;const c=AU.ctx,t0=c.currentTime+w,o=c.createOscillator(),g=c.createGain();o.type=type;o.frequency.value=f;g.gain.setValueAtTime(0,t0);g.gain.linearRampToValueAtTime(v,t0+.02);g.gain.exponentialRampToValueAtTime(.0001,t0+d);o.connect(g).connect(c.destination);o.start(t0);o.stop(t0+d+.05);}
+function horn(){tone(311,1.6,'sawtooth',.06);tone(370,1.6,'sawtooth',.05);}
+function chime(){tone(659,.9,'sine',.12);tone(523,.9,'sine',.12,.35);tone(392,1.2,'sine',.12,.7);}
+function crowdNoise(){const c=AU.ctx,len=c.sampleRate*2,b=c.createBuffer(1,len,c.sampleRate),d=b.getChannelData(0);for(let i=0;i<len;i++)d[i]=(Math.random()*2-1)*.5;const src=c.createBufferSource();src.buffer=b;src.loop=true;const f=c.createBiquadFilter();f.type='bandpass';f.frequency.value=600;f.Q.value=.6;const g=c.createGain();g.gain.value=.035;src.connect(f).connect(g).connect(c.destination);src.start();AU.crowd=g;}
+document.getElementById('snd').onclick=e=>{if(!AU.ctx){try{AU.ctx=new (window.AudioContext||window.webkitAudioContext)();crowdNoise();}catch(err){}}AU.on=!AU.on;e.target.classList.toggle('on',AU.on);
+  if(AU.ctx){AU.ctx.resume();if(AU.crowd)AU.crowd.gain.value=AU.on?.035:0;}if(AU.on){pickVoice();CH.talkT=.2;speak(LINES[0][0],1);bubble(LINES[0][1]);}else{try{speechSynthesis.cancel();}catch(err){}}};
+function chaiTick(dt){chai.position.x+=CH.dir*1.1*dt;if(chai.position.x<-40||chai.position.x>66)CH.dir*=-1;chai.rotation.y=CH.dir>0?Math.PI/2:-Math.PI/2;chai.position.y=1+Math.abs(Math.sin(performance.now()/140))*.05;
+  if(CH.bubbleT>0){CH.bubbleT-=dt;if(CH.bubbleT<=0)bub.visible=false;}
+  CH.talkT-=dt;if(CH.talkT<=0){CH.talkT=rnd(5,8);const L2=LINES[Math.floor(rnd(0,LINES.length))];const d=cam.position.distanceTo(chai.position);const vol=Math.max(.15,Math.min(1,1.15-d/45));bubble(L2[1]);speak(L2[0],vol);}}
+let lastPh=0;function stationSounds(ph){if(!AU.on){lastPh=ph;return;}if(lastPh>40&&ph<5||lastPh<1&&ph>=1&&ph<2){chime();setTimeout(()=>{try{speechSynthesis.cancel();}catch(e){}speak('यात्रीगण कृपया ध्यान दें। गाड़ी संख्या तीन सात दो पाँच छह, प्लेटफ़ॉर्म नंबर पाँच पर आ रही है।',.9,1,1);},1300);}
+  if(lastPh<10&&ph>=10)horn();if(lastPh<32&&ph>=32)horn();lastPh=ph;}
 addEventListener('resize',()=>{cam.aspect=innerWidth/innerHeight;cam.updateProjectionMatrix();R.setSize(innerWidth,innerHeight);});
 /* ---------- loop ---------- */
 const clk=new T.Clock();let trainT=0;
 R.setAnimationLoop(()=>{const dt=Math.min(.05,clk.getDelta()),t=clk.elapsedTime;trainT+=dt;
   for(const p of PEOPLE){if(p.walk){p.g.position.x+=p.dir*p.sp*dt;if(p.g.position.x>72||p.g.position.x<-48)p.dir*=-1;p.g.rotation.y=p.dir>0?Math.PI/2:-Math.PI/2;p.g.position.y=1+Math.abs(Math.sin(t*7+p.ph))*.06;}}
   const ph=trainT%44;T2.position.x=ph<12?64-170*Math.pow(1-ph/12,2):ph<32?64:64+Math.pow(ph-32,2)*1.6;
+  chaiTick(dt);stationSounds(ph);
   SIG[1].material.color.set(ph>28&&ph<40?0x2aff6a:0xff2a2a);
   ctl.update();R.render(S,cam);});
 document.getElementById('load').remove();
