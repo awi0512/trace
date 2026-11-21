@@ -249,7 +249,7 @@ function pickCounters(){const h=HUNTER.habits;return Object.keys(habitNorm).map(
 function rollMods(leg){const n=leg<=1?0:leg<=3?1:leg<=6?2:3;return shuffle(Object.keys(MODS)).slice(0,n);}
 function nextZones(cur){return shuffle(GROUND.filter(z=>z!==cur)).slice(0,2);}
 function newRun(ch){ch=CHARS[ch]?ch:'agent';const counters=pickCounters();for(const k in WORLD.zones)WORLD.zones[k]=+(WORLD.zones[k]*.75).toFixed(2);wjson(WKEY,WORLD);const z='airport';const B=getBoard();const raid=false;
-  const r={active:true,leg:1,zone:z,mods:raid?['patrol','alert']:[],raid,counters,char:ch,darts:(ch==='hacker'?1:ch==='soldier'||ch==='conman'?3:2)+(CAREER.dartUp||0),ammo:ch==='conman'?0:(ch==='soldier'?4:ch==='hacker'?4:0)+2*(CAREER.ammoUp||0),score:0,earned:0,oneCash:true,kit:ch==='agent'?50000:0,legs:[],lh:{run:0,crowd:0,disguise:0,dart:0,cams:0,flight:0},started:Date.now()};saveRun(r);return r;}
+  const r={active:true,leg:1,zone:z,mods:raid?['patrol','alert']:[],raid,counters,char:ch,darts:(ch==='hacker'?1:ch==='soldier'||ch==='conman'?3:2)+(CAREER.dartUp||0),ammo:ch==='conman'?0:(ch==='soldier'?4:ch==='hacker'?4:0)+2*(CAREER.ammoUp||0),score:0,earned:0,oneCash:true,kit:ch==='agent'?50000:0,legs:[],lh:{run:0,crowd:0,disguise:0,dart:0,cams:0,flight:0},started:Date.now()};applyPrep(r);saveRun(r);return r;}
 function startNewRun(){pickChar(ch=>{closeSheet&&closeSheet();((d)=>d())(()=>{const r=newRun(ch);goZone(ZONES[r.zone].url);});});}
 /* ---- cold open: Ganpati visarjan night, a red dupatta, a fake trail (story bible, chapter 1) ---- */
 function storyScene(cards,done){const ov=document.createElement('div');ov.id='story';ov.style.cssText='position:fixed;inset:0;z-index:60;background:#07070a;color:#f1ece1;display:flex;align-items:center;justify-content:center;padding:24px;font-family:"Space Grotesk",sans-serif;text-align:center';
@@ -297,7 +297,8 @@ function runStart(){if(!RUN)return;RT.on=true;RT.lastLook=lookKey();
   const sec=secLevel(ZONE_ID);if(sec>=1)G.forEach(g=>{g.range*=1+sec*.1;});if(sec>=2)G.forEach(g=>{g.walk=(g.walk||1.1)*1.1;});if(sec>=3)W.shootAt=2;
   const hl=WORLD.news.filter(n=>n.zone===ZONE_ID).slice(-1)[0];if(sec>=1||hl)setTimeout(()=>{if(RT.on)newsFlash(hl?hl.text:null,sec);},1800);
   if(RUN.lh.flight===undefined)RUN.lh.flight=0;
-  oneCash();if(!(typeof TUT!=='undefined'&&TUT)){dartUI();gunUI();phoneUI();abilUI();noiseUI();}evStart();ranaArrive();chaiCheck();docksWeight();counterStamp();
+  oneCash();if(!(typeof TUT!=='undefined'&&TUT)){dartUI();gunUI();phoneUI();abilUI();noiseUI();}evStart();ranaArrive();chaiCheck();docksWeight();counterStamp();RT.t0=performance.now();RT.firstMove=null;RT.firstAct=null;heistStart();
+  if(RUN.prep==='ismail'&&ZONE_ID==='port'){RUN.prep=null;saveRun(RUN);G.forEach(g=>{g.range*=.85;});setTimeout(()=>{if(RT.on)toast('Ismail bhai ki tip: searchlight ka time pata hai. Guards 15% kam dekhenge.','good');},5000);}
   if(RUN.leg===1&&TIER_INTRO[TIER()]&&RUN.tierSeen!==TIER()&&!(typeof TUT!=='undefined'&&TUT)){RUN.tierSeen=TIER();saveRun(RUN);const ti=TIER_INTRO[TIER()];setTimeout(()=>{if(RT.on){stamp(ti[0],'#ffd166',ti[1],3400);}},3500);}
   if(RUN.raid&&RUN.leg===1)setTimeout(()=>{if(!RT.on)return;sfx.alert();vib([200,100,200]);banner('RAID! Rana\'s task force is here. Survive this zone to wipe his case board.',true);setTimeout(()=>{if(RT.on)banner(null);},7000);},900);
   const lines=[];
@@ -316,7 +317,7 @@ function runTick(dt){if(!RT.on||!P)return;const h=RUN.lh;
   if((RUN.mods||[]).includes('blackout')&&typeof CAMS!=='undefined'){RT.blackT+=dt;const dark=(RT.blackT%30)>21;if(dark!==RT.dark){RT.dark=dark;
     if(dark){RT.saved=CAMS.map(c=>c.range);CAMS.forEach(c=>c.range=.01);G.forEach(g=>{g._r=g.range;g.range*=.6;});hemi.intensity*=.45;sfx.thak&&sfx.thak();toast('BLACKOUT! Cameras off for 9 seconds.','info');}
     else{CAMS.forEach((c,i)=>c.range=RT.saved[i]);G.forEach(g=>{if(g._r)g.range=g._r;});hemi.intensity/=.45;}}}
-  updDarts(dt);updGun(dt);fxTick(dt);hearTick(dt);plainTick(dt);evTick(dt);camTick(dt);checkLock();phoneTick(dt);crowdTick(dt);disguiseTick(dt);seenTick();
+  updDarts(dt);updGun(dt);fxTick(dt);hearTick(dt);plainTick(dt);evTick(dt);camTick(dt);heistTick(dt);openingTick(dt);logTick();checkLock();phoneTick(dt);crowdTick(dt);disguiseTick(dt);seenTick();
   if(RT.gcT>0){RT.gcT-=dt;if(RT.gcT<=0&&S.phase==='play'){const old=MYGATE;MYGATE=pick(GATES.filter(g=>g!==old));const sw={code:MYGATE.code,dest:MYGATE.dest};Object.assign(MYGATE,{code:old.code,dest:old.dest});Object.assign(old,sw);setGateSign(old);setGateSign(MYGATE);S.gateChanged=true;drawBoard();sfx.chime();vib([60,40,60]);
     banner(`GATE CHANGE! ${MYGATE.code} ${MYGATE.dest} now boards at Gate ${MYGATE.n}`,true);setTimeout(()=>{if(RT.on)banner(null);},6000);toast(`Announcement: "${MYGATE.code} ${MYGATE.dest} ab Gate ${MYGATE.n} se jaayegi."`,'info');}}}
 /* ---- airport: any alert, gunshot or found body locks the gates. No flight; leave by taxi (train or bus next) ---- */
@@ -504,7 +505,7 @@ function phoneTick(dt){if(!PH.el||RT.dead)return;
   if(PH.ring){PH.ringT-=dt;if(!RUN.phone.silent){if((PH.rt=(PH.rt||0)-dt)<=0){PH.rt=1.1;tone(880,.25,'square',.06);tone(660,.25,'square',.06,.3);}
       for(const g of G){if(!g.g.visible||g.down>0||g.state==='alert'||g.area&&g.area!==S.area)continue;if(Math.hypot(g.pos.x-P.pos.x,g.pos.z-P.pos.z)<9){g.sus=Math.min(99,g.sus+18*dt);g.lastSeen=[P.pos.x,P.pos.z];if(g.state==='patrol'&&g.sus>35)g.state='sus';}}}
     if(PH.ringT<=0)endCall('missed');}}
-function incoming(){const trap=Math.random()<(RUN.char==='hacker'?.2:.45);const who=trap?pick(['Unknown +91 98','Bank Helpline','Courier']):Math.random()<.7?'Didi':'Unknown +91 70';PH.ring={trap,who};PH.ringT=8;vib([200,100,200,100,200]);
+function incoming(){const trap=Math.random()<(RUN.char==='hacker'?.2:.45);const who=trap?pick(['Unknown +91 98','Bank Helpline','Courier']):Math.random()<.7?'Didi':'Unknown +91 70';PH.ring={trap,who:who+(trap&&(CAREER.deduce||[]).includes('feed')?' ⚠ TRAP':'')};PH.ringT=8;vib([200,100,200,100,200]);
   const d=document.createElement('div');d.id='callBar';d.style.cssText='position:fixed;z-index:41;left:50%;translate:-50% 0;top:calc(env(safe-area-inset-top,0px) + 12px);width:min(92vw,360px);background:#111;color:#fff;border-radius:18px;padding:10px 12px;display:flex;align-items:center;gap:10px;box-shadow:0 6px 0 #000;font:700 14px "Space Grotesk",sans-serif';
   d.innerHTML=`<span style="font-size:22px">📞</span><span style="flex:1">${esc(who)}<br><span style="font:500 11px sans-serif;opacity:.7">${RUN.phone.silent?'vibrating…':'ringing… guards nearby can hear it'}</span></span><button type="button" id="cAns" style="background:#2fe39a;border:0;border-radius:12px;padding:8px 10px;font-weight:700">Answer</button><button type="button" id="cDec" style="background:#e0242b;color:#fff;border:0;border-radius:12px;padding:8px 10px;font-weight:700">Decline</button>`;
   d.addEventListener('pointerdown',e=>e.stopPropagation());document.body.appendChild(d);d.querySelector('#cAns').onclick=()=>endCall('answer');d.querySelector('#cDec').onclick=()=>endCall('decline');}
@@ -665,10 +666,10 @@ const EXITS={flight:{title:'Boarding the Goa flight ✈',text:'Clean exit: nobod
 const ARRIVE={airport:{visarjan:'Visarjan ki bheed se bach ke taxi pakdi. Ab Mumbai Airport. Yahan se Goa ki flight, ya kuch aur.'},plane:{flight:'Gate se seedha jahaz mein. Ab 2 ghante ki flight, aur cabin mein ek air marshal.'},
   train:{taxi:'Airport lockdown ke baad taxi se Mumbai Central. Goa ki raat ki gaadi platform pe khadi hai.'},
   bus:{taxi:'Airport lockdown ke baad taxi se bus adda. Goa ki highway bus pakdo.',jump:'Chalti train se koodi, khet paar karke highway ke bus adde tak pahunchi.'},
-  port:{landed:'Goa airport se taxi. Mormugao docks pe jahaz raat 4 baje nikalta hai.',station:'Madgaon station se auto. Docks saamne hain, jahaz raat 4 baje.',city:'Bus Goa pahunch gayi. Docks tak paidal.',truck:'Truck ne seedha docks ke andar utaara. Tarpaulin se bahar niklo.'}};
+  port:{heist:'Adhyaay 5. Nayan ke Rachna servers aaj raat JNPT docks se jahaz pe chadh rahe hain. Dock office (Nayan ka security room) se pass lo, aur gangway se upload terminal tak pahuncho.',landed:'Goa airport se taxi. Mormugao docks pe jahaz raat 4 baje nikalta hai.',station:'Madgaon station se auto. Docks saamne hain, jahaz raat 4 baje.',city:'Bus Goa pahunch gayi. Docks tak paidal.',truck:'Truck ne seedha docks ke andar utaara. Tarpaulin se bahar niklo.'}};
 const GOAL='Cover leak ho gaya. Mumbai se nikal ke Goa ke Mormugao docks pahuncho aur jahaz pakdo. Inspector Rana peeche hai.';
 /* ---- end of a zone: next leg or run over ---- */
-function runEnd(win,who,why){if(!RT.on)return false;RT.on=false;S.phase='over';locked=true;if(dartBtn){dartBtn.sw.remove();dartBtn.remove();}if(PH.ring)endCall('missed');['#wantedHud','#phoneBtn','#phone','#callBar','#abilBtn','#noiseBtn','#fxChip'].forEach(q=>{const e=document.querySelector(q);if(e)e.remove();});RUN.wanted=Math.max(0,W.stars-1);RUN.kills=(RUN.kills||0)+W.kills;CAREER.kills=(CAREER.kills||0)+W.kills;RUN.st=RUN.st||{};RUN.st.close=(RUN.st.close||0)+FX.close;RUN.st.lost=(RUN.st.lost||0)+FX.lost;
+function runEnd(win,who,why){if(!RT.on)return false;RT.on=false;S.phase='over';locked=true;if(dartBtn){dartBtn.sw.remove();dartBtn.remove();}if(PH.ring)endCall('missed');['#wantedHud','#phoneBtn','#phone','#callBar','#abilBtn','#noiseBtn','#fxChip','#rachBtn'].forEach(q=>{const e=document.querySelector(q);if(e)e.remove();});RUN.wanted=Math.max(0,W.stars-1);RUN.kills=(RUN.kills||0)+W.kills;CAREER.kills=(CAREER.kills||0)+W.kills;RUN.st=RUN.st||{};RUN.st.close=(RUN.st.close||0)+FX.close;RUN.st.lost=(RUN.st.lost||0)+FX.lost;
   if(win&&ZONE_ID==='airport'&&typeof M!=='undefined'&&M&&S.done&&SABOOT[M.type]){CAREER.saboot=CAREER.saboot||[];if(!CAREER.saboot.includes(M.type))CAREER.saboot.push(M.type);RT.saboot=SABOOT[M.type];}try{saveCareer();}catch(e){}
   ['#hud','#pads','#joy','#map'].forEach(s=>{const e=$(s);if(e)e.hidden=true;});banner(null);
   const nCam=S.camsSeen?S.camsSeen.size:0;RUN.lh.cams+=nCam;recordWorld(win);addEvidence(win);
@@ -676,12 +677,12 @@ function runEnd(win,who,why){if(!RT.on)return false;RT.on=false;S.phase='over';l
   RUN.legs.push({zone:ZONE_ID,win,traces:S.traces.length,alerts:S.alerts});
   if(win&&!RT.exit)RT.exit={airport:'taxi',train:'station',bus:'city',plane:'landed'}[ZONE_ID]||null;
   const EX=RT.exit&&EXITS[RT.exit];if(EX&&win){RUN.cash+=cash*(EX.cash-1);if(RT.exit==='flight'){RUN.lh.flight++;W.stars=0;RUN.wanted=0;RUN.darts++;}if(RT.exit==='station'||RT.exit==='city'||RT.exit==='ship'||RT.exit==='landed'){W.stars=0;RUN.wanted=0;}}
-  if(win&&ZONE_ID==='port'){RUN.score+=legScore+500;RUN.cash+=cash*2;RUN.legs.push({zone:ZONE_ID,win:true,traces:S.traces.length,alerts:S.alerts});RUN.escaped=RT.exit==='boat'?'boat':'ship';saveRun(RUN);const fin=()=>fxCleared(legScore+500,cash*2,()=>ranaCall('escaped',()=>runOver(true)),true);if(nGot()===11&&TIER()>=2)storyFinale(fin);else fin();return true;}
+  if(win&&ZONE_ID==='port'){RUN.score+=legScore+500;RUN.cash+=cash*2;RUN.legs.push({zone:ZONE_ID,win:true,traces:S.traces.length,alerts:S.alerts});RUN.escaped=RT.exit==='boat'?'boat':'ship';saveRun(RUN);const fin=()=>fxCleared(legScore+500,cash*2,()=>ranaCall('escaped',()=>runOver(true)),true);logZone(true);if(RUN.heist){RUN.score+=legScore;saveRun(RUN);chowpatty();return true;}if(nGot()===11&&TIER()>=2)didiReveal(fin);else fin();return true;}
   if(win&&RUN.raid&&RUN.leg===1){RUN.raid=false;const B=getBoard();B.strength=0;B.photos=[];B.notes=[];B.cleared=(B.cleared||0)+1;wjson(BKEY,B);RUN.cash+=500000;
     WORLD.news.push({zone:ZONE_ID,text:'Inspector Rana ka case gira: saboot nakaafi, suspect faraar',at:Date.now()});wjson(WKEY,WORLD);toast('RAID SURVIVED! Rana\'s case board is wiped. +₹5,00,000','good');}
-  if(win){RUN.score+=legScore;RUN.cash+=cash;RUN.from=RT.exit||null;const opts=(EX?EX.next:['port']).map(z=>({z,mods:rollMods(RUN.leg+1)}));RUN.offer=opts;saveRun(RUN);
+  if(win){logZone(true);RUN.score+=legScore;RUN.cash+=cash;RUN.from=RT.exit||null;const opts=(EX?EX.next:['port']).map(z=>({z,mods:rollMods(RUN.leg+1)}));RUN.offer=opts;saveRun(RUN);
     fxCleared(legScore,cash,()=>ranaCall('leg',()=>legRouteCard(EX,opts)));}
-  else{fxStop();RUN.dead={who:who||null,why:why||null,cause:captureCause(why)};stamp(/^Shot/.test(why||'')?'SHOT DOWN':'CAUGHT','#e0242b','',1300);shake(14,500);setTimeout(()=>ranaCall('caught',caughtChoice),1300);}
+  else{fxStop();RUN.dead={who:who||null,why:why||null,cause:captureCause(why)};logZone(false,RUN.dead.cause[0]);stamp(/^Shot/.test(why||'')?'SHOT DOWN':'CAUGHT','#e0242b','',1300);shake(14,500);setTimeout(()=>ranaCall('caught',caughtChoice),1300);}
   return true;}
 /* ---- Rana's call (Catch Me If You Can + Nemesis): a few lines from your real play ---- */
 function ranaLines(kind){const n=CHARS[RUN.char]||CHARS.agent,L=[];const upi=(RUN.phone&&RUN.phone.upi||[]).length,cams=S.camsSeen?S.camsSeen.size:0,traces=(S.traces||[]).length;
@@ -720,7 +721,7 @@ function runOver(banked){const r=RUN;r.active=false;saveRun(r);
   const legsDone=r.legs.filter(l=>l.win).length;HUNTER.best=Math.max(HUNTER.best||0,legsDone);
   const top=Object.keys(habitNorm).map(k=>[k,(r.lh[k]||0)/habitNorm[k]]).sort((a,b)=>b[1]-a[1])[0];
   const learned=top&&top[1]>=.5?top[0]:null;wjson(HKEY,HUNTER);
-  oneCash();const kept=r.earned||0;const goalLines=r.settled?[]:settleGoals(r);r.settled=true;saveRun(r);if(r.escaped)CAREER.escapes=(CAREER.escapes||0)+1;CAREER.bestRun=Math.max(CAREER.bestRun||0,legsDone);CAREER.missions=(CAREER.missions||0)+1;saveCareer();
+  logRunEnd(r);oneCash();const kept=r.earned||0;const goalLines=r.settled?[]:settleGoals(r);r.settled=true;saveRun(r);if(r.escaped)CAREER.escapes=(CAREER.escapes||0)+1;CAREER.bestRun=Math.max(CAREER.bestRun||0,legsDone);CAREER.missions=(CAREER.missions||0)+1;saveCareer();
   const c=sheet(`<div class="eyebrow">ESCAPE · RUN OVER</div><h2 style="color:${banked?'var(--good)':'var(--red)'}">${r.escaped?'Escaped India! 🚢':banked?'Vanished!':(r.dead&&/^Shot by/.test(r.dead.why||'')?'Shot down':'Caught')}</h2>
     <p>${r.escaped?(r.escaped==='boat'?'A stolen speedboat into the dark sea. Rana watched from the quay.':'The cargo ship slipped out of Mormugao at 4 AM with you on board. Rana came up empty.'):banked?'You slipped out of the city. Rana came up empty.':esc(r.dead&&r.dead.who?'Caught by '+r.dead.who+'.':(r.dead&&r.dead.why)||'Rana wins. This time.')}</p>
     <div class="stats"><div class="stat"><span>Legs cleared</span><b>${legsDone}</b></div>${r.records?`<div class="stat"><span>Police record</span><b>${r.records}</b></div>`:''}<div class="stat"><span>Score</span><b>${r.score}</b></div><div class="stat"><span>Cash earned (yours)</span><b>${inr(kept)}</b></div></div>
@@ -762,9 +763,9 @@ function thump(v){tone(58,.16,'sine',.55*v);tone(48,.14,'sine',.42*v,.16);}
 function chip(text,hot){fxUI();let c=document.getElementById('fxChip');if(!text){if(c)c.remove();return;}if(!c){c=document.createElement('div');c.id='fxChip';document.body.appendChild(c);}c.textContent=gtx(text);c.classList.toggle('hot',!!hot);}
 const DEADLINE={airport:()=>RT.lock?'Taxi stand band hone wala hai':'Flight ka gate band hone wala hai',train:()=>S.area==='train'?'Agla station aane wala hai':'Gaadi chhootne wali hai',bus:()=>'Bus nikalne wali hai',port:()=>'Jahaz 4 baje nikal jaayega',plane:()=>'Landing hone wali hai'};
 function fxStart(){if(RUN&&RUN.leg===1&&!RUN.ppIntro&&!(typeof TUT!=='undefined'&&TUT)){RUN.ppIntro=true;saveRun(RUN);setTimeout(()=>{if(RT.on)toast(`🛂 Tumhara nakli passport: ${ppGet().max} safe scans. Har ID check pe scan hota hai. Khatam hue to DRISHTI flag kar dega.`,'info');},9000);}FX.on=true;FX.alerts=S.alerts||0;FX.look=lookKey();FX.peak=new Map();FX.close=0;FX.lost=0;FX.bonus=0;FX.min1=false;fxUI();
-  if(ZONE_ID==='airport'&&RUN.leg===1&&!(typeof TUT!=='undefined'&&TUT)){FX.open={t:45,look:lookKey()};
+  if(ZONE_ID==='airport'&&RUN.leg===1&&!RUN.heist&&!(typeof TUT!=='undefined'&&TUT)){FX.open={t:45,look:lookKey()};openingGuide();
     setTimeout(()=>{if(!RT.on)return;sfx.alert();vib([100,60,100]);stamp('BREAKING','#e0242b','Tumhari photo 45 second mein airport ki har screen pe',2600);
-      setTimeout(()=>{if(RT.on)phoneMsg&&PH.el&&phoneMsg('Didi','Photo aane se pehle washroom mein look badlo, ya seedha gate ki taraf. Jaldi!');},2800);},700);}}
+      setTimeout(()=>{if(RT.on)phoneMsg&&PH.el&&phoneMsg('Didi','Photo aane se pehle washroom (hara nishaan, left side) mein kapde ya hat badlo. Guard tumhe kapdon aur hat se pehchaante hain. Jaldi!');},2800);},700);}}
 function fxTick(dt){if(!FX.on)return;FX.lastTick=performance.now();const e=document.getElementById('fxEdge');
   // tension: how close is the hunt
   let ten=0,anyAlert=false;for(const g of G){if(!g.g.visible||g.down>0||g.dead)continue;if(g.area&&S.area&&g.area!==S.area)continue;const d=Math.hypot(g.pos.x-P.pos.x,g.pos.z-P.pos.z);
@@ -788,7 +789,7 @@ function fxTick(dt){if(!FX.on)return;FX.lastTick=performance.now();const e=docum
   // opening: your photo goes on TV
   if(FX.open){FX.open.t-=dt;const s=Math.max(0,Math.ceil(FX.open.t));if(FX.open.t>0){const changed=lookKey()!==FX.open.look;chip(changed?`📺 Photo TV pe ${s}s mein · tumhara look badal chuka hai ✓`:`📺 Tumhari photo TV pe: 0:${String(s).padStart(2,'0')}`,s<=10&&!changed);}
     else{chip(null);const same=lookKey()===FX.open.look;FX.open=null;
-      if(same){S.startLook=lookKey();G.forEach(g=>{g.knows=true;g.sus=Math.max(g.sus||0,30);});sfx.alert();vib([150,80,150]);shake(8,400);stamp('FACE ON TV','#e0242b','Har guard ke paas ab tumhari photo hai. Look badlo!',2400);toast('Announcement: "Sabhi yatri dhyan dein. Is vyakti ko dekhte hi security ko batayein."');}
+      if(same){S.startLook=lookKey();G.forEach(g=>{g.knows=true;g.sus=Math.max(g.sus||0,30);});sfx.alert();vib([150,80,150]);shake(8,400);stamp('FACE ON TV','#e0242b','Har guard ke paas ab tumhari photo hai. Look badlo!',2400);toast('Announcement: "Sabhi yatri dhyan dein. Is vyakti ko dekhte hi security ko batayein."');setTimeout(()=>{if(RT.on)faceOnTvHunt();},2600);}
       else{FX.bonus+=15000;RUN.cash+=15000;stamp('PHOTO PURANI!','#2fe39a','TV pe purana look aaya · +₹15,000',2200);}}}}
 function fxStop(){FX.on=false;chip(null);const e=document.getElementById('fxEdge');if(e)e.style.opacity=0;}
 /* ---- nishaan: one piece of the truth per cleared zone ---- */
@@ -853,7 +854,7 @@ function abilUI(){if(AB.el||!RUN||!ABIL[RUN.char])return;const A=ABIL[RUN.char];
   b.addEventListener('pointerdown',e=>{e.stopPropagation();e.preventDefault();useAbil();});document.body.appendChild(b);AB.el=b;addEventListener('keydown',e=>{if(e.code==='KeyR')useAbil();});
   const st=document.createElement('style');st.textContent='body.talking #abilBtn,body.talking #noiseBtn{display:none!important}';document.head.appendChild(st);drawAbil();}
 function drawAbil(){if(!AB.el)return;const A=ABIL[RUN.char];AB.el.innerHTML=`⚡ ${A.n}<br><b style="font-size:16px">${AB.left}</b>`;AB.el.style.opacity=AB.left>0?1:.35;}
-function useAbil(){if(!RT.on||!playing()||AB.left<=0)return;const A=ABIL[RUN.char];if(A.fn()){AB.left--;RUN.st=RUN.st||{};RUN.st.abil=(RUN.st.abil||0)+1;tone(660,.1,'triangle',.12);tone(990,.12,'triangle',.1,.08);vib(30);drawAbil();}}
+function useAbil(){if(!RT.on||!playing()||AB.left<=0)return;if(RT.firstAct==null&&RT.t0)RT.firstAct=Math.round((performance.now()-RT.t0)/100)/10;const A=ABIL[RUN.char];if(A.fn()){AB.left--;RUN.st=RUN.st||{};RUN.st.abil=(RUN.st.abil||0)+1;tone(660,.1,'triangle',.12);tone(990,.12,'triangle',.1,.08);vib(30);drawAbil();}}
 /* characters unlock as you play (old saves keep everyone) */
 const UNLOCK={agent:null,driver:null,hacker:{t:'2 nishaan kholo',ok:()=>nGot()>=2},actress:{t:'Ek baar Goa ka jahaz pakdo',ok:()=>(CAREER.escapes||0)>=1},conman:{t:'3 run khelo',ok:()=>(HUNTER.runs||0)>=3},soldier:{t:'5 nishaan kholo',ok:()=>nGot()>=5}};
 function charOpen(k){ensureV3();if(CAREER.allChars)return true;const u=UNLOCK[k];return !u||u.ok();}
@@ -1088,7 +1089,116 @@ function counterStamp(){const c=RUN.counters||[];if(!c.length||TIER()<2)return;c
 /* Arjun knows the roads: one extra route where there is one */
 function arjunRoute(opts){if(RUN.char!=='driver'||opts.length>2)return opts;const have=opts.map(o=>o.z);const extra=GROUND.filter(z=>z!==ZONE_ID&&!have.includes(z)&&z!=='airport');if(!extra.length)return opts;
   const z=have.includes('port')?null:extra.includes('port')&&opts.length>1?'port':null;if(!z)return opts;return opts.concat([{z,mods:rollMods(RUN.leg+1).concat(['rush']).filter((v,i,a)=>a.indexOf(v)===i),arjun:true}]);}
-window.__run={judge:(g,ok)=>judge(g,ok,false),dhabaDeal:()=>dhabaDeal(),CAMHOT,finale:d=>storyFinale(d),chaiPeRana:()=>chaiPeRana(),todayChallenge:()=>todayChallenge(),settleGoals:r=>settleGoals(r),EV,EVTS,evGo:k=>EVTS[k].go(),makeNoise:()=>makeNoise(),ranaGuess:o=>ranaGuess(o),NZ,TIER:()=>TIER(),useAbil:()=>useAbil(),AB,ppScan:w=>ppScan(w),ppNew:()=>ppNew(),ppGet:()=>ppGet(),fxCleared:(...a)=>fxCleared(...a),stamp:(...a)=>stamp(...a),FX,nGot:()=>nGot(),showNishaan:b=>showNishaan(b),ranaLines:k=>ranaLines(k),coldOpen:(c,d)=>coldOpen(c,d),gtx:t=>gtx(t),wantedCard:()=>wantedCard(),rushHour:()=>rushHour(),wearDisguise:k=>wearDisguise(k),spawnBag:()=>{const o=Math.random;Math.random=()=>0;try{spawnBag();}finally{Math.random=o;}},BAG,HUNT2:HUNT,CR,crowdStart:()=>crowdStart(),PH,incoming:()=>incoming(),endCall:a=>endCall(a),togglePhone:()=>togglePhone(),CT,spawnContact:()=>{RUN.leg=Math.max(RUN.leg,2);const o=Math.random;Math.random=()=>0;try{spawnContact();}finally{Math.random=o;}},W,WORLD,newsFlash:(t,s)=>newsFlash(t,s),gateOpen:()=>gateOpen(),switchWpn:()=>switchWpn(),shootGun:()=>shootGun(),addStars:(n)=>addStars(n,'test'),runEnd:(...a)=>runEnd(...a),shootDart:()=>shootDart(),get RUN(){return RUN;},HUNT,RT};
+/* ===================== OVERHAUL 5: opening guide, Adhyaay 4 reveal, Adhyaay 5 heist, safehouse, playtest log ===================== */
+/* opening: a green marker over the washroom while your photo counts down; after FACE ON TV one guard comes looking */
+let WMK=null;
+function openingGuide(){if(ZONE_ID!=='airport'||typeof T==='undefined')return;try{WMK=new T.Mesh(new T.OctahedronGeometry(.45),new T.MeshBasicMaterial({color:0x2fe39a,toneMapped:false}));WMK.position.set(-31.5,3.2,13.5);scene.add(WMK);}catch(e){WMK=null;}}
+function openingTick(dt){if(!WMK)return;WMK.rotation.y+=dt*2;WMK.position.y=3.2+Math.sin(performance.now()/300)*.25;if(!FX.open||lookKey()!==FX.open.look){scene.remove(WMK);WMK=null;}}
+function faceOnTvHunt(){const g=evNear(1)[0];if(g){g.state='search';g.lastSeen=[P.pos.x,P.pos.z];g.searchT=12;g.sus=Math.max(g.sus,60);}toast('Ek CISF jawan TV dekh ke tumhari taraf aa raha hai! Look badlo ya bheed mein ghuso.');}
+/* Adhyaay 4 (canon): the ship door opens on Didi. All is lost: she wants the pen drive */
+async function didiReveal(done){locked=true;RT.finaleDone=true;
+  await say('','(Jahaz ka darwaza khulta hai. Andar AC ki thandak… aur server fan ki ghoon ghoon.)',true);
+  await say('Didi','Shukriya. Tumne meri kahani bahut achhe se likhi.');await say('','(Dr. Sunanda Iyer. DRISHTI ki creator. "Didi". Uske peeche chaar mehmaan: Nayan ke kharidaar. Goa ka jahaz bachne ka raasta nahi tha.)',true);
+  await say('Didi','Pen drive mujhe do. Naya naam, naya desh, sab milega.');
+  const r=await choose([{label:'Pen drive le ke samundar mein kood jao',sub:'Sab kuch daav pe',value:'jump'},{label:'Pen drive de do',sub:'Abhi ke liye zinda raho',value:'give'}]);closeDlg();
+  CAREER.penDrive=r==='jump'?'kept':'didi';saveCareer();
+  stamp(r==='jump'?'PEN DRIVE BACHI':'PEN DRIVE GAYI',r==='jump'?'#2fe39a':'#e0242b',r==='jump'?'Thande paani se nikal ke tum aur pen drive dono zinda.':'Didi muskurayi. Rachna ab uske haath mein hai.',2600);
+  setTimeout(done,2600);}
+/* Adhyaay 5: the heist. Plan in the safehouse, play it at Nayan's servers (being loaded at the JNPT docks), then Chowpatty */
+const CREW={hacker:{r:'CCTV',d:'Poore heist mein camere aadhe andhe'},actress:{r:'Distraction',d:'Guards 20% kam dekhte hain'},driver:{r:'Getaway',d:'+90 second, aur speedboat taiyaar'},conman:{r:'Nakli pass',d:'Passport scans ki chinta nahi'},soldier:{r:'Backup',d:'+1 recovery, +30 health'},agent:{r:'Intel',d:'+1 sikka, +1 ability use'}};
+function heistReady(){return nGot()>=NISHAAN.length;}
+function heistPlan(back){ensureV3();const avail=Object.keys(CHARS).filter(charOpen);const pick2={runner:avail[0],crew:[]};
+  const draw=()=>{const c=sheet(`<div class="eyebrow">ADHYAAY 5 · SABSE BADA NISHAAN</div><h2>Heist ki planning</h2><p style="font-size:14px">Nayan ke Rachna servers aaj raat JNPT docks se jahaz pe chadhenge. ${CAREER.penDrive==='didi'?'Didi ke paas pen drive hai: andar ka nakshaa usi ke paas. Mushkil hoga.':'Pen drive tumhare paas hai: andar ka nakshaa bhi.'} Ek andar jaayega, teen bahar se madad karenge.</p>
+    <div class="eyebrow">ANDAR KAUN JAAYEGA</div>${avail.map(k=>`<button class="btn${pick2.runner===k?'':' alt'}" type="button" data-r="${k}" style="padding:8px;font-size:15px">${CHARS[k].emoji} ${CHARS[k].name}</button>`).join('')}
+    <div class="eyebrow">CREW (3 chuno)</div>${avail.filter(k=>k!==pick2.runner).map(k=>`<button class="btn${pick2.crew.includes(k)?'':' alt'}" type="button" data-c="${k}" style="padding:8px;font-size:14px;text-align:left;line-height:1.2">${CHARS[k].emoji} ${CHARS[k].name} · ${CREW[k].r}<br><span style="font:500 12px var(--type,monospace)">${CREW[k].d}</span></button>`).join('')}
+    <button class="btn" type="button" id="go" style="background:#e0242b" ${pick2.crew.length===Math.min(3,avail.length-1)?'':'disabled'}>Heist shuru</button><button class="btn alt" type="button" id="bk">Back</button>`);
+    c.querySelectorAll('[data-r]').forEach(b=>b.onclick=()=>{pick2.runner=b.dataset.r;pick2.crew=pick2.crew.filter(k=>k!==pick2.runner);draw();});
+    c.querySelectorAll('[data-c]').forEach(b=>b.onclick=()=>{const k=b.dataset.c;if(pick2.crew.includes(k))pick2.crew=pick2.crew.filter(x=>x!==k);else if(pick2.crew.length<3)pick2.crew.push(k);draw();});
+    c.querySelector('#bk').onclick=back;c.querySelector('#go').onclick=()=>{if(pick2.crew.length!==Math.min(3,avail.length-1))return;closeSheet&&closeSheet();const r=newRun(pick2.runner);r.zone='port';r.heist={crew:pick2.crew};r.from='heist';saveRun(r);goZone(ZONES.port.url);};};draw();}
+const RACH={left:0,el:null};
+function heistStart(){if(!RUN.heist)return;const cr=RUN.heist.crew||[];RACH.left=3;
+  if(cr.includes('hacker')&&typeof CAMS!=='undefined')CAMS.forEach(c=>{c.range*=.5;});if(cr.includes('actress'))G.forEach(g=>{g.range*=.8;});if(cr.includes('driver'))S.timeLeft+=90;
+  if(cr.includes('conman')){const p=ppGet();p.max=99;}if(cr.includes('soldier')){W.max+=30;W.hp+=30;RUN.recov=(RUN.recov||0)-1;}if(cr.includes('agent')){NZ.left++;drawNoise();AB.left++;drawAbil();}
+  if(CAREER.penDrive==='didi')G.forEach(g=>{g.range*=1.1;});
+  const b=document.createElement('button');b.type='button';b.id='rachBtn';b.style.cssText='position:fixed;right:160px;bottom:calc(118px + env(safe-area-inset-bottom));width:60px;height:60px;border-radius:50%;border:3px solid #111;background:#ff5fa2;color:#111;font:700 10px/1.05 "Space Grotesk",sans-serif;z-index:30;box-shadow:0 4px 0 #111;touch-action:manipulation;padding:0';
+  b.addEventListener('pointerdown',e=>{e.stopPropagation();e.preventDefault();rachna();});document.body.appendChild(b);RACH.el=b;drawRach();
+  setTimeout(()=>{if(RT.on)stamp('ADHYAAY 5','#ff5fa2','DRISHTI ka apna hathiyaar ab tumhare paas: RACHNA. Nakli nishaan banao, police ko galat jagah bhejo.',3400);},1500);
+  RT.wrongAt=rnd(45,70);}
+function drawRach(){if(!RACH.el)return;RACH.el.innerHTML=`🧬 RACHNA<br><b style="font-size:16px">${RACH.left}</b>`;RACH.el.style.opacity=RACH.left>0?1:.35;}
+/* Rachna: plant a fake sighting 25 m ahead. Every guard in range runs there, believing it is you */
+function rachna(){if(!RT.on||!playing()||RACH.left<=0)return;const c={x:P.pos.x+Math.sin(P.yaw)*25,z:P.pos.z+Math.cos(P.yaw)*25};try{collide(c);}catch(e){}let n=0;
+  for(const g of G){if(!g.g.visible||g.down>0||g.dead||g.smell)continue;if(Math.hypot(g.pos.x-c.x,g.pos.z-c.z)<40){g.state='search';g.lastSeen=[c.x,c.z];g.searchT=15;g.sus=60;g.lost=0;n++;}}
+  RACH.left--;drawRach();if(S.wanted===lookKey())S.wanted=null;flashScreen('#ff5fa2');stamp('NAKLI NISHAAN','#ff5fa2',`DRISHTI ne "tumhe" 25 m aage dikhaya. ${n} guard wahan daude.`,2200);}
+function heistTick(dt){if(!RUN.heist||!(RT.wrongAt>0))return;RT.wrongAt-=dt;if(RT.wrongAt>0)return;RT.wrongAt=-1;
+  sfx.alert&&sfx.alert();vib([200,80,200]);shake(10,500);stamp('PLAN BIGDA','#e0242b',CAREER.penDrive==='didi'?'Didi ne Nayan ko plan bata diya! Sab guards tumhari taraf.':'Kisi ne alarm bajaya! Improvise karo.',3000);
+  evNear(3).forEach(g=>{g.state='search';g.lastSeen=[P.pos.x,P.pos.z];g.searchT=14;g.sus=75;});EV.sweep={x:P.pos.x,z:P.pos.z,t:10};}
+/* after the heist zone: Chowpatty on the last day of visarjan, where it began. Rana is waiting */
+async function chowpatty(){locked=true;const kills=CAREER.kills||0,trust=(CAREER.ranaTrust||0)+((CAREER.deduce||[]).includes('test1')?2:0),sab=(CAREER.saboot||[]).length+(CAREER.penDrive==='kept'?1:0)+((CAREER.deduce||[]).length);
+  await say('','(Girgaon Chowpatty. Visarjan ki aakhri raat. Dhol, bheed, samundar. Jahan sab shuru hua tha.)',true);
+  await say('','(Laptop mein Rachna ka poora data. Bheed ke beech, ek bench pe: Inspector Vikram Rana.)',true);
+  if(kills>2){await say('Rana',`Tumne ${kills} log maare, Chhaya. Tum unhi jaise ho gayi.`);}
+  else if(trust>=2){await say('Rana','Maine apni biwi ki file phir khol li. Test #1. …Tum sahi thi.');}
+  else await say('Rana','Aakhri baar poochhta hoon. Haath upar.');
+  const r=await choose([{label:'Sab kuch LEAK karo',sub:`${sab} saboot saath${sab>=4?'':' (kam padenge?)'}`,value:'leak'},{label:'Data Rana ko do',sub:trust>=2?'Wo ab sunta hai':'Kya wo bharosa karega?',value:'rana'},{label:'Didi ko bech do',sub:'Paisa. Aur andhera.',value:'sell'}]);
+  let end=r==='leak'?(sab>=4&&kills<=2?'sach':'half'):r==='rana'?(trust>=2?'chhaya':'ignored'):'rachna';closeDlg();
+  if(end==='half'&&kills>2){await say('Rana','Khoon se likhi kahani pe koi yakeen nahi karta.');closeDlg();}
+  CAREER.endings=Object.assign({},CAREER.endings);CAREER.endings[end]=1;CAREER.season1=1;saveCareer();const E=ENDINGS[end];
+  const c=sheet(`<div class="eyebrow">SEASON 1 · ANT</div><h2>${E[0]}</h2><p>${gtx(E[1])}</p>${end==='chhaya'||end==='sach'?`<p style="font-size:14px;font-style:italic">Kuch mahine baad. Rana ka phone: "Ek naya system aaya hai, Hyderabad mein. Mujhe ek aisa insaan chahiye jo nishaan padhna aur banana dono jaanta ho."</p>`:''}
+    <p class="eyebrow">Endings dekhe: ${Object.keys(CAREER.endings).length}/5 · ${end==='sach'?'Sabse achha ant.':'Alag faisla, alag ant. Heist phir khelo.'}</p><button class="btn" id="ok" type="button">Safehouse</button>`);
+  c.querySelector('#ok').onclick=()=>{RUN.active=false;saveRun(RUN);location.href='index.html';};}
+/* ---- playtest log: what really happened in each run on this device (no guesses) ---- */
+const PLOG='trace_log';
+function logZone(win,cause){try{const L=rjson(PLOG)||{runs:[]};let r=L.runs.find(x=>x.id===RUN.started);if(!r){r={id:RUN.started,char:RUN.char,tier:TIER(),zones:[],firstMove:null,firstAct:null,startedAt:Date.now()};L.runs.push(r);}
+  r.zones.push({z:ZONE_ID,win,s:Math.round((performance.now()-(RT.t0||performance.now()))/1000),alerts:S.alerts||0,close:FX.close,lost:FX.lost,cause:cause||null,route:RUN.zone,abil:(RUN.st||{}).abil||0,coins:2-NZ.left,firstMove:RT.firstMove,firstAct:RT.firstAct});
+  L.runs=L.runs.slice(-60);wjson(PLOG,L);}catch(e){}}
+function logRunEnd(r){try{const L=rjson(PLOG)||{runs:[]};const x=L.runs.find(q=>q.id===r.started);if(x){x.endedAt=Date.now();x.escaped=!!r.escaped;x.legs=r.legs.filter(l=>l.win).length;}wjson(PLOG,L);}catch(e){}}
+function logTick(){if(RT.firstMove==null&&P&&P.speed>0)RT.firstMove=Math.round((performance.now()-RT.t0)/100)/10;}
+function playtestHTML(){const L=rjson(PLOG)||{runs:[]};const R=L.runs.filter(r=>r.zones.length);if(!R.length)return '<p>Abhi koi run record nahi hua. Kisi naye player ko khilao, phir yahan dekho.</p>';
+  const Z=R.flatMap(r=>r.zones),caught=Z.filter(z=>!z.win),cnt=(a,f)=>a.reduce((m,x)=>{const k=f(x);if(k!=null)m[k]=(m[k]||0)+1;return m;},{});const fmt=o=>Object.entries(o).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`${k}: ${v}`).join(', ')||'–';
+  const dur=R.filter(r=>r.endedAt).map(r=>(r.endedAt-r.startedAt)/60000);const fm=Z.filter(z=>z.firstMove!=null).map(z=>z.firstMove);const avg=a=>a.length?(a.reduce((x,y)=>x+y,0)/a.length).toFixed(1):'–';
+  let again=0,pairs=0;for(let i=1;i<R.length;i++){if(R[i-1].endedAt){pairs++;if(R[i].startedAt-R[i-1].endedAt<120000)again++;}}
+  return `<table style="width:100%;font-size:13px;border-collapse:collapse">${[['Runs',R.length],['Avg run (min)',avg(dur)],['Zones played',Z.length],['Zone clear rate',Math.round(Z.filter(z=>z.win).length/Z.length*100)+'%'],['Capture rate',Math.round(caught.length/Z.length*100)+'%'],['Caught because',fmt(cnt(caught,z=>z.cause))],['Reached the docks',R.filter(r=>r.zones.some(z=>z.z==='port')).length+' / '+R.length],['Escaped',R.filter(r=>r.escaped).length],['Zones visited',fmt(cnt(Z,z=>z.z))],['Runners',fmt(cnt(R,r=>r.char))],['Secs to first move',avg(fm)],['Close calls / zone',avg(Z.map(z=>z.close||0))],['Abilities used / run',avg(R.map(r=>Math.max(0,...r.zones.map(z=>z.abil||0))))],['New run within 2 min',pairs?`${again} / ${pairs}`:'–']].map(([k,v])=>`<tr><td style="padding:4px;border-bottom:1px solid #333">${k}</td><td style="padding:4px;border-bottom:1px solid #333"><b>${esc(String(v))}</b></td></tr>`).join('')}</table>`;}
+/* ---- safehouse: the hideout grows with the story ---- */
+const SH_LV=[[0,'Chhupne ki jagah','Ek kamra, ek gadda, ek purana phone.'],[3,'Ghar','Deewar pe saboot, aur ek investigation board.'],[6,'Operations room','Contacts ki line, aur Rana ki file.'],[12,'Heist base','Poora crew. Ek aakhri kaam.']];
+function shLevel(){const n=nGot();let L=SH_LV[0];for(const x of SH_LV)if(n>=x[0])L=x;return L;}
+const DEDUCE=[{a:3,b:8,id:'feed',t:'Didi DRISHTI ke andar se dekh rahi hai',d:'5 second ki der + server fan = wo wahi camera live dekhti hai. Ab trap calls pe "TRAP" dikhega.'},{a:4,b:9,id:'test1',t:'Rana ki biwi ka case DRISHTI ka pehla test tha',d:'Diary ki file + Test #1. Ye baat Rana ko Chowpatty pe batayi ja sakti hai (Rana ka bharosa +2).'},{a:0,b:2,id:'frame',t:'Pen drive mein Rachna ka saboot hai',d:'Pen drive + ek frame, do sach. Ye ek saboot ginaa jaayega (endings ke liye).'}];
+function boardSheet(back){const n=nGot();const sel=[];const got=CAREER.deduce||[];
+  const draw=()=>{const c=sheet(`<div class="eyebrow">INVESTIGATION BOARD</div><h2>Nishaan jodo</h2><p style="font-size:14px">Do khule nishaan chuno jo ek doosre se jude hain. Sahi jode to ek naya sach (aur gameplay fayda) khulta hai.</p>
+    ${got.map(id=>{const D=DEDUCE.find(d=>d.id===id);return `<div class="dossier"><h3>✓ ${esc(D.t)}</h3><p style="margin:2px 0 0;color:#1b1b1b;font-size:13px">${esc(D.d)}</p></div>`;}).join('')}
+    ${NISHAAN.slice(0,n).map((q,i)=>`<button type="button" class="btn${sel.includes(i)?'':' alt'}" data-i="${i}" style="padding:8px;font-size:14px;text-align:left">${i+1}. ${esc(q.t)}</button>`).join('')}
+    <p style="font-size:13px">Saboot (missions se): ${(CAREER.saboot||[]).map(k=>esc(SABOOT[k])).join(', ')||'abhi koi nahi'}</p><button class="btn alt" type="button" id="bk">Back</button>`);
+    c.querySelectorAll('[data-i]').forEach(b=>b.onclick=()=>{const i=+b.dataset.i;if(sel.includes(i))sel.splice(sel.indexOf(i),1);else sel.push(i);if(sel.length===2){const D=DEDUCE.find(d=>(d.a===sel[0]&&d.b===sel[1])||(d.a===sel[1]&&d.b===sel[0]));
+      if(D&&!got.includes(D.id)){got.push(D.id);CAREER.deduce=got;saveCareer();toast('🔗 Naya sach: '+D.t,'good');}else toast(D?'Ye pehle hi jod chuke ho.':'Ye do nishaan aapas mein nahi judte.','info');sel.length=0;}draw();});
+    c.querySelector('#bk').onclick=back;};draw();}
+function contactsSheet(back){const ob=CAREER.didiObey||0,rf=CAREER.didiRefuse||0,ow=CAREER.didiOwe||0,bl=CAREER.didiBail||0;const P2=CAREER.prep||null;
+  const c=sheet(`<div class="eyebrow">CONTACTS</div><h2>Phone book</h2>
+    <div class="dossier"><h3>Didi</h3><p style="margin:2px 0 0;color:#1b1b1b;font-size:13px">Camera wale order maane: ${ob} · mana kiye: ${rf} · ehsaan: ${ow+bl}${nGot()>=12?' · <b>Sach: Dr. Sunanda Iyer</b>':(CAREER.deduce||[]).includes('feed')?' · <b>Wo DRISHTI dekh rahi hai…</b>':''}</p></div>
+    <div class="dossier"><h3>Ismail bhai (docks)</h3><p style="margin:2px 0 0;color:#1b1b1b;font-size:13px">${nGot()>=7?'"Searchlight ka time mujhe pata hai. ₹25,000 do, agli baar docks pe guards kam dekhenge."':'Abhi tumhe nahi jaanta.'}</p>${nGot()>=7?`<button class="btn" type="button" id="ism" ${CAREER.money<25000||P2==='ismail'?'disabled':''}>${P2==='ismail'?'Agle run ke liye taiyaar ✓':'Deal · ₹25,000'}</button>`:''}</div>
+    <div class="dossier"><h3>Anjali ka purana dost</h3><p style="margin:2px 0 0;color:#1b1b1b;font-size:13px">"Ek saaf passport, ek extra safe scan ke saath. ₹20,000."</p><button class="btn" type="button" id="pas" ${CAREER.money<20000||P2==='pass'?'disabled':''}>${P2==='pass'?'Agle run ke liye taiyaar ✓':'Deal · ₹20,000'}</button></div>
+    <p style="font-size:12px;opacity:.75">Ek waqt pe ek hi taiyaari. Agle run mein kaam aayegi.</p><button class="btn alt" type="button" id="bk">Back</button>`);
+  const buy=(k,amt)=>{CAREER.money-=amt;CAREER.prep=k;saveCareer();contactsSheet(back);};const i=c.querySelector('#ism');if(i)i.onclick=()=>buy('ismail',25000);const pz=c.querySelector('#pas');if(pz)pz.onclick=()=>buy('pass',20000);c.querySelector('#bk').onclick=back;}
+function ranaFileSheet(back){const h=HUNTER.habits;const next=pickCounters();const R=HUNTER.routes||{};
+  const c=sheet(`<div class="eyebrow">RANA KI FILE</div><h2>Wo kya jaanta hai</h2><p style="font-size:14px">Ye file tumne uske phone se uthayi hai. Jo aadatein bhari hain, agle run mein Rana unka tod nikaalega.</p>
+    ${Object.keys(habitNorm).map(k=>{const v=Math.min(1,(h[k]||0)/habitNorm[k]);return `<div style="margin:6px 0"><div style="display:flex;justify-content:space-between;font-size:13px"><span>Wo ${esc(gtx(HABITS[k].t))}</span><b style="color:${next.includes(k)?'#ff6a5a':'#aaa'}">${next.includes(k)?'AGLE RUN MEIN COUNTER':Math.round(v*100)+'%'}</b></div><div style="height:6px;background:#333;border-radius:3px"><i style="display:block;height:100%;width:${v*100}%;background:${next.includes(k)?'#ff6a5a':'#ffd166'};border-radius:3px"></i></div></div>`;}).join('')}
+    <p style="font-size:13px">Raaste jo tumne liye: ${Object.entries(R).map(([z,v])=>`${ZONES[z]?ZONES[z].name:z} ${v}`).join(', ')||'abhi koi nahi'}. Wo inhi se andaaza lagata hai.</p>
+    <p style="font-size:13px">Rana ka bharosa: <b>${CAREER.ranaTrust||0}</b> · Kills: <b>${CAREER.kills||0}</b></p><button class="btn alt" type="button" id="bk">Back</button>`);c.querySelector('#bk').onclick=back;}
+function safehouseRooms(hub){const n=nGot();const L=shLevel();
+  return {html:`<div class="eyebrow" style="margin-top:6px">SAFEHOUSE · ${esc(L[1].toUpperCase())}</div><p style="font-size:13px;margin:0 0 6px;opacity:.8">${esc(L[2])}</p>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+    <button class="btn alt" type="button" id="shN" style="font-size:15px;padding:10px">📁 Nishaan ${n}/${NISHAAN.length}</button>
+    <button class="btn alt" type="button" id="shB" style="font-size:15px;padding:10px" ${n>=3?'':'disabled'}>🧵 Board${n>=3?'':' (3 nishaan)'}</button>
+    <button class="btn alt" type="button" id="shC" style="font-size:15px;padding:10px" ${n>=6?'':'disabled'}>📞 Contacts${n>=6?'':' (6)'}</button>
+    <button class="btn alt" type="button" id="shR" style="font-size:15px;padding:10px" ${n>=6?'':'disabled'}>🕵️ Rana file${n>=6?'':' (6)'}</button>
+    <button class="btn alt" type="button" id="store" style="font-size:15px;padding:10px">🛒 Store</button>
+    <button class="btn alt" type="button" id="shP" style="font-size:15px;padding:10px">📊 Playtest</button></div>
+    ${heistReady()?`<button class="btn" type="button" id="shH" style="background:#ff5fa2;color:#111">🧬 Adhyaay 5: Heist ki planning</button>`:''}`,
+  wire(c){const on=(id,f)=>{const e=c.querySelector(id);if(e&&!e.disabled)e.onclick=f;};on('#shN',()=>showNishaan(hub));on('#shB',()=>boardSheet(hub));on('#shC',()=>contactsSheet(hub));on('#shR',()=>ranaFileSheet(hub));
+    on('#shP',()=>{const k=sheet(`<div class="eyebrow">PLAYTEST DATA (IS DEVICE PE)</div><h2>Asli khel ke aankde</h2>${playtestHTML()}<p style="font-size:12px;opacity:.7">Har run apne aap yahan likha jaata hai. Naye players ko is phone pe khilao, phir ye dekho.</p><button class="btn alt" type="button" id="cp">Copy as text</button><button class="btn alt" type="button" id="bk">Back</button>`);
+      k.querySelector('#bk').onclick=hub;k.querySelector('#cp').onclick=()=>{try{navigator.clipboard.writeText(JSON.stringify(rjson(PLOG)||{}));toast('Copied.','good');}catch(e){}};});
+    on('#shH',()=>heistPlan(hub));}};}
+/* prep bought from contacts applies to the next run */
+function applyPrep(r){const k=CAREER.prep;if(!k)return;CAREER.prep=null;saveCareer();r.prep=k;if(k==='pass'){r.pp={scans:0,max:(r.char==='agent'?4:3)+1,n:1};}}
+window.__run={didiReveal:d=>didiReveal(d),heistPlan:b=>heistPlan(b),chowpatty:()=>chowpatty(),rachna:()=>rachna(),RACH,playtestHTML:()=>playtestHTML(),boardSheet:b=>boardSheet(b),judge:(g,ok)=>judge(g,ok,false),dhabaDeal:()=>dhabaDeal(),CAMHOT,finale:d=>didiReveal(d),chaiPeRana:()=>chaiPeRana(),todayChallenge:()=>todayChallenge(),settleGoals:r=>settleGoals(r),EV,EVTS,evGo:k=>EVTS[k].go(),makeNoise:()=>makeNoise(),ranaGuess:o=>ranaGuess(o),NZ,TIER:()=>TIER(),useAbil:()=>useAbil(),AB,ppScan:w=>ppScan(w),ppNew:()=>ppNew(),ppGet:()=>ppGet(),fxCleared:(...a)=>fxCleared(...a),stamp:(...a)=>stamp(...a),FX,nGot:()=>nGot(),showNishaan:b=>showNishaan(b),ranaLines:k=>ranaLines(k),coldOpen:(c,d)=>coldOpen(c,d),gtx:t=>gtx(t),wantedCard:()=>wantedCard(),rushHour:()=>rushHour(),wearDisguise:k=>wearDisguise(k),spawnBag:()=>{const o=Math.random;Math.random=()=>0;try{spawnBag();}finally{Math.random=o;}},BAG,HUNT2:HUNT,CR,crowdStart:()=>crowdStart(),PH,incoming:()=>incoming(),endCall:a=>endCall(a),togglePhone:()=>togglePhone(),CT,spawnContact:()=>{RUN.leg=Math.max(RUN.leg,2);const o=Math.random;Math.random=()=>0;try{spawnContact();}finally{Math.random=o;}},W,WORLD,newsFlash:(t,s)=>newsFlash(t,s),gateOpen:()=>gateOpen(),switchWpn:()=>switchWpn(),shootGun:()=>shootGun(),addStars:(n)=>addStars(n,'test'),runEnd:(...a)=>runEnd(...a),shootDart:()=>shootDart(),get RUN(){return RUN;},HUNT,RT};
 /*RUN-END*/
 const CAREER=loadCareer();
 
@@ -1721,7 +1831,7 @@ function routeCard(route){const C=getC();const bus=route==='bus';
     <p style="opacity:.75;font-size:13px">Kam nishaan chhodogi to agli baar doosra raasta khulega.</p>
     <a class="btn" href="${bus?'bus.html':'train.html'}" style="background:${bus?'#d35400':'#1f4f9a'}">Chapter 3: ${bus?'Highway ki Bus':'Raat ki Gaadi'} →</a>`);}
 /* ===================== hub ===================== */
-function hub(){$('#loading').hidden=true;const h=Math.round(CAREER.heat);const H=getHunter();const r=getRun();const up=CAREER.dartUp||0;const act=r&&r.active;
+function hub(){$('#loading').hidden=true;const SR=safehouseRooms(hub);const h=Math.round(CAREER.heat);const H=getHunter();const r=getRun();const up=CAREER.dartUp||0;const act=r&&r.active;
   const c=sheet(`<h1>TRACE</h1><p class="eyebrow">EVERY STEP LEAVES A TRACE</p>
     <p>Run across India with Inspector Rana on your tail. He remembers how you play. Every run is different.</p>
     <div class="stats"><div class="stat"><span>Best run</span><b>${H.best||0} leg${(H.best||0)===1?'':'s'}</b></div><div class="stat"><span>Cash</span><b>${inr(CAREER.money)}</b></div><div class="stat"><span>Rana</span><b>${H.runs||0} run${(H.runs||0)===1?'':'s'}</b></div></div>
@@ -1730,12 +1840,11 @@ function hub(){$('#loading').hidden=true;const h=Math.round(CAREER.heat);const H
     <button class="btn" id="newrun" type="button" style="background:#1d2340">NEW GAME</button>`
     :`<button class="btn" id="play" type="button" style="background:#e0242b;font-size:26px;padding:18px">NEW GAME</button>${r&&r.legs&&r.legs.length?`<p class="eyebrow" style="margin:-4px 0 4px">Last run: ${r.legs.filter(l=>l.win).length} legs cleared · ended</p>`:''}`}
     ${goalsHTML()}
-    <div style="display:flex;gap:10px"><button class="btn alt" id="store" type="button" style="flex:1;font-size:18px">🛒 Store</button></div>
-    <button class="btn alt" id="nish" type="button" style="font-size:18px">📁 Nishaan ${nGot()}/${NISHAAN.length}${nGot()<NISHAAN.length?' · agla zone paar karo':''}</button>
+    ${SR.html}
     <p style="opacity:.7;font-size:13px">Phone: left stick to move, drag right side for camera, RUN to sprint. Computer: WASD, Shift, mouse drag, E to act, F to fire, Q to switch.</p>`);
   c.querySelector('#play').onclick=()=>{auInit();if(act)goZone(ZONES[r.zone].url);else startNewRun();};
   if(c.querySelector('#newrun'))c.querySelector('#newrun').onclick=()=>{const k=sheet(`<h2>New game?</h2><p>Your current run (leg ${r.leg}) will end. Cash you earned stays yours.</p><button class="btn" id="yes" type="button" style="background:#e0242b">Start a new game</button><button class="btn alt" id="no" type="button">Keep my run</button>`);k.querySelector('#yes').onclick=()=>{auInit();startNewRun();};k.querySelector('#no').onclick=hub;};
-  c.querySelector('#nish').onclick=()=>showNishaan(hub);
+  SR.wire(c);
   c.querySelector('#store').onclick=store;}
 const DART_COST=()=>150000*((CAREER.dartUp||0)+1);
 /* store: permanent upgrades bought with banked cash */
