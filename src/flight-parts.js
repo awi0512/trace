@@ -181,6 +181,7 @@ async function immigration(){locked=true;S.phase='talk';if(S.seat)standUp();
   await say('','(Plane rukta hai. Aerobridge, phir immigration counter.)',true);
   const hot=S.alerts>0||S.wanted;
   await say('Immigration officer',hot?'Aapke flight se ek complaint aayi hai. Kuch sawaal.':'Passport please. Kahan se aa rahi hain?');
+  if(RUN&&!(await ppScan('Immigration officer'))){await say('Immigration officer','Ye passport system mein FLAGGED hai. Side mein aaiye.');closeDlg();S.phase='over';ui(false);await comic('caught','Immigration');return finish(false,'Immigration');}
   const ans=L.city;const r=await choose(shuffle([ans,...shuffle(CITIES.filter(x=>x!==ans)).slice(0,2)]).map(o=>({label:`${o} se`,value:o})),{timer:hot?5000:8000});
   if(r!==ans){await say('Immigration officer','Passport mein to kuch aur likha hai… Side mein aaiye.');closeDlg();S.phase='over';ui(false);await comic('caught','Immigration');return finish(false,'Immigration');}
   if(hot){await say('Immigration officer','Aur kaam kya karti hain?');const j=L.job;const r2=await choose(shuffle([j,...shuffle(JOBS.filter(x=>x!==j)).slice(0,2)]).map(o=>({label:o})),{timer:5000});

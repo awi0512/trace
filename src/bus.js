@@ -206,7 +206,7 @@ function gunUI(){if(W.ui||!RUN)return;if(RUN.ammo===undefined)RUN.ammo=6;W.stars
   const h=document.createElement('div');h.id='wantedHud';h.style.cssText='position:fixed;right:16px;top:calc(140px + env(safe-area-inset-top));z-index:30;background:#111;color:#fff;border-radius:999px;padding:5px 12px;font:700 13px "Space Grotesk",sans-serif;display:flex;gap:10px;align-items:center;pointer-events:none';
   document.body.appendChild(h);W.ui=h;const v=document.createElement('div');v.style.cssText='position:fixed;inset:0;pointer-events:none;z-index:29;box-shadow:inset 0 0 120px 40px rgba(224,36,43,.75);opacity:0;transition:opacity .25s';document.body.appendChild(v);W.vig=v;drawGun();}
 function drawGun(){if(!W.ui)return;drawDartBtn();
-  W.ui.innerHTML=`${DISG[S.look.outfit]?`<span>${DISG[S.look.outfit].emoji}</span>`:''}<span style="color:#ffd166;letter-spacing:1px">${'★'.repeat(W.stars)}<span style="opacity:.3">${'★'.repeat(5-W.stars)}</span></span>${ZONE_ID==='airport'?`<span style="color:${RT.lock?'#ff6a5a':'#2fe39a'}">✈ ${RT.lock?'LOCKED':'OPEN'}</span>`:''}<span style="display:inline-block;width:70px;height:8px;background:#333;border-radius:4px;overflow:hidden"><i style="display:block;height:100%;width:${W.hp/W.max*100}%;background:${W.hp>W.max/2?'#2fe39a':W.hp>25?'#f5b82e':'#e0242b'}"></i></span>`;}
+  W.ui.innerHTML=`${DISG[S.look.outfit]?`<span>${DISG[S.look.outfit].emoji}</span>`:''}<span style="color:#ffd166;letter-spacing:1px">${'★'.repeat(W.stars)}<span style="opacity:.3">${'★'.repeat(5-W.stars)}</span></span>${ppGet()?`<span style="color:${ppLeft()?ppLeft()===1?'#ffd166':'#cfe0ff':'#ff6a5a'}">🛂 ${ppLeft()?ppDots(ppGet()):'FLAGGED'}</span>`:''}${ZONE_ID==='airport'?`<span style="color:${RT.lock?'#ff6a5a':'#2fe39a'}">✈ ${RT.lock?'LOCKED':'OPEN'}</span>`:''}<span style="display:inline-block;width:70px;height:8px;background:#333;border-radius:4px;overflow:hidden"><i style="display:block;height:100%;width:${W.hp/W.max*100}%;background:${W.hp>W.max/2?'#2fe39a':W.hp>25?'#f5b82e':'#e0242b'}"></i></span>`;}
 function addStars(n,why){const before=W.stars;W.stars=Math.min(5,W.stars+n);if(W.stars>before){toast(`WANTED ${'★'.repeat(W.stars)} · ${why}`);if(W.stars>=W.shootAt&&before<W.shootAt){banner(`${W.shootAt}★ WANTED: police will shoot on sight!`,true);setTimeout(()=>banner(null),5000);}}drawGun();}
 function tracer(a,b,col){const g=new T.BufferGeometry().setFromPoints([new T.Vector3(a.x,1.15,a.z),new T.Vector3(b.x,1.1,b.z)]);const l=new T.Line(g,new T.LineBasicMaterial({color:col,transparent:true,opacity:1,toneMapped:false}));scene.add(l);
   const f=new T.Mesh(new T.SphereGeometry(.16,8,6),new T.MeshBasicMaterial({color:0xfff2a0,toneMapped:false}));f.position.set(a.x,1.15,a.z);scene.add(f);W.fx.push({l,f,t:.12});}
@@ -234,18 +234,44 @@ function updGun(dt){W.cd-=dt;for(const g of G)if(g.stunT>0)g.stunT-=dt;W.hitT+=d
     if(Math.random()<pHit){const dmg=ri(18,32);W.hp-=dmg;W.hitT=0;W.vig.style.opacity=1;setTimeout(()=>W.vig.style.opacity=0,260);vib([60,30,60]);drawGun();
       if(W.hp<=0){W.hp=0;drawGun();toast('You were shot...');setTimeout(()=>runEnd(false,null,`Shot by ${g.name}. At ${W.stars}★ the police don\'t ask questions.`),900);RT.dead=true;locked=true;P.g.rotation.x=-Math.PI/2;P.g.position.y=.25;return;}
       else toast(`Hit! Health ${Math.round(W.hp)}. Hide to recover.`);}}}
+/* ---- nakli passport: every ID check scans it. After a few scans DRISHTI flags it, and the next scan gets you arrested ---- */
+function ppGet(){if(!RUN)return null;if(!RUN.pp)RUN.pp={scans:0,max:RUN.char==='agent'?4:3,n:1};return RUN.pp;}
+function ppLeft(){const p=ppGet();return p?Math.max(0,p.max-p.scans):0;}
+function ppDots(p){return '●'.repeat(Math.max(0,p.max-p.scans))+'○'.repeat(Math.min(p.max,p.scans));}
+function ppCard(head,body,col,ms){return new Promise(res=>{const p=ppGet();const nm=RUN.cover||['?','?'];const o=document.createElement('div');o.style.cssText='position:fixed;inset:0;z-index:58;display:flex;align-items:center;justify-content:center;background:#0008;pointer-events:none';
+  o.innerHTML=`<div style="position:relative;width:min(80vw,300px);background:#14325c;color:#e8e2c8;border:3px solid #111;border-radius:12px;box-shadow:6px 6px 0 #000;padding:14px 16px;font-family:'Space Grotesk',sans-serif;overflow:hidden">
+    <div style="font:700 11px 'Space Grotesk';letter-spacing:3px;opacity:.8">PASSPORT · NO. ${(7300000+((nm[0].charCodeAt(0)*977+p.n*31)%99999))}</div>
+    <div style="display:flex;gap:12px;margin-top:10px;align-items:center"><div style="width:56px;height:68px;background:#e8e2c8;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:36px">${isMale()?'👨':'👩'}</div>
+    <div><div style="font-size:11px;opacity:.7">NAAM</div><div style="font-size:19px;font-weight:700">${nm[0]} ${nm[1]}</div><div style="font-size:11px;opacity:.7;margin-top:4px">SAFE SCANS</div><div style="font-size:18px;letter-spacing:3px;color:#ffd166">${ppDots(p)}</div></div></div>
+    <div id="ppHead" style="margin-top:10px;font:700 15px 'Space Grotesk';color:${col}">${head}</div><div style="font-size:13px;opacity:.85;margin-top:2px">${gtx(body)}</div>
+    <div id="ppLine" style="position:absolute;left:0;right:0;height:3px;background:#2fe39a;box-shadow:0 0 12px #2fe39a;top:0;animation:ppScan .9s linear infinite"></div></div>`;
+  if(!document.getElementById('ppSt')){const st=document.createElement('style');st.id='ppSt';st.textContent='@keyframes ppScan{0%{top:0}100%{top:100%}}';document.head.appendChild(st);}
+  document.body.appendChild(o);setTimeout(()=>{o.remove();res();},ms||1600);});}
+async function ppScan(who){const p=ppGet();if(!p)return true;const flagged=p.scans>=p.max;
+  tone(1500,.05,'square',.08);tone(1500,.05,'square',.08,.15);await ppCard('Scanning…',`${who} passport machine pe chala raha hai`,'#ffd166',1100);
+  if(flagged){sfx.alert&&sfx.alert();vib([200,80,200]);try{shake(10,400);}catch(e){}await ppCard('⚠ FLAGGED BY DRISHTI','Ye passport bahut baar scan ho chuka hai. System ne pakad liya.','#ff6a5a',1800);return false;}
+  p.scans++;saveRun(RUN);drawGun();const left=p.max-p.scans;
+  tone(880,.08,'triangle',.1);await ppCard('✓ CLEAR',left?`Is passport pe ${left} safe scan aur bache hain.`:'Ye aakhri safe scan tha. Agla scan = FLAGGED.',left?'#2fe39a':'#ffd166',left?1300:2000);
+  if(!left){toast('🛂 Passport ab DRISHTI ki nazar mein hai. Naya passport lo: bus wale dhabe pe, ya kisi ajnabi se.','bad');}
+  else if(left===1)toast('🛂 Passport pe sirf 1 safe scan bacha hai. ID checks se bacho.','info');
+  return true;}
+function ppNew(){const p=ppGet();if(!p)return;const pool=isMale()?COVER_M:COVER_F;const nm=pick(pool.filter(n=>!RUN.cover||n[0]!==RUN.cover[0]));RUN.cover=nm;p.scans=0;p.n++;p.max=RUN.char==='agent'?4:3;saveRun(RUN);
+  try{const l=typeof L!=='undefined'?L:(typeof M!=='undefined'&&M&&M.L);if(l){l.given=nm[0];l.surname=nm[1];}}catch(e){}
+  try{flashScreen('#fff');stamp('NAYA PASSPORT','#2fe39a',`Naya naam: ${nm[0]} ${nm[1]}. Yaad rakho!`,2800);}catch(e){}drawGun();}
 /* fair stops: a correct answer always lets you go, unless you were caught red-handed or still look exactly like the wanted photo */
 async function judge(g,ok,redHanded){if(redHanded===undefined)redHanded=S.wanted===lookKey();
   if(!ok&&RUN&&RUN.char==='conman'&&!RT.conUsed){RT.conUsed=true;await say('','(Kabir muskura ke baat ghuma deta hai)',true);await say('Kabir','Arre sahab, neend mein galat naam bol diya. Ye lijiye, ID dekh lijiye.');ok=true;}
   if(!ok){await say(g.name,'Ye naam record se match nahi karta. Chalo!');return false;}
   if(redHanded){await say(g.name,'Naam sahi hoga, par tumhe abhi kuch galat karte dekha gaya hai. Chalo!');return false;}
   if(g.knows&&lookKey()===S.startLook){await say(g.name,'Naam to sahi hai… par ye chehra aur ye kapde photo wale hain. Chalo!');toast('Tip: pehle look badlo (shop / washroom). Photo wale guard tumhara purana hulia pehchaante hain.','info');return false;}
+  if(RUN&&RT.on){await say(g.name,'Passport dikhao.');if(!(await ppScan(g.name))){await say(g.name,'System mein ye passport FLAGGED hai. Nakli hai! Chalo!');return false;}}
   return true;}
 /* guards that are knocked out skip their normal update */
 function runNoArrest(g){return !!(RT.on&&(W.stars>=W.shootAt||g.stunT>0||RT.dead));}
 function isDown(g){if(g.stunT>0){if(g.icon)g.icon.sp.visible=true;return true;}if(!(g.down>0))return false;g.cone.piv.visible=false;if(g.icon)g.icon.sp.visible=false;return true;}
 /* ---- strangers: a random contact offers a deal. Most are honest; some sell you out. Watch for the tell. ---- */
-const DEALS=[
+const DEALS=[{id:'pass',pitch:'Naya passport chahiye? Naya naam, saaf record. DRISHTI ne ise kabhi scan nahi kiya.',label:'Fresh passport',cost:40000,apply(){ppNew();}},
+  
   {id:'id',pitch:'Nakli ID card. Naya naam, naya chehra record mein. Tumhari purani photo kisi kaam ki nahi rahegi.',label:'Fake ID',cost:30000,
    apply(){S.startLook='__none__';S.wanted=null;G.forEach(g=>{g.knows=false;if(g.state!=='alert'){g.sus=0;g.state='patrol';}});toast('Fake ID: guards no longer match your old photo.','good');}},
   {id:'ammo',pitch:'Teen goliyan. Saaf maal, koi number nahi.',label:'+3 bullets',cost:20000,apply(){RUN.ammo=(RUN.ammo||0)+3;drawDartBtn();toast('+3 bullets.','good');}},
@@ -261,7 +287,7 @@ function spawnContact(){if(!RT.on||CT.npc||RUN.leg<2||!P||ZONE_ID==='plane'||Mat
   const look={body:pick([0x3b3b3b,0x6b4f3a,0x2e4a3a]),legs:0x222222,skin:pick([0x8f5d3e,0xc68b5e,0x6b4428]),hair:0x111111,mustache:Math.random()<.6,cap:Math.random()<.5?0x111111:undefined,capPeak:0x111111};
   const n=chibi(look);n.pos.set(x,0,z);n.beh='idle';n.inArea=S.area;n.reg='hall';n.walk=1;n.wait=999;NPC.push(n);CT.npc=n;
   const mk=new T.Mesh(new T.OctahedronGeometry(.22),new T.MeshBasicMaterial({color:0x2fe39a,toneMapped:false}));mk.position.y=2.35;n.g.add(mk);CT.mk=mk;
-  const tr=.25+Math.min(.2,HUNTER.runs*.02)+(RUN.mods||[]).includes('traitor')*.15;CT.traitor=Math.random()<tr;CT.deal=pick(DEALS.filter(d=>!(d.id==='heal'&&W.hp>=100)));
+  const tr=.25+Math.min(.2,HUNTER.runs*.02)+(RUN.mods||[]).includes('traitor')*.15;CT.traitor=Math.random()<tr;CT.deal=ppLeft()<=1&&Math.random()<.7?DEALS[0]:pick(DEALS.filter(d=>!(d.id==='heal'&&W.hp>=100)&&!(d.id==='pass'&&ppLeft()>=2)));
   inter({area:S.area,label:'Talk to the stranger',r:1.9,on:()=>!CT.used&&RT.on,pos:()=>[CT.npc.pos.x,CT.npc.pos.z],run:talkContact});
   toast('Someone is watching you… and waving you over (green marker).','info');}
 async function talkContact(){if(CT.used)return;locked=true;const d=CT.deal;const who='Ajnabi';
@@ -501,7 +527,7 @@ function runEnd(win,who,why){if(!RT.on)return false;RT.on=false;S.phase='over';l
     fxCleared(legScore,cash,()=>ranaCall('leg',()=>{const c=sheet(`<div class="eyebrow">ESCAPE · LEG ${RUN.leg} CLEARED</div><h2>${EX?EX.title:'Escaped!'}</h2>${EX?`<p>${EX.text}</p>`:''}
       <div class="stats"><div class="stat"><span>Score</span><b>${RUN.score}</b></div><div class="stat"><span>Run cash</span><b>${inr(RUN.cash)}</b></div><div class="stat"><span>Darts / Ammo</span><b>${RUN.darts} / ${RUN.ammo}</b></div></div>${RUN.wanted?`<p class="eyebrow" style="color:#ffd166">WANTED ${'★'.repeat(RUN.wanted)} carries into the next zone</p>`:''}
       <p>${opts.length>1?'Rana is right behind you. Pick your route to Goa:':'Next stop:'}</p>
-      ${opts.map((o,i)=>`<button class="btn" type="button" data-i="${i}" style="background:${ZONES[o.z].col};text-align:left;line-height:1.25">${secLevel(o.z)?`<span style="float:right;font:700 11px 'Space Grotesk',sans-serif;background:#111;color:#ffd166;padding:2px 6px;border-radius:6px">SECURITY: ${SEC_NAMES[secLevel(o.z)].toUpperCase()}</span>`:''}${EX&&EX.via[o.z]?EX.via[o.z]:ZONES[o.z].name+' →'}<br><span style="font:500 12px var(--type,monospace);opacity:.9">${EX&&EX.via[o.z]?ZONES[o.z].name:ZONES[o.z].sub}${o.mods.length?' · ⚠ '+o.mods.map(k=>MODS[k].name).join(', '):' · no hazards'}</span></button>`).join('')}
+      ${opts.map((o,i)=>`<button class="btn" type="button" data-i="${i}" style="background:${ZONES[o.z].col};text-align:left;line-height:1.25">${secLevel(o.z)?`<span style="float:right;font:700 11px 'Space Grotesk',sans-serif;background:#111;color:#ffd166;padding:2px 6px;border-radius:6px">SECURITY: ${SEC_NAMES[secLevel(o.z)].toUpperCase()}</span>`:''}${EX&&EX.via[o.z]?EX.via[o.z]:ZONES[o.z].name+' →'}<br><span style="font:500 12px var(--type,monospace);opacity:.9">${EX&&EX.via[o.z]?ZONES[o.z].name:ZONES[o.z].sub}${o.z==='bus'?' · 🛂 naya passport milega':''}${o.mods.length?' · ⚠ '+o.mods.map(k=>MODS[k].name).join(', '):' · no hazards'}</span></button>`).join('')}
       <button class="btn alt" type="button" id="bank">Give up the escape (bank the cash)</button>`);
     c.querySelectorAll('[data-i]').forEach(b=>b.onclick=()=>{const o=opts[+b.dataset.i];RUN.leg++;RUN.zone=o.z;RUN.mods=o.mods;RUN.from=RT.exit||RUN.from;if(RUN.leg%3===0)RUN.darts++;RUN.ammo=(RUN.ammo||0)+2;saveRun(RUN);goZone(ZONES[o.z].url);});
     c.querySelector('#bank').onclick=()=>runOver(true);}));}
@@ -522,6 +548,7 @@ function ranaLines(kind){const n=CHARS[RUN.char]||CHARS.agent,L=[];const upi=(RU
   if(kind==='leg'&&(RT.exit==='flight'||RT.exit==='station'||RT.exit==='city'))facts.push('Koi nishaan nahi. Ya to tum bhoot ho, ya DRISHTI mein ched hai. Dono baatein mujhe pareshaan karti hain.');
   if(S.look&&DISG[S.look.outfit])facts.push(`Naya bhes? ${DISG[S.look.outfit].name}. Accha tha. Par chaal wahi hai.`);
   if(RUN.lh&&RUN.lh.run>40)facts.push('Tum bahut bhaagti ho. Bhaagne wale log hamesha dikh jaate hain.');
+  if(RUN.pp&&RUN.pp.scans>=2&&RUN.cover)facts.push(`${RUN.cover[0]} ${RUN.cover[1]}. Accha naam hai. ${RUN.pp.scans} baar scan hua. DRISHTI ne note kar liya.`);
   if(nGot()>=6&&kind!=='caught')facts.push(pick(['Ye "Rachna" kya hai, Chhaya? Mujhe sach batao.','Maine apni biwi ki file phir se kholi. Kuch theek nahi lag raha.']));
   if(!facts.length)facts.push(traces?`${traces} nishaan. Bas itne kaafi hain.`:'Sirf ek nishaan chahiye mujhe. Ek.');
   L.push(...shuffle(facts).slice(0,2));
@@ -593,7 +620,7 @@ function flashScreen(col){const f=document.createElement('div');f.style.cssText=
 function thump(v){tone(58,.16,'sine',.55*v);tone(48,.14,'sine',.42*v,.16);}
 function chip(text,hot){fxUI();let c=document.getElementById('fxChip');if(!text){if(c)c.remove();return;}if(!c){c=document.createElement('div');c.id='fxChip';document.body.appendChild(c);}c.textContent=gtx(text);c.classList.toggle('hot',!!hot);}
 const DEADLINE={airport:()=>RT.lock?'Taxi stand band hone wala hai':'Flight ka gate band hone wala hai',train:()=>S.area==='train'?'Agla station aane wala hai':'Gaadi chhootne wali hai',bus:()=>'Bus nikalne wali hai',port:()=>'Jahaz 4 baje nikal jaayega',plane:()=>'Landing hone wali hai'};
-function fxStart(){FX.on=true;FX.alerts=S.alerts||0;FX.look=lookKey();FX.peak=new Map();FX.close=0;FX.lost=0;FX.bonus=0;FX.min1=false;fxUI();
+function fxStart(){if(RUN&&RUN.leg===1&&!RUN.ppIntro&&!(typeof TUT!=='undefined'&&TUT)){RUN.ppIntro=true;saveRun(RUN);setTimeout(()=>{if(RT.on)toast(`🛂 Tumhara nakli passport: ${ppGet().max} safe scans. Har ID check pe scan hota hai. Khatam hue to DRISHTI flag kar dega.`,'info');},9000);}FX.on=true;FX.alerts=S.alerts||0;FX.look=lookKey();FX.peak=new Map();FX.close=0;FX.lost=0;FX.bonus=0;FX.min1=false;fxUI();
   if(ZONE_ID==='airport'&&RUN.leg===1&&!(typeof TUT!=='undefined'&&TUT)){FX.open={t:45,look:lookKey()};
     setTimeout(()=>{if(!RT.on)return;sfx.alert();vib([100,60,100]);stamp('BREAKING','#e0242b','Tumhari photo 45 second mein airport ki har screen pe',2600);
       setTimeout(()=>{if(RT.on)phoneMsg&&PH.el&&phoneMsg('Didi','Photo aane se pehle washroom mein look badlo, ya seedha gate ki taraf. Jaldi!');},2800);},700);}}
@@ -651,7 +678,7 @@ function fxCleared(score,cash,done,final){fxStop();const i=nUnlock();const q=i==
   document.body.appendChild(ov);const R=[...ov.querySelectorAll('.row')];R.forEach((r,k)=>setTimeout(()=>{r.classList.add('v');tone(520+k*90,.07,'triangle',.08);},450+k*230));
   const tc=450+R.length*230+250;const cd=ov.querySelector('.card');if(cd)setTimeout(()=>{cd.classList.add('v');tone(392,.4,'sine',.12);tone(523,.6,'sine',.1,.18);vib(40);},tc);
   const b=ov.querySelector('#fxGo');setTimeout(()=>b.classList.add('v'),tc+(cd?700:0));b.onclick=()=>{ov.remove();done&&done();};}
-window.__run={fxCleared:(...a)=>fxCleared(...a),stamp:(...a)=>stamp(...a),FX,nGot:()=>nGot(),showNishaan:b=>showNishaan(b),ranaLines:k=>ranaLines(k),coldOpen:(c,d)=>coldOpen(c,d),gtx:t=>gtx(t),wantedCard:()=>wantedCard(),rushHour:()=>rushHour(),wearDisguise:k=>wearDisguise(k),spawnBag:()=>{const o=Math.random;Math.random=()=>0;try{spawnBag();}finally{Math.random=o;}},BAG,HUNT2:HUNT,CR,crowdStart:()=>crowdStart(),PH,incoming:()=>incoming(),endCall:a=>endCall(a),togglePhone:()=>togglePhone(),CT,spawnContact:()=>{RUN.leg=Math.max(RUN.leg,2);const o=Math.random;Math.random=()=>0;try{spawnContact();}finally{Math.random=o;}},W,WORLD,newsFlash:(t,s)=>newsFlash(t,s),gateOpen:()=>gateOpen(),switchWpn:()=>switchWpn(),shootGun:()=>shootGun(),addStars:(n)=>addStars(n,'test'),runEnd:(...a)=>runEnd(...a),shootDart:()=>shootDart(),get RUN(){return RUN;},HUNT,RT};
+window.__run={ppScan:w=>ppScan(w),ppNew:()=>ppNew(),ppGet:()=>ppGet(),fxCleared:(...a)=>fxCleared(...a),stamp:(...a)=>stamp(...a),FX,nGot:()=>nGot(),showNishaan:b=>showNishaan(b),ranaLines:k=>ranaLines(k),coldOpen:(c,d)=>coldOpen(c,d),gtx:t=>gtx(t),wantedCard:()=>wantedCard(),rushHour:()=>rushHour(),wearDisguise:k=>wearDisguise(k),spawnBag:()=>{const o=Math.random;Math.random=()=>0;try{spawnBag();}finally{Math.random=o;}},BAG,HUNT2:HUNT,CR,crowdStart:()=>crowdStart(),PH,incoming:()=>incoming(),endCall:a=>endCall(a),togglePhone:()=>togglePhone(),CT,spawnContact:()=>{RUN.leg=Math.max(RUN.leg,2);const o=Math.random;Math.random=()=>0;try{spawnContact();}finally{Math.random=o;}},W,WORLD,newsFlash:(t,s)=>newsFlash(t,s),gateOpen:()=>gateOpen(),switchWpn:()=>switchWpn(),shootGun:()=>shootGun(),addStars:(n)=>addStars(n,'test'),runEnd:(...a)=>runEnd(...a),shootDart:()=>shootDart(),get RUN(){return RUN;},HUNT,RT};
 /*RUN-END*/
 const NAMES=[['Ananya','Sethi'],['Kavya','Arora'],['Riya','Joshi'],['Meera','Khanna'],['Aditi','Rao'],['Sana','Mirza'],['Isha','Bhatt']];
 const CITIES=['Indore','Pune','Lucknow','Jaipur','Surat','Nagpur','Bhopal'];
@@ -1072,7 +1099,7 @@ inter({area:'train',label:'Seat pe baitho',r:3,on:()=>!S.seat&&!!seatNear()&&P.p
 inter({area:'train',label:()=>S.covered?'Chehra kholo':'Dupatte se chehra dhako',r:99,on:()=>!!S.seat,pos:()=>[P.pos.x+.01,P.pos.z],run:async()=>{S.covered=!S.covered;coverMesh.visible=S.covered;toast(S.covered?'Chehra dhak liya. Kam dikhogi, par police hataane ko bol sakti hai.':'Chehra khol diya.','info');}});
 inter({area:'train',label:'Seat se utho',r:99,on:()=>!!S.seat,pos:()=>[P.pos.x,P.pos.z],run:async()=>standUp()});
 function standUp(){if(!S.seat)return;S.seat.ref.taken=false;const b=S.seat.back;S.seat=null;S.covered=false;coverMesh.visible=false;P.pose=null;P.root.rotation.z=0;P.root.position.y=0;P.g.position.set(b.x,0,b.z);P.ring.visible=true;}
-inter({area:'train',label:'Contact se passport lo',r:1.7,on:()=>S.stage==='dhaba'&&!S.done&&!S.seat,pos:()=>[contact.pos.x,contact.pos.z],run:async()=>{const ok=await hold('Akhbaar ke andar se passport le rahi ho…',3,true,()=>S.stage!=='dhaba'?'Bus chalne wali hai!':null);if(ok){S.done=true;sfx.ok();setTimeout(()=>{if(S.stage!=='dhaba')return;banner('Aage POLICE NAKA hai! Photo wala look badlo: DUPATTA · CHASHMA stall (dhabe ke left side)',true);toast('Contact: "Aage naka pe police chehre check kar rahi hai. Wo trench coat aur hat waali photo dikha rahe hain. Dhabe ki dupatta-chashma dukaan (left side) se look badlo, warna naka pe pakdi jaogi."','info');setTimeout(()=>{if(S.stage==='dhaba')banner(null);},7000);},2500);toast('Naya passport mil gaya! Ab bus mein wapas chadho.','good');}}});
+inter({area:'train',label:'Contact se passport lo',r:1.7,on:()=>S.stage==='dhaba'&&!S.done&&!S.seat,pos:()=>[contact.pos.x,contact.pos.z],run:async()=>{const ok=await hold('Akhbaar ke andar se passport le rahi ho…',3,true,()=>S.stage!=='dhaba'?'Bus chalne wali hai!':null);if(ok){S.done=true;sfx.ok();if(RUN)ppNew();setTimeout(()=>{if(S.stage!=='dhaba')return;banner('Aage POLICE NAKA hai! Photo wala look badlo: DUPATTA · CHASHMA stall (dhabe ke left side)',true);toast('Contact: "Aage naka pe police chehre check kar rahi hai. Wo trench coat aur hat waali photo dikha rahe hain. Dhabe ki dupatta-chashma dukaan (left side) se look badlo, warna naka pe pakdi jaogi."','info');setTimeout(()=>{if(S.stage==='dhaba')banner(null);},7000);},2500);toast('Naya passport mil gaya! Ab bus mein wapas chadho.','good');}}});
 inter({area:'train',label:'Dupatta + chashma kharido · ₹300',r:2,on:()=>S.stage==='dhaba'&&S.look.outfit!=='dupatta',pos:()=>[-6.8,TZ+6.4],run:async()=>{CAREER.money-=300;S.look={outfit:'dupatta',hat:false};buildPlayer(P.pos.clone(),P.yaw);clearWanted();sfx.ok();toast('Naya look: laal dupatta + chashma.','good');}});
 /* ---------------- flow ---------------- */
 const ui=on=>['#hud','#pads','#joy','#map'].forEach(s=>$(s).hidden=!on);
