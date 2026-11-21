@@ -210,6 +210,8 @@ const MODS={blackout:{name:'Blackout',d:'Power cuts on and off. CCTV goes dark, 
 const HABITS={run:{t:'bhaagti hai',c:'Guards now suspect runners instantly.'},crowd:{t:'bheed mein chhupti hai',c:'Guards now watch crowds closely.'},
   disguise:{t:'kapde badalti hai',c:'A new look reaches every radio in 30 seconds.'},dart:{t:'dart chalaati hai',c:'Darted guards wake up faster.'},
   cams:{t:'CCTV ke saamne aati hai',c:'Cameras see further.'},flight:{t:'hamesha flight pakadti hai',c:'Airports get extra eyes.'},upi:{t:'UPI se paise deti hai',c:'He reads bank records: phone pings come faster.'}};
+/* go to a zone page with a fresh URL, so Safari never reloads the old one (hash-only changes are not real navigations) */
+function goZone(url){const [path,hash]=url.split('#');location.href=path+'?t='+Date.now()+(hash?'#'+hash:'');}
 function rjson(k){try{return JSON.parse(localStorage.getItem(k)||'null');}catch(e){return null;}}
 function wjson(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
 const getRun=()=>rjson(RKEY),saveRun=r=>wjson(RKEY,r);
@@ -254,7 +256,7 @@ function rollMods(leg){const n=leg<=1?0:leg<=3?1:leg<=6?2:3;return shuffle(Objec
 function nextZones(cur){return shuffle(GROUND.filter(z=>z!==cur)).slice(0,2);}
 function newRun(ch){ch=CHARS[ch]?ch:'agent';const counters=pickCounters();for(const k in WORLD.zones)WORLD.zones[k]=+(WORLD.zones[k]*.75).toFixed(2);wjson(WKEY,WORLD);const z='airport';const B=getBoard();const raid=B.strength>=100;
   const r={active:true,leg:1,zone:z,mods:raid?['patrol','alert']:[],raid,counters,char:ch,darts:(ch==='hacker'?1:ch==='soldier'||ch==='conman'?3:2)+(CAREER.dartUp||0),ammo:ch==='conman'?0:(ch==='hacker'?4:ch==='soldier'?10:6)+2*(CAREER.ammoUp||0),score:0,cash:ch==='agent'?50000:0,legs:[],lh:{run:0,crowd:0,disguise:0,dart:0,cams:0,flight:0},started:Date.now()};saveRun(r);return r;}
-function startNewRun(){pickChar(ch=>{closeSheet&&closeSheet();((d)=>d())(()=>{const r=newRun(ch);location.href=ZONES[r.zone].url;if(ZONE_ID==='airport'&&r.zone==='airport')location.reload();});});}
+function startNewRun(){pickChar(ch=>{closeSheet&&closeSheet();((d)=>d())(()=>{const r=newRun(ch);goZone(ZONES[r.zone].url);});});}
 /* ---- cold open: Ganpati visarjan night, a red dupatta, a fake trail (story bible, chapter 1) ---- */
 function storyScene(cards,done){const ov=document.createElement('div');ov.id='story';ov.style.cssText='position:fixed;inset:0;z-index:60;background:#07070a;color:#f1ece1;display:flex;align-items:center;justify-content:center;padding:24px;font-family:"Space Grotesk",sans-serif;text-align:center';
   document.body.appendChild(ov);let i=0,typing=null;const sk=document.createElement('button');sk.textContent='Skip ›';sk.type='button';sk.style.cssText='position:fixed;top:calc(14px + env(safe-area-inset-top));right:14px;z-index:61;background:#0000;border:1px solid #fff5;color:#fff;border-radius:999px;padding:6px 12px;font:700 12px sans-serif';document.body.appendChild(sk);
@@ -655,7 +657,7 @@ function runEnd(win,who,why){if(!RT.on)return false;RT.on=false;S.phase='over';l
       <p>${opts.length>1?'Rana is right behind you. Pick your route to Goa:':'Next stop:'}</p>
       ${opts.map((o,i)=>`<button class="btn" type="button" data-i="${i}" style="background:${ZONES[o.z].col};text-align:left;line-height:1.25">${secLevel(o.z)?`<span style="float:right;font:700 11px 'Space Grotesk',sans-serif;background:#111;color:#ffd166;padding:2px 6px;border-radius:6px">SECURITY: ${SEC_NAMES[secLevel(o.z)].toUpperCase()}</span>`:''}${EX&&EX.via[o.z]?EX.via[o.z]:ZONES[o.z].name+' →'}<br><span style="font:500 12px var(--type,monospace);opacity:.9">${EX&&EX.via[o.z]?ZONES[o.z].name:ZONES[o.z].sub}${o.mods.length?' · ⚠ '+o.mods.map(k=>MODS[k].name).join(', '):' · no hazards'}</span></button>`).join('')}
       <button class="btn alt" type="button" id="bank">Give up the escape (bank the cash)</button>`);
-    c.querySelectorAll('[data-i]').forEach(b=>b.onclick=()=>{const o=opts[+b.dataset.i];RUN.leg++;RUN.zone=o.z;RUN.mods=o.mods;RUN.from=RT.exit||RUN.from;if(RUN.leg%3===0)RUN.darts++;RUN.ammo=(RUN.ammo||0)+2;saveRun(RUN);location.href=ZONES[o.z].url;if(o.z==='airport'&&ZONE_ID==='airport')location.reload();});
+    c.querySelectorAll('[data-i]').forEach(b=>b.onclick=()=>{const o=opts[+b.dataset.i];RUN.leg++;RUN.zone=o.z;RUN.mods=o.mods;RUN.from=RT.exit||RUN.from;if(RUN.leg%3===0)RUN.darts++;RUN.ammo=(RUN.ammo||0)+2;saveRun(RUN);goZone(ZONES[o.z].url);});
     c.querySelector('#bank').onclick=()=>runOver(true);});}
   else{RUN.dead={who:who||null,why:why||null};ranaCall('caught',caughtChoice);}
   return true;}
@@ -697,7 +699,7 @@ function caughtChoice(){const rec=RUN.records||0,left=2+(CAREER.bailUp||0)-rec,s
     <button class="btn" id="bail" type="button" style="background:#e0242b">Continue · pay bail, retry this zone</button>
     <button class="btn alt" id="give" type="button">End run</button>`);
   c.querySelector('#bail').onclick=()=>{RUN.records=rec+1;RUN.cash-=bail;RUN.wanted=Math.min(5,(RUN.wanted||0)+2);RUN.dead=null;RUN.active=true;saveRun(RUN);
-    if(S.traces.length<12)trace('FIR darj: police record mein naam');location.href=ZONES[ZONE_ID].url;if(ZONE_ID==='airport')location.reload();};
+    if(S.traces.length<12)trace('FIR darj: police record mein naam');goZone(ZONES[ZONE_ID].url);};
   c.querySelector('#give').onclick=()=>runOver(false);}
 function runOver(banked){const r=RUN;r.active=false;saveRun(r);
   for(const k in r.lh)HUNTER.habits[k]=(HUNTER.habits[k]||0)*.6+r.lh[k];HUNTER.runs++;
@@ -1332,7 +1334,7 @@ function finish(win,who,why){if(runEnd(win,who,why))return;S.phase='over';locked
     <p class="eyebrow">YOUR DIGITAL FOOTPRINT</p><ul class="traces">${S.traces.length?S.traces.map(t=>`<li>${esc(t.t)} · ${esc(t.text)}</li>`).join(''):'<li class="ok">No traces.</li>'}</ul>
     ${STORY?(win?`<button class="btn" id="twist" type="button" style="background:#e0242b">Aage kya hua? →</button>`:`<button class="btn" id="again" type="button">Chapter dobara khelo</button>`):`<button class="btn" id="again" type="button">Next mission</button>${win?`<a class="btn" href="train.html" style="background:#1f4f9a">Next level: Night Train →</a>`:''}`}<button class="btn alt" id="hub" type="button">Safehouse</button>`);
     if(c.querySelector('#twist'))c.querySelector('#twist').onclick=()=>routeCard(route);
-    if(c.querySelector('#again'))c.querySelector('#again').onclick=()=>{location.hash=STORY?'story':'play';location.reload();};c.querySelector('#hub').onclick=()=>{location.hash='';location.reload();};};
+    if(c.querySelector('#again'))c.querySelector('#again').onclick=()=>{goZone('index.html#'+(STORY?'story':'play'));};c.querySelector('#hub').onclick=()=>{goZone('index.html');};};
   if(win)comic('win').then(show);else show();}
 
 /* ===================== story: the twist after the airport, and the road the heat picks ===================== */
@@ -1355,7 +1357,7 @@ function hub(){$('#loading').hidden=true;const h=Math.round(CAREER.heat);const H
     :`<button class="btn" id="play" type="button" style="background:#e0242b;font-size:26px;padding:18px">NEW GAME</button>${r&&r.legs&&r.legs.length?`<p class="eyebrow" style="margin:-4px 0 4px">Last run: ${r.legs.filter(l=>l.win).length} legs cleared · ended</p>`:''}`}
     <div style="display:flex;gap:10px"><button class="btn alt" id="store" type="button" style="flex:1;font-size:18px">🛒 Store</button><button class="btn alt" id="cboard" type="button" style="flex:1;font-size:18px">🧷 Case ${getBoard().strength}%</button></div>
     <p style="opacity:.7;font-size:13px">Phone: left stick to move, drag right side for camera, RUN to sprint. Computer: WASD, Shift, mouse drag, E to act, F to fire, Q to switch.</p>`);
-  c.querySelector('#play').onclick=()=>{auInit();if(act){location.href=ZONES[r.zone].url;if(r.zone==='airport')location.reload();}else startNewRun();};
+  c.querySelector('#play').onclick=()=>{auInit();if(act)goZone(ZONES[r.zone].url);else startNewRun();};
   if(c.querySelector('#newrun'))c.querySelector('#newrun').onclick=()=>{const k=sheet(`<h2>New game?</h2><p>Your current run (leg ${r.leg}, ${inr(r.cash||0)} run cash) will be lost.</p><button class="btn" id="yes" type="button" style="background:#e0242b">Start a new game</button><button class="btn alt" id="no" type="button">Keep my run</button>`);k.querySelector('#yes').onclick=()=>{auInit();startNewRun();};k.querySelector('#no').onclick=hub;};
   c.querySelector('#cboard').onclick=()=>showBoard(hub);
   c.querySelector('#store').onclick=store;}
