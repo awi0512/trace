@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>TRACE Station Sample</title>
+<style>
+html,body{margin:0;height:100%;background:#0b0d14;overflow:hidden;font-family:system-ui,sans-serif}
+canvas{display:block;touch-action:none}
+#ui{position:fixed;left:0;right:0;bottom:calc(16px + env(safe-area-inset-bottom));display:flex;gap:8px;justify-content:center;z-index:5}
+#ui button{border:3px solid #111;border-radius:14px;padding:10px 14px;font:700 15px system-ui;background:#ffd166;color:#111;box-shadow:0 3px 0 #111}
+#ui button.on{background:#2fe39a}
+#cap{position:fixed;top:calc(12px + env(safe-area-inset-top));left:16px;right:16px;color:#fff;font:600 13px system-ui;text-shadow:0 1px 3px #000;z-index:5}
+#load{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;color:#fff;font:700 18px system-ui;background:#0b0d14;z-index:9}
+</style>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
+</head>
+<body>
+<div id="load">Station ban raha hai…</div>
+<div id="cap">TRACE · station sample (game me nahi). Ungli se ghumao, do ungli se zoom.</div>
+<div id="ui"><button id="day" class="on" type="button">☀ Din</button><button id="night" type="button">🌙 Raat</button><button id="auto" class="on" type="button">↻ Auto</button><button id="walk" type="button">🚶 Platform pe</button></div>
+<script type="module">
+import * as T from 'three';
+import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
+const R=new T.WebGLRenderer({antialias:true,powerPreference:'high-performance'});R.setPixelRatio(Math.min(2,devicePixelRatio));R.setSize(innerWidth,innerHeight);
+R.shadowMap.enabled=true;R.shadowMap.type=T.PCFSoftShadowMap;R.outputColorSpace=T.SRGBColorSpace;R.toneMapping=T.ACESFilmicToneMapping;R.toneMappingExposure=1.05;document.body.appendChild(R.domElement);
+const S=new T.Scene();const cam=new T.PerspectiveCamera(55,innerWidth/innerHeight,.1,600);cam.position.set(112,4.2,0);
+const ctl=new OrbitControls(cam,R.domElement);ctl.target.set(40,3.2,2);ctl.enableDamping=true;ctl.maxPolarAngle=Math.PI*.49;ctl.minDistance=4;ctl.maxDistance=140;ctl.autoRotate=true;ctl.autoRotateSpeed=.35;
+/* ---------- canvas textures ---------- */
+const tex=(w,h,draw,rep)=>{const c=document.createElement('canvas');c.width=w;c.height=h;const g=c.getContext('2d');draw(g,w,h);const t=new T.CanvasTexture(c);t.colorSpace=T.SRGBColorSpace;t.anisotropy=4;if(rep){t.wrapS=t.wrapT=T.RepeatWrapping;t.repeat.set(rep[0],rep[1]);}return t;};
+const rnd=(a,b)=>a+Math.random()*(b-a);
+const brick=tex(256,256,(g,w,h)=>{g.fillStyle='#b8342a';g.fillRect(0,0,w,h);for(let y=0;y<h;y+=16){for(let x=(y/16%2)*16;x<w+32;x+=32){g.fillStyle=`hsl(${rnd(2,10)},${rnd(55,65)}%,${rnd(36,44)}%)`;g.fillRect(x-30,y+1,29,14);}}g.fillStyle='rgba(230,220,210,.35)';for(let y=0;y<h;y+=16)g.fillRect(0,y,w,1.5);},[10,3]);
+const ballast=tex(256,256,(g,w,h)=>{g.fillStyle='#6f6a63';g.fillRect(0,0,w,h);for(let i=0;i<2600;i++){const v=rnd(70,150);g.fillStyle=`rgb(${v},${v-4},${v-10})`;g.beginPath();g.arc(rnd(0,w),rnd(0,h),rnd(1,3.2),0,7);g.fill();}},[60,1.2]);
+const tiles=tex(256,256,(g,w,h)=>{g.fillStyle='#c9c4bb';g.fillRect(0,0,w,h);for(let x=0;x<w;x+=64)for(let y=0;y<h;y+=64){g.fillStyle=`hsl(40,6%,${rnd(72,80)}%)`;g.fillRect(x+1,y+1,62,62);}for(let i=0;i<300;i++){g.fillStyle='rgba(60,50,40,.08)';g.fillRect(rnd(0,w),rnd(0,h),rnd(2,10),rnd(1,3));}},[40,2]);
+const stripe=tex(128,32,(g,w,h)=>{for(let x=0;x<w;x+=32){g.fillStyle='#d8262b';g.fillRect(x,0,16,h);g.fillStyle='#f3f0ea';g.fillRect(x+16,0,16,h);}},[80,1]);
+const coachTex=(body,band,label,yellow)=>tex(1024,128,(g,w,h)=>{g.fillStyle=body;g.fillRect(0,0,w,h);g.fillStyle=band;g.fillRect(0,18,w,10);g.fillRect(0,h-26,w,8);
+  for(let x=60;x<w-60;x+=58){g.fillStyle='#1c2430';g.fillRect(x,40,40,36);g.fillStyle='rgba(160,200,230,.35)';g.fillRect(x+2,42,36,14);g.strokeStyle='#d8d8d8';g.lineWidth=2;for(let k=1;k<5;k++){g.beginPath();g.moveTo(x,40+k*7);g.lineTo(x+40,40+k*7);g.stroke();}}
+  g.fillStyle='#202a36';g.fillRect(10,34,38,74);g.fillRect(w-48,34,38,74);g.fillStyle=yellow?'#5a2a10':'#ffffff';g.font='bold 22px sans-serif';g.fillText(label,w/2-20,108);});
+/* ---------- materials ---------- */
+const M=(c,o={})=>new T.MeshStandardMaterial(Object.assign({color:c,roughness:.8,metalness:0},o));
+const mat={ballast:M(0xffffff,{map:ballast}),rail:M(0x8d8f93,{metalness:.8,roughness:.35}),sleeper:M(0x7b7268),plat:M(0xffffff,{map:tiles}),side:M(0xffffff,{map:stripe}),red:M(0xd8262b),yellow:M(0xf4c430),
+  roof:M(0x3d6fb6,{roughness:.6,side:T.DoubleSide}),steel:M(0xd9dde3,{metalness:.5,roughness:.45}),dark:M(0x2a2e36),brick:M(0xffffff,{map:brick}),cream:M(0xf2e6d0),white:M(0xf5f5f5),ground:M(0x8a8577),grass:M(0x5d7a3a)};
+const box=(w,h,d,m,x,y,z,cast=true)=>{const o=new T.Mesh(new T.BoxGeometry(w,h,d),m);o.position.set(x,y,z);o.castShadow=cast;o.receiveShadow=true;S.add(o);return o;};
+const cyl=(r,h,m,x,y,z)=>{const o=new T.Mesh(new T.CylinderGeometry(r,r,h,10),m);o.position.set(x,y,z);o.castShadow=true;S.add(o);return o;};
+/* ---------- layout: tracks along X ---------- */
+const L=170,X0=-60;const TRK=[-7,7,21];const PLAT=[{z:0,n:'4'},{z:14,n:'5'},{z:28,n:'6'}];
+box(400,.2,200,mat.ground,0,-.15,10,false);box(L,.3,7,mat.ballast,X0+L/2-35,.05,TRK[0],false);box(L,.3,7,mat.ballast,X0+L/2-35,.05,TRK[1],false);box(L,.3,7,mat.ballast,X0+L/2-35,.05,TRK[2],false);
+const slG=new T.BoxGeometry(.28,.18,2.8);const nSl=Math.floor(L/.65);const sl=new T.InstancedMesh(slG,mat.sleeper,nSl*3);let si=0;const m4=new T.Matrix4();
+for(const z of TRK){for(let i=0;i<nSl;i++){m4.makeTranslation(X0-35+i*.65,.28,z);sl.setMatrixAt(si++,m4);}box(L,.16,.12,mat.rail,X0+L/2-35,.44,z-.75);box(L,.16,.12,mat.rail,X0+L/2-35,.44,z+.75);}sl.receiveShadow=true;S.add(sl);
+for(const p of PLAT){box(150,1,8,mat.plat,10,.5,p.z);box(150,.06,.35,mat.red,10,1.03,p.z-3.8,false);box(150,.06,.35,mat.red,10,1.03,p.z+3.8,false);box(150,.065,.12,mat.yellow,10,1.035,p.z-3.45,false);box(150,.065,.12,mat.yellow,10,1.035,p.z+3.45,false);
+  const sf=new T.Mesh(new T.PlaneGeometry(150,.9),mat.side);sf.position.set(10,.5,p.z-4.01);sf.rotation.y=Math.PI;S.add(sf);const sb=sf.clone();sb.position.z=p.z+4.01;sb.rotation.y=0;S.add(sb);}
+/* platform sheds: steel columns, trusses, blue gabled roof */
+const LAMPS=[];
+for(const p of PLAT){for(let x=-55;x<=75;x+=10){cyl(.18,5.4,mat.steel,x,3.7,p.z);box(.25,.25,8.6,mat.steel,x,6.3,p.z);const tr=box(.12,.9,.12,mat.steel,x,5.9,p.z-2.5);const tr2=tr.clone();tr2.position.z=p.z+2.5;S.add(tr2);
+    if(x%20===0){const lamp=box(.5,.12,1.2,new T.MeshStandardMaterial({color:0xfff3c4,emissive:0xffd88a,emissiveIntensity:0}),x+5,5.8,p.z);LAMPS.push({m:lamp,x:x+5,z:p.z});}}
+  for(const s of [-1,1]){const r=new T.Mesh(new T.PlaneGeometry(132,4.8),mat.roof);r.position.set(10,6.95,p.z+s*2.2);r.rotation.x=-Math.PI/2+s*.18;r.castShadow=true;r.receiveShadow=true;S.add(r);}
+  box(132,.12,.12,mat.steel,10,7.35,p.z);
+  /* platform number boards + benches + stalls */
+  for(const bx of [-30,20,60]){const c=document.createElement('canvas');c.width=128;c.height=128;const g=c.getContext('2d');g.fillStyle='#1f4fa8';g.fillRect(0,0,128,128);g.strokeStyle='#fff';g.lineWidth=6;g.strokeRect(6,6,116,116);g.fillStyle='#fff';g.font='bold 92px sans-serif';g.textAlign='center';g.fillText(p.n,64,98);
+    const t=new T.CanvasTexture(c);t.colorSpace=T.SRGBColorSpace;const b=new T.Mesh(new T.BoxGeometry(.12,1.3,1.3),[mat.dark,mat.dark,mat.dark,mat.dark,new T.MeshBasicMaterial({map:t}),new T.MeshBasicMaterial({map:t})]);b.rotation.y=Math.PI/2;b.position.set(bx,5.2,p.z);S.add(b);}
+  for(let x=-45;x<70;x+=17){box(2.2,.12,.6,M(0xb7742e),x,1.55,p.z+1.2);box(.1,.5,.5,mat.dark,x-.9,1.25,p.z+1.2);box(.1,.5,.5,mat.dark,x+.9,1.25,p.z+1.2);box(2.2,.5,.08,M(0xb7742e),x,1.9,p.z+1.48);}
+}
+/* stalls and luggage */
+const stall=(x,z,col,name)=>{box(3.2,2.4,2,M(col),x,2.2,z);box(3.4,.15,2.4,mat.red,x,3.5,z);const c=document.createElement('canvas');c.width=256;c.height=48;const g=c.getContext('2d');g.fillStyle='#fffbe8';g.fillRect(0,0,256,48);g.fillStyle='#b8261f';g.font='bold 30px sans-serif';g.fillText(name,10,36);const t=new T.CanvasTexture(c);t.colorSpace=T.SRGBColorSpace;const s=new T.Mesh(new T.PlaneGeometry(3,.55),new T.MeshBasicMaterial({map:t}));s.position.set(x,3.85,z-1.01);s.rotation.y=Math.PI;S.add(s);
+  for(let i=0;i<14;i++){box(.18,.26,.04,M([0xd94f3a,0x2b7bd0,0xf2c14e,0x3aa56b][i%4]),x-1.3+(i%7)*.4,2.6-Math.floor(i/7)*.35,z-1.02,false);}};
+stall(8,1.5,0x2f7d4f,'CHAI · SAMOSA');stall(40,15.5,0x6b3fa0,'BOOK STALL');stall(-20,29.5,0x2a6fb0,'PANI · SNACKS');
+for(let i=0;i<10;i++){const s=rnd(.5,.9);box(s,s*.8,s,M(0xb98a52),rnd(-40,60),1+s*.4,PLAT[i%3].z+rnd(-2.5,2.5));}
+/* station building: red brick, arched windows, two clock towers */
+const archWin=tex(512,256,(g,w,h)=>{g.drawImage(brick.image,0,0,w,h);for(let x=24;x<w;x+=64){g.fillStyle='#f1e4c8';g.beginPath();g.moveTo(x-4,h-40);g.lineTo(x-4,90);g.arc(x+20,90,24,Math.PI,0);g.lineTo(x+44,h-40);g.closePath();g.fill();g.fillStyle='#3a2a1e';g.beginPath();g.moveTo(x,h-44);g.lineTo(x,92);g.arc(x+20,92,20,Math.PI,0);g.lineTo(x+40,h-44);g.closePath();g.fill();}g.fillStyle='#f1e4c8';g.fillRect(0,0,w,14);g.fillRect(0,h-22,w,22);},[6,1]);
+const bld=box(150,13,10,new T.MeshStandardMaterial({map:archWin}),5,6.5,-24);box(152,.8,11,mat.cream,5,13.4,-24);
+for(let x=-65;x<80;x+=6){box(1,1.4,1,mat.cream,x,14.4,-19.3);}
+const tower=(x)=>{box(9,26,9,mat.brick,x,13,-23);box(9.6,1,9.6,mat.cream,x,26,-23);const roof=new T.Mesh(new T.ConeGeometry(7,9,4),mat.white);roof.rotation.y=Math.PI/4;roof.position.set(x,31,-23);roof.castShadow=true;S.add(roof);
+  const c=document.createElement('canvas');c.width=128;c.height=128;const g=c.getContext('2d');g.fillStyle='#f6f1e4';g.beginPath();g.arc(64,64,60,0,7);g.fill();g.strokeStyle='#222';g.lineWidth=5;g.stroke();g.lineWidth=6;g.beginPath();g.moveTo(64,64);g.lineTo(64,24);g.moveTo(64,64);g.lineTo(92,74);g.stroke();
+  const t=new T.CanvasTexture(c);t.colorSpace=T.SRGBColorSpace;const ck=new T.Mesh(new T.CircleGeometry(2.4,32),new T.MeshBasicMaterial({map:t}));ck.position.set(x,21,-18.4);S.add(ck);};
+tower(-40);tower(50);
+const nb=document.createElement('canvas');nb.width=1024;nb.height=128;{const g=nb.getContext('2d');g.fillStyle='#f4c430';g.fillRect(0,0,1024,128);g.strokeStyle='#111';g.lineWidth=8;g.strokeRect(4,4,1016,120);g.fillStyle='#111';g.font='bold 70px sans-serif';g.textAlign='center';g.fillText('मुंबई  सेंट्रल   MUMBAI CENTRAL',512,90);}
+{const t=new T.CanvasTexture(nb);t.colorSpace=T.SRGBColorSpace;const s=new T.Mesh(new T.PlaneGeometry(26,3.2),new T.MeshBasicMaterial({map:t}));s.position.set(5,10.5,-18.9);S.add(s);}
+/* overhead wires: masts + boom + contact wire per track */
+for(let x=-55;x<=95;x+=30){for(const z of [-11,11]){cyl(.22,9.5,mat.steel,x,4.75,z);}box(.25,.3,22,mat.steel,x,9.2,0);cyl(.22,9.5,mat.steel,x,4.75,25);box(.25,.3,6,mat.steel,x,9.2,22);}
+for(const z of TRK){box(L,.05,.05,M(0x222222),X0+L/2-35,7.8,z,false);box(L,.05,.05,M(0x222222),X0+L/2-35,8.6,z,false);}
+/* signals */
+const SIG=[];for(const z of [-10.5,10.5]){cyl(.15,6,mat.dark,92,3,z);const head=box(.8,1.8,.5,mat.dark,92,6.4,z);const l=new T.Mesh(new T.SphereGeometry(.22,12,8),new T.MeshBasicMaterial({color:z<0?0xff2a2a:0x2aff6a}));l.position.set(91.6,6.8,z);S.add(l);SIG.push(l);}
+/* ---------- trains ---------- */
+const train=(z,eng,coachBody,band,yellow,n)=>{const g=new T.Group();S.add(g);
+  const E=eng==='red'?{body:0xc8211b,band:0xf2e6d0}:{body:0xf3f3f0,band:0xe2761b};
+  const eb=new T.Mesh(new T.BoxGeometry(19,3.6,3.1),M(E.body,{roughness:.5}));eb.position.set(0,2.6,0);eb.castShadow=true;g.add(eb);
+  const st=new T.Mesh(new T.BoxGeometry(19.05,.5,3.15),M(E.band,{roughness:.5}));st.position.set(0,2.2,0);g.add(st);
+  const nose=new T.Mesh(new T.BoxGeometry(.6,3.4,3.1),M(E.body,{roughness:.5}));nose.position.set(9.6,2.6,0);g.add(nose);
+  for(const s of [-1,1]){const w=new T.Mesh(new T.PlaneGeometry(1.1,.9),M(0x1a2a3a,{metalness:.6,roughness:.15}));w.position.set(9.92,3.4,s*.7);w.rotation.y=Math.PI/2;g.add(w);
+    const hl=new T.Mesh(new T.CircleGeometry(.18,16),new T.MeshBasicMaterial({color:0xfff6d0}));hl.position.set(9.92,1.7,s*1.05);hl.rotation.y=Math.PI/2;g.add(hl);g.userData.hl=(g.userData.hl||[]).concat([hl]);}
+  const num=document.createElement('canvas');num.width=256;num.height=64;{const q=num.getContext('2d');q.fillStyle=eng==='red'?'#c8211b':'#f3f3f0';q.fillRect(0,0,256,64);q.fillStyle=eng==='red'?'#fff':'#c8211b';q.font='bold 44px sans-serif';q.fillText(eng==='red'?'22905':'37256',40,48);}
+  {const t=new T.CanvasTexture(num);t.colorSpace=T.SRGBColorSpace;for(const s of [-1,1]){const p=new T.Mesh(new T.PlaneGeometry(2.6,.65),new T.MeshBasicMaterial({map:t}));p.position.set(2,3.4,s*1.56);p.rotation.y=s<0?Math.PI:0;g.add(p);}}
+  const bog=M(0x26292e);for(const bx of [-6,6]){const b=new T.Mesh(new T.BoxGeometry(4.2,.9,2.6),bog);b.position.set(bx,.95,0);g.add(b);for(const wx of [-1.3,0,1.3])for(const s of [-1,1]){const wh=new T.Mesh(new T.CylinderGeometry(.55,.55,.2,14),bog);wh.rotation.x=Math.PI/2;wh.position.set(bx+wx,.65,s*.78);g.add(wh);}}
+  const pan=new T.Group();const arm1=new T.Mesh(new T.BoxGeometry(.08,1.8,.08),mat.dark);arm1.position.set(0,.8,0);arm1.rotation.z=.6;pan.add(arm1);const arm2=arm1.clone();arm2.rotation.z=-.6;arm2.position.x=.9;pan.add(arm2);const bar=new T.Mesh(new T.BoxGeometry(.2,.06,2),mat.dark);bar.position.set(.45,1.6,0);pan.add(bar);pan.position.set(-5,4.4,0);g.add(pan);
+  const ct=coachTex(coachBody,band,'S4',yellow);
+  for(let i=0;i<n;i++){const cx=-10.6-i*23;const cm=[M(coachBody,{roughness:.55}),M(coachBody,{roughness:.55}),M(0x555a60,{roughness:.7}),M(0x333,{}),new T.MeshStandardMaterial({map:ct,roughness:.55}),new T.MeshStandardMaterial({map:ct,roughness:.55})];
+    const geo=new T.BoxGeometry(22,3.4,3.05);const mats=[cm[0],cm[1],cm[2],cm[3],cm[4],cm[5]];const cc=new T.Mesh(geo,mats);cc.position.set(cx,2.6,0);cc.castShadow=true;g.add(cc);
+    const top=new T.Mesh(new T.CylinderGeometry(1.6,1.6,22,16,1,false,0,Math.PI),M(0x9aa0a6,{roughness:.6}));top.rotation.z=Math.PI/2;top.rotation.y=Math.PI/2;top.rotation.set(0,0,Math.PI/2);top.scale.set(1,1,.35);top.position.set(cx,4.3,0);g.add(top);
+    for(const bx of [-7,7]){const b=new T.Mesh(new T.BoxGeometry(3,.8,2.4),bog);b.position.set(cx+bx,.9,0);g.add(b);}}
+  g.position.set(70,0,z);return g;};
+const T1=train(TRK[0],'red',0x2b4c9a,0xf2e6d0,false,6);const T2=train(TRK[1],'white',0xe0a72a,0x7a1f1f,true,6);T2.position.x=64;
+/* ---------- people (simple chibi, the game's style) ---------- */
+const SKIN=[0xc68b5e,0x8f5d3e,0xe2b48f,0x9a6644],CLOTH=[0x2e8b57,0xc0392b,0x8e44ad,0xf1c40f,0x1f6fb2,0xe67e22,0xffffff,0x6d4c41];
+const PEOPLE=[];const person=(x,z,walk)=>{const g=new T.Group();const sari=Math.random()<.45;const body=new T.Mesh(sari?new T.ConeGeometry(.42,1.15,10):new T.CylinderGeometry(.3,.32,.8,10),M(CLOTH[Math.floor(rnd(0,8))]));body.position.y=sari?.62:.9;body.castShadow=true;g.add(body);
+  if(!sari){for(const s of [-.12,.12]){const l=new T.Mesh(new T.CylinderGeometry(.09,.09,.5,8),M(0x2b2b33));l.position.set(0,.25,s);g.add(l);}}
+  const head=new T.Mesh(new T.SphereGeometry(.3,14,10),M(SKIN[Math.floor(rnd(0,4))]));head.position.y=1.55;head.castShadow=true;g.add(head);const hair=new T.Mesh(new T.SphereGeometry(.31,14,10,0,Math.PI*2,0,Math.PI/2),M(0x151515));hair.position.y=1.58;g.add(hair);
+  if(Math.random()<.25){const bag=new T.Mesh(new T.BoxGeometry(.5,.35,.4),M(0xb98a52));bag.position.y=2.05;g.add(bag);}
+  g.position.set(x,1,z);g.rotation.y=rnd(0,6.28);S.add(g);PEOPLE.push({g,walk,dir:Math.random()<.5?1:-1,sp:rnd(.8,1.4),ph:rnd(0,6)});};
+for(let i=0;i<42;i++){const p=PLAT[i%3];person(rnd(-45,66),p.z+rnd(-2.6,2.6),Math.random()<.5);}
+/* ---------- sky, lights, day/night ---------- */
+const skyDay=tex(16,256,(g,w,h)=>{const gr=g.createLinearGradient(0,0,0,h);gr.addColorStop(0,'#4f8fd8');gr.addColorStop(.6,'#a9d1f2');gr.addColorStop(1,'#e8f1f6');g.fillStyle=gr;g.fillRect(0,0,w,h);});
+const skyNight=tex(16,256,(g,w,h)=>{const gr=g.createLinearGradient(0,0,0,h);gr.addColorStop(0,'#05060c');gr.addColorStop(.7,'#131a2e');gr.addColorStop(1,'#2a2436');g.fillStyle=gr;g.fillRect(0,0,w,h);});
+const hemi=new T.HemisphereLight(0xdfefff,0x6b5f4f,1.1);S.add(hemi);const sun=new T.DirectionalLight(0xfff1d8,2.4);sun.position.set(60,80,40);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);
+Object.assign(sun.shadow.camera,{left:-90,right:90,top:60,bottom:-60,near:10,far:250});sun.shadow.bias=-.0005;sun.target.position.set(10,0,5);S.add(sun);S.add(sun.target);
+const PL=[];for(let i=0;i<7;i++){const l=new T.PointLight(0xffc98a,0,34,1.3);S.add(l);PL.push(l);}
+let night=false;
+function setMode(n){night=n;document.getElementById('day').classList.toggle('on',!n);document.getElementById('night').classList.toggle('on',n);
+  S.background=n?skyNight:skyDay;S.fog=n?new T.Fog(0x141a2a,35,170):new T.Fog(0xd7e6f2,120,420);hemi.intensity=n?.42:1.1;sun.intensity=n?0:2.4;R.toneMappingExposure=n?1.6:1.05;
+  LAMPS.forEach(l=>{l.m.material.emissiveIntensity=n?2.2:0;});const pick=LAMPS.filter(l=>l.x>-30).filter((l,i)=>i%2===0).slice(0,PL.length);PL.forEach((l,i)=>{const q=pick[i];if(q){l.position.set(q.x,5.2,q.z);l.intensity=n?70:0;}});
+  [T1,T2].forEach(t=>t.userData.hl.forEach(h=>{h.material.color.set(n?0xfff6d0:0xd8d2c0);}));}
+setMode(false);
+document.getElementById('day').onclick=()=>setMode(false);document.getElementById('night').onclick=()=>setMode(true);
+document.getElementById('auto').onclick=e=>{ctl.autoRotate=!ctl.autoRotate;e.target.classList.toggle('on',ctl.autoRotate);};
+document.getElementById('walk').onclick=()=>{cam.position.set(76,2.7,2.6);ctl.target.set(50,2.3,1.2);ctl.autoRotate=false;document.getElementById('auto').classList.remove('on');};
+addEventListener('resize',()=>{cam.aspect=innerWidth/innerHeight;cam.updateProjectionMatrix();R.setSize(innerWidth,innerHeight);});
+/* ---------- loop ---------- */
+const clk=new T.Clock();let trainT=0;
+R.setAnimationLoop(()=>{const dt=Math.min(.05,clk.getDelta()),t=clk.elapsedTime;trainT+=dt;
+  for(const p of PEOPLE){if(p.walk){p.g.position.x+=p.dir*p.sp*dt;if(p.g.position.x>72||p.g.position.x<-48)p.dir*=-1;p.g.rotation.y=p.dir>0?Math.PI/2:-Math.PI/2;p.g.position.y=1+Math.abs(Math.sin(t*7+p.ph))*.06;}}
+  const ph=trainT%44;T2.position.x=ph<12?64-170*Math.pow(1-ph/12,2):ph<32?64:64+Math.pow(ph-32,2)*1.6;
+  SIG[1].material.color.set(ph>28&&ph<40?0x2aff6a:0xff2a2a);
+  ctl.update();R.render(S,cam);});
+document.getElementById('load').remove();
+</script>
+</body>
+</html>
