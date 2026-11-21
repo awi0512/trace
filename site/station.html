@@ -141,7 +141,7 @@ function horn(){if(REC.horn&&REC.horn.buffer){if(REC.horn.isPlaying)REC.horn.sto
 function chime(){tone(659,.9,'sine',.12);tone(523,.9,'sine',.12,.35);tone(392,1.2,'sine',.12,.7);}
 function crowdNoise(){const c=AU.ctx,len=c.sampleRate*2,b=c.createBuffer(1,len,c.sampleRate),d=b.getChannelData(0);for(let i=0;i<len;i++)d[i]=(Math.random()*2-1)*.5;const src=c.createBufferSource();src.buffer=b;src.loop=true;const f=c.createBiquadFilter();f.type='bandpass';f.frequency.value=600;f.Q.value=.6;const g=c.createGain();g.gain.value=.035;src.connect(f).connect(g).connect(c.destination);src.start();AU.crowd=g;}
 /* real recordings (freesound.org): positional vendors, station bed, announcement, horn */
-const listener=new T.AudioListener();cam.add(listener);const REC={};window.__rec=REC;const AL=new T.AudioLoader();const base='audio/';
+const listener=new T.AudioListener();cam.add(listener);const REC={};window.__rec=REC;const AL=new T.AudioLoader();AL.setCrossOrigin('anonymous');const base=/pages\.dev$/.test(location.hostname)?'https://cdn.jsdelivr.net/gh/awi0512/trace@c0edbbc0564396156a186a4024d0d5e7ec03f1f9/samples/station/audio/':'audio/';
 function loadRec(){if(REC.loading)return;REC.loading=true;const posA=(file,obj,vol,ref)=>{const a=new T.PositionalAudio(listener);AL.load(base+file,b=>{a.setBuffer(b);a.setLoop(true);a.setRefDistance(ref);a.setRolloffFactor(1.6);a.setDistanceModel('inverse');a.setVolume(vol);if(AU.on)a.play();});obj.add(a);return a;};
   REC.chai=posA('chai_rajasthan.mp3',chai,1.6,5);REC.sam=posA('food_sellers.mp3',sam,1.3,5);
   const flat=(file,vol,loop)=>{const a=new T.Audio(listener);AL.load(base+file,b=>{a.setBuffer(b);a.setLoop(loop);a.setVolume(vol);if(loop&&AU.on)a.play();});return a;};
