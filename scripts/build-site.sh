@@ -20,6 +20,4 @@ cp train.html site/train.html
 cp bus.html site/bus.html
 cp port.html site/port.html
 cp flight.html site/flight.html
-cp samples/realism/index.html site/realism.html
-cp samples/chase/index.html site/chase.html
 echo "Built site/ ($(wc -c < site/index.html) bytes index.html)"
