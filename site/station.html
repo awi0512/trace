@@ -145,6 +145,20 @@ document.getElementById('snd').onclick=e=>{if(!AU.ctx){try{AU.ctx=new (window.Au
 function chaiTick(dt){chai.position.x+=CH.dir*1.1*dt;if(chai.position.x<-40||chai.position.x>66)CH.dir*=-1;chai.rotation.y=CH.dir>0?Math.PI/2:-Math.PI/2;chai.position.y=1+Math.abs(Math.sin(performance.now()/140))*.05;
   if(CH.bubbleT>0){CH.bubbleT-=dt;if(CH.bubbleT<=0)bub.visible=false;}
   CH.talkT-=dt;if(CH.talkT<=0){CH.talkT=rnd(5,8);const L2=LINES[Math.floor(rnd(0,LINES.length))];const d=cam.position.distanceTo(chai.position);const vol=Math.max(.15,Math.min(1,1.15-d/45));bubble(L2[1]);speak(L2[0],vol);}}
+
+/* ---------- samosa wala (second vendor, deeper voice) ---------- */
+const sam=new T.Group();{const body=new T.Mesh(new T.CylinderGeometry(.32,.34,.85,10),M(0x8a5a2b));body.position.y=.92;body.castShadow=true;sam.add(body);const pj=new T.Mesh(new T.CylinderGeometry(.34,.36,.55,10),M(0xefe6d2));pj.position.y=.3;sam.add(pj);
+  const head=new T.Mesh(new T.SphereGeometry(.3,14,10),M(0xc68b5e));head.position.y=1.58;sam.add(head);const must=new T.Mesh(new T.BoxGeometry(.26,.05,.06),M(0x111111));must.position.set(0,1.5,.28);sam.add(must);
+  const basket=new T.Mesh(new T.CylinderGeometry(.55,.45,.18,16),M(0xb98a52));basket.position.y=2.0;sam.add(basket);const cloth=new T.Mesh(new T.CylinderGeometry(.5,.5,.03,16),M(0xd8262b));cloth.position.y=2.1;sam.add(cloth);
+  const sm=M(0xd9a441,{roughness:.6});for(let i=0;i<7;i++){const t=new T.Mesh(new T.ConeGeometry(.12,.2,3),sm);const a=i/7*6.28;t.position.set(Math.cos(a)*.3,2.2,Math.sin(a)*.3);t.rotation.z=Math.PI/2;t.rotation.y=a;sam.add(t);}
+  const arm=new T.Mesh(new T.CylinderGeometry(.07,.07,.7,8),M(0x8a5a2b));arm.position.set(.32,1.55,0);arm.rotation.z=.25;sam.add(arm);}
+sam.position.set(40,1,-1.6);S.add(sam);const SM={dir:1,talkT:4.5,bubbleT:0};
+const sbC=document.createElement('canvas');sbC.width=512;sbC.height=128;const sbT=new T.CanvasTexture(sbC);sbT.colorSpace=T.SRGBColorSpace;const sbub=new T.Sprite(new T.SpriteMaterial({map:sbT,depthTest:false,transparent:true}));sbub.scale.set(4.2,1.05,1);sbub.position.set(0,3.1,0);sbub.visible=false;sam.add(sbub);
+function sBubble(t){const g=sbC.getContext('2d');g.clearRect(0,0,512,128);g.fillStyle='#fff3d6';g.strokeStyle='#111';g.lineWidth=6;g.beginPath();g.roundRect(6,6,500,92,26);g.fill();g.stroke();g.beginPath();g.moveTo(230,96);g.lineTo(256,124);g.lineTo(280,96);g.fill();g.fillStyle='#8a4b00';let fs=44;do{g.font=`bold ${fs}px sans-serif`;fs-=2;}while(g.measureText(t).width>460&&fs>20);g.textAlign='center';g.fillText(t,256,66);sbT.needsUpdate=true;sbub.visible=true;SM.bubbleT=2.8;}
+const SLINES=[['गरम समोसा! गरमा गरम समोसा!','Garam samosa! Garma garam!'],['समोसा ले लो, समोसा!','Samosa le lo, samosa!'],['आलू समोसा, गरम गरम!','Aloo samosa, garam garam!'],['कचौरी! समोसा! गरम!','Kachori! Samosa! Garam!'],['दस रुपये का समोसा, गरम!','Das rupaye ka samosa!']];
+function samTick(dt){sam.position.x+=SM.dir*.9*dt;if(sam.position.x<-42||sam.position.x>66)SM.dir*=-1;sam.rotation.y=SM.dir>0?Math.PI/2:-Math.PI/2;sam.position.y=1+Math.abs(Math.sin(performance.now()/160))*.05;
+  if(SM.bubbleT>0){SM.bubbleT-=dt;if(SM.bubbleT<=0)sbub.visible=false;}
+  SM.talkT-=dt;if(SM.talkT<=0){SM.talkT=rnd(5,8);const L2=SLINES[Math.floor(rnd(0,SLINES.length))];const d=cam.position.distanceTo(sam.position);const vol=Math.max(.15,Math.min(1,1.15-d/45));sBubble(L2[1]);speak(L2[0],vol,1.15,.8);}}
 let lastPh=0;function stationSounds(ph){if(!AU.on){lastPh=ph;return;}if(lastPh>40&&ph<5||lastPh<1&&ph>=1&&ph<2){chime();setTimeout(()=>{try{speechSynthesis.cancel();}catch(e){}speak('यात्रीगण कृपया ध्यान दें। गाड़ी संख्या तीन सात दो पाँच छह, प्लेटफ़ॉर्म नंबर पाँच पर आ रही है।',.9,1,1);},1300);}
   if(lastPh<10&&ph>=10)horn();if(lastPh<32&&ph>=32)horn();lastPh=ph;}
 addEventListener('resize',()=>{cam.aspect=innerWidth/innerHeight;cam.updateProjectionMatrix();R.setSize(innerWidth,innerHeight);});
@@ -153,7 +167,7 @@ const clk=new T.Clock();let trainT=0;
 R.setAnimationLoop(()=>{const dt=Math.min(.05,clk.getDelta()),t=clk.elapsedTime;trainT+=dt;
   for(const p of PEOPLE){if(p.walk){p.g.position.x+=p.dir*p.sp*dt;if(p.g.position.x>72||p.g.position.x<-48)p.dir*=-1;p.g.rotation.y=p.dir>0?Math.PI/2:-Math.PI/2;p.g.position.y=1+Math.abs(Math.sin(t*7+p.ph))*.06;}}
   const ph=trainT%44;T2.position.x=ph<12?64-170*Math.pow(1-ph/12,2):ph<32?64:64+Math.pow(ph-32,2)*1.6;
-  chaiTick(dt);stationSounds(ph);
+  chaiTick(dt);samTick(dt);stationSounds(ph);
   SIG[1].material.color.set(ph>28&&ph<40?0x2aff6a:0xff2a2a);
   ctl.update();R.render(S,cam);});
 document.getElementById('load').remove();
