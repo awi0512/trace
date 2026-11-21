@@ -1,6 +1,7 @@
 //@@CONST
-const DESTS=['JAIPUR','AJMER','AGRA','KOTA','UDAIPUR'];
+const DESTS=['PUNE','KOLHAPUR','SATARA','BELGAUM','NASHIK'];
 const MY_BUS=ri(1,3);            // which parked bus is ours
+DESTS[MY_BUS]='GOA';
 const MY_DEST=DESTS[MY_BUS];
 const JOB='pickup';
 const S={phase:'title',t:0,timeLeft:180,traces:[],camsSeen:new Set(),alerts:0,wanted:null,photos:[],look:{outfit:'coat',hat:true},startLook:'coath',
@@ -167,7 +168,7 @@ async function title(){
     <p class="eyebrow">Look badalna is level ki chaabi hai. Heat ${Math.round(CAREER.heat||0)}/100 saath hai.</p>
     <button class="btn" id="go" type="button">Enter the bus stand</button><a class="btn alt" href="index.html">Safehouse</a>`);
     c.querySelector('#go').onclick=()=>{auInit();AU.ctx&&AU.ctx.resume();closeSheet();res();};});
-  await comic('start');startPlatform();}
+  if(!(RUN&&await arrivalCard()))await comic('start');startPlatform();}
 function startPlatform(){S.phase='platform';S.area='platform';S.timeLeft=180;buildPlayer(new T.Vector3(0,0,12),Math.PI);ui(true);locked=false;sfx.horn();runStart();
   toast(`Neeche-left gole se chalo. ${MY_DEST} likhi bus dhoondho.`,'info');}
 async function board(){if(S.phase!=='platform')return;locked=true;S.phase='boarding';sfx.horn();vib(40);ui(false);await sleep(500);trace(`Bus adda: ${MY_DEST} wali bus mein chadhi (CCTV ${S.camsSeen.size} camere)`);startTrain();}
@@ -260,7 +261,7 @@ async function fareCheck(){if(locked)return;locked=true;S.phase='talk';
 //@@NPCUPD
 function updNPC(dt,t){for(const n of NPC){if(!(n.inArea===S.area||(S.area==='train'&&n.inArea==='dhaba'&&n.g.visible)))continue;let mv=false;
   if(n.beh==='wander'){if(!n.target){n.wait-=dt;if(n.wait<=0)n.target=[clamp(n.pos.x+rnd(-12,12),-38,38),rnd(-3,10)];}if(n.target){if(stepTo(n,n.target[0],n.target[1],dt,n.walk)){n.target=null;n.wait=rnd(1,5);}else mv=true;}
-    if(n.isChai&&Math.hypot(n.pos.x-P.pos.x,n.pos.z-P.pos.z)<6&&!n.said){n.said=true;toast('Chaiwala: "Chaai, garam samosa!"','info');setTimeout(()=>n.said=false,15000);}}
+    if(n.isChai&&Math.hypot(n.pos.x-P.pos.x,n.pos.z-P.pos.z)<16&&!n.said){n.said=true;toast(pick(['Chaiwala: "Chaai, garam samosa!"','Chaiwala: "Chaai chaai! Garam chaai!"']),'info');setTimeout(()=>n.said=false,11000);}}
   anim(n,dt,mv?n.speed:0,t);}}
 //@@MINIMAP
 const mc=$('#map'),mg=mc.getContext('2d');const mx=x=>(x+44)/88*236,mz=z=>(z+14)/28*168;

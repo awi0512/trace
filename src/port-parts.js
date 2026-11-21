@@ -125,7 +125,7 @@ async function title(){
     <dt>Tip</dt><dd>Neeche-left ke locker shed se dock worker ki jacket lo. Containers ke beech chhupo.</dd></dl><span class="stampx">TOP SECRET</span></div>
     <button class="btn" id="go" type="button">Enter the docks</button><a class="btn alt" href="index.html">Safehouse</a>`);
     c.querySelector('#go').onclick=()=>{auInit();AU.ctx&&AU.ctx.resume();closeSheet();res();};});
-  await comic('start');startPlatform();}
+  if(!(RUN&&await arrivalCard()))await comic('start');startPlatform();}
 function startPlatform(){addBoat();S.phase='platform';S.area='platform';S.timeLeft=300;buildPlayer(new T.Vector3(-46,0,-28),0);ui(true);locked=false;sfx.horn();runStart();
   toast('Neeche-left gole se chalo. Searchlight ki roshni aur guards ki peeli nazar se bacho.','info');}
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));

@@ -97,7 +97,7 @@ const habitNorm={run:60,crowd:90,disguise:3,dart:3,cams:8,flight:2,upi:3};
 function pickCounters(){const h=HUNTER.habits;return Object.keys(habitNorm).map(k=>[k,(h[k]||0)/habitNorm[k]]).filter(x=>x[1]>=1).sort((a,b)=>b[1]-a[1]).slice(0,Math.min(3,1+Math.floor(HUNTER.runs/3))).map(x=>x[0]);}
 function rollMods(leg){const n=leg<=1?0:leg<=3?1:leg<=6?2:3;return shuffle(Object.keys(MODS)).slice(0,n);}
 function nextZones(cur){return shuffle(GROUND.filter(z=>z!==cur)).slice(0,2);}
-function newRun(ch){ch=CHARS[ch]?ch:'agent';const counters=pickCounters();for(const k in WORLD.zones)WORLD.zones[k]=+(WORLD.zones[k]*.75).toFixed(2);wjson(WKEY,WORLD);const z=pick(GROUND);const B=getBoard();const raid=B.strength>=100;
+function newRun(ch){ch=CHARS[ch]?ch:'agent';const counters=pickCounters();for(const k in WORLD.zones)WORLD.zones[k]=+(WORLD.zones[k]*.75).toFixed(2);wjson(WKEY,WORLD);const z='airport';const B=getBoard();const raid=B.strength>=100;
   const r={active:true,leg:1,zone:z,mods:raid?['patrol','alert']:[],raid,counters,char:ch,darts:(ch==='hacker'?1:ch==='soldier'||ch==='conman'?3:2)+(CAREER.dartUp||0),ammo:ch==='conman'?0:(ch==='hacker'?4:ch==='soldier'?10:6)+2*(CAREER.ammoUp||0),score:0,cash:ch==='agent'?50000:0,legs:[],lh:{run:0,crowd:0,disguise:0,dart:0,cams:0,flight:0},started:Date.now()};saveRun(r);return r;}
 function startNewRun(){pickChar(ch=>{const r=newRun(ch);location.href=ZONES[r.zone].url;if(ZONE_ID==='airport'&&r.zone==='airport')location.reload();});}
 function pickChar(cb){const c=sheet(`<div class="eyebrow">NEW GAME</div><h2>Choose your runner</h2>${Object.entries(CHARS).map(([k,v])=>`<button type="button" class="dossier" data-c="${k}" style="display:block;width:100%;text-align:left;margin:0;cursor:pointer">
@@ -126,12 +126,12 @@ function runStart(){if(!RUN)return;RT.on=true;RT.lastLook=lookKey();
   if(RUN.lh.flight===undefined)RUN.lh.flight=0;
   if(!(typeof TUT!=='undefined'&&TUT)){dartUI();gunUI();phoneUI();}
   if(RUN.raid&&RUN.leg===1)setTimeout(()=>{if(!RT.on)return;sfx.alert();vib([200,100,200]);banner('RAID! Rana\'s task force is here. Survive this zone to wipe his case board.',true);setTimeout(()=>{if(RT.on)banner(null);},7000);},900);
-  const lines=[`ESCAPE · LEG ${RUN.leg} · ${ZONES[ZONE_ID].name.toUpperCase()}`];
+  const lines=[];
   mods.forEach(k=>lines.push('⚠ '+MODS[k].name+': '+MODS[k].d));
   (RUN.counters||[]).forEach(k=>lines.push('RANA: "Wo '+HABITS[k].t+'." → '+HABITS[k].c));
   lines.forEach((l,i)=>setTimeout(()=>{if(RT.on)toast(l,i===0?'info':'bad');},400+i*2600));
   setTimeout(spawnContact,rnd(15000,40000));setTimeout(spawnBag,rnd(6000,20000));setTimeout(()=>{if(RT.on)wantedCard();},2200);
-  if(CROWDS[ZONE_ID]&&Math.random()<.55)CR.at=rnd(20,60);}
+  if(CROWDS[ZONE_ID]&&Math.random()<.35)CR.at=rnd(25,60);}
 function runTick(dt){if(!RT.on||!P)return;const h=RUN.lh;
   if(input.run||input.keys.ShiftLeft||input.keys.ShiftRight){if(P.speed>0)h.run+=dt;}
   try{const F=typeof flags==='function'?flags():playerFlags();if(F.crowd>=2)h.crowd+=dt;}catch(e){}
@@ -232,7 +232,7 @@ const DEALS=[
   {id:'disg',pitch:'Ek set kapde hain. Bhes badlo, chehra badlo. Sab kuch theek se.',label:'Disguise set',cost:25000,apply(){const o=Object.keys(DISG).filter(canWear);wearDisguise(pick(o));}},
   {id:'heal',pitch:'First-aid kit. Patti, dard ki goli.',label:'Full health',cost:10000,apply(){W.hp=100;drawGun();toast('Health restored.','good');}}];
 const CT={npc:null,used:false,traitor:false,deal:null};
-function spawnContact(){if(!RT.on||CT.npc||RUN.leg<2||!P||Math.random()>.65)return;
+function spawnContact(){if(!RT.on||CT.npc||RUN.leg<2||!P||ZONE_ID==='plane'||Math.random()>.45)return;
   let x=P.pos.x,z=P.pos.z;for(let i=0;i<12;i++){const a=rnd(0,6.28),d=rnd(3,6);const q={x:P.pos.x+Math.sin(a)*d,z:P.pos.z+Math.cos(a)*d};const c={x:q.x,z:q.z};collide(c);if(Math.hypot(c.x-q.x,c.z-q.z)<.01&&segClear(P.pos.x,P.pos.z,c.x,c.z)){x=c.x;z=c.z;break;}}
   const look={body:pick([0x3b3b3b,0x6b4f3a,0x2e4a3a]),legs:0x222222,skin:pick([0x8f5d3e,0xc68b5e,0x6b4428]),hair:0x111111,mustache:Math.random()<.6,cap:Math.random()<.5?0x111111:undefined,capPeak:0x111111};
   const n=chibi(look);n.pos.set(x,0,z);n.beh='idle';n.inArea=S.area;n.reg='hall';n.walk=1;n.wait=999;NPC.push(n);CT.npc=n;
@@ -315,8 +315,8 @@ function endCall(how){const c=PH.ring;PH.ring=null;const d=document.getElementBy
 const VOX={ok:typeof speechSynthesis!=='undefined',hi:null,en:null,last:0};
 function pickVoices(){try{const vs=speechSynthesis.getVoices();VOX.hi=vs.find(v=>/^hi[-_]IN/i.test(v.lang))||null;VOX.en=vs.find(v=>/^en[-_]IN/i.test(v.lang))||null;}catch(e){}}
 if(VOX.ok){pickVoices();try{speechSynthesis.onvoiceschanged=pickVoices;}catch(e){}
-  addEventListener('pointerdown',()=>{try{const u=new SpeechSynthesisUtterance(' ');u.volume=0;speechSynthesis.speak(u);}catch(e){}},{once:true});}
-const DEVA={'Chaai lo madam, garam chaai!':'चाय लो मैडम, गरम चाय!','Chaaai, garam chaai!':'चाय चाय! गरम चाय!','Chaai, garam samosa!':'चाय चाय! गरम समोसा!','Side do, side do!':'साइड दो, साइड दो!',
+  addEventListener('pointerdown',()=>{try{pickVoices();const u=new SpeechSynthesisUtterance('.');u.volume=.01;u.lang='hi-IN';speechSynthesis.speak(u);}catch(e){}},{once:true});}
+const DEVA={'Chaai chaai! Garam chaai!':'चाय चाय! गरम चाय!','Samosa garam! Chaai chaai!':'समोसा गरम! चाय चाय!','Chaai lo madam, garam chaai!':'चाय लो मैडम, गरम चाय!','Chaaai, garam chaai!':'चाय चाय! गरम चाय!','Chaai, garam samosa!':'चाय चाय! गरम समोसा!','Side do, side do!':'साइड दो, साइड दो!',
   'Arre mera thela! Pakdo koi!':'अरे मेरा ठेला! पकड़ो कोई!','Yatri kripya dhyaan dein, gaadi sankhya 12951…':'यात्री कृपया ध्यान दें। गाड़ी संख्या बारह नौ पाँच एक, प्लेटफ़ॉर्म पर खड़ी है।',
   'Chalo chalo! Bus nikal rahi hai!':'चलो चलो! बस निकल रही है!','Saari flights hold pe hain.':'सारी फ़्लाइट्स होल्ड पर हैं।'};
 const VSTYLE={Crowd:[1.2,1.1],Chaiwala:[1.15,1.25],Coolie:[1.1,.8],Conductor:[1.2,.85],Thelewala:[1.25,1.1],Announcement:[.92,1],Radio:[1.1,.9],Contact:[1,1]};
@@ -374,11 +374,11 @@ function crowdTick(dt){if(CR.at>0){CR.at-=dt;if(CR.at<=0)crowdStart();}if(!CR.on
     if(CR.inT>5&&!CR.picked){CR.picked=true;if(Math.random()<.35){if(RUN.darts>0){RUN.darts--;drawDartBtn();toast('Jeb kat gayi! A pickpocket in the crowd took a dart.');}else{RUN.cash=Math.max(0,RUN.cash-10000);toast('Jeb kat gayi! −₹10,000 run cash.');}}}}
   if(CR.u>=CR.len+4){CR.on=false;for(const n of CR.members){n.g.visible=false;const i=NPC.indexOf(n);if(i>=0)NPC.splice(i,1);scene.remove(n.g);}CR.members=[];toast(`The ${CROWDS[ZONE_ID].name.toLowerCase()} has passed.`,'info');}}
 /* ---- disguises with rules: each changes how guards read you ---- */
-const DISG={burqa:{name:'Burqa',emoji:'🧕',zones:null,rule:'Face hidden: photo guards cannot match you. But running in a burqa turns heads.',
+const DISG={burqa:{name:'Burqa',emoji:'🧕',zones:['airport','train','bus','port'],rule:'Face hidden: photo guards cannot match you. But running in a burqa turns heads.',
     look:{body:0x15151c,legs:0x15151c,shawl:0x15151c,skin:0xc68b5e,hair:0x15151c,longHair:true}},
   coolie:{name:'Coolie',emoji:'🧳',zones:['train','bus'],rule:'Coolies go everywhere on a platform: guards mostly ignore you. The luggage slows you down.',
     look:{body:0xc0392b,legs:0x2c2c36,skin:0xc68b5e,hair:0x1a1a1a,band:true}},
-  delivery:{name:'Delivery rider',emoji:'📦',zones:null,rule:'Keep moving and nobody looks twice. Stand still for long and you look out of place.',
+  delivery:{name:'Delivery rider',emoji:'📦',zones:['bus','port','train'],rule:'Keep moving and nobody looks twice. Stand still for long and you look out of place.',
     look:{body:0xe0242b,legs:0x2c2c36,skin:0xc68b5e,hair:0x1a1a1a,cap:0xe0242b,capPeak:0x7a1f1f}}};
 const SADHU={name:'Sadhu',emoji:'🧘',rule:'Saffron robes, ash and a big beard: photo guards cannot match you. But a sadhu sprinting turns heads.',look:{body:0xf28b0f,legs:0xf28b0f,shawl:0xe07a1f,turban:0xf28b0f,hair:0x111111}};
 const DZ={stillT:0};
@@ -404,7 +404,7 @@ function segClear(ax,az,bx,bz){const dx=bx-ax,dz=bz-az;for(const c of COL){if(!c
   if(hit&&t0<=t1&&t0<1&&t1>0)return false;}return true;}
 /* an abandoned bag with a disguise inside appears in most zones */
 const BAG={mesh:null,used:false,kind:null};
-function spawnBag(){if(!RT.on||BAG.mesh||!P||RUN.char!=='actress'&&Math.random()>.7)return;const opts=Object.keys(DISG).filter(canWear);if(!opts.length)return;BAG.kind=pick(opts);
+function spawnBag(){if(!RT.on||BAG.mesh||!P||RUN.leg<2||ZONE_ID==='plane'||RUN.char!=='actress'&&Math.random()>.3)return;const opts=Object.keys(DISG).filter(canWear);if(!opts.length)return;BAG.kind=pick(opts);
   let x=P.pos.x,z=P.pos.z;for(let i=0;i<16;i++){const a=rnd(0,6.28),d=rnd(6,14),q={x:P.pos.x+Math.sin(a)*d,z:P.pos.z+Math.cos(a)*d};const c={x:q.x,z:q.z};collide(c);if(Math.hypot(c.x-q.x,c.z-q.z)<.01&&segClear(P.pos.x,P.pos.z,c.x,c.z)){x=c.x;z=c.z;break;}}
   const g=new T.Group();g.position.set(x,P.pos.y>1?P.pos.y:0,z);scene.add(g);new T.Mesh();const bag=new T.Mesh(new T.BoxGeometry(.7,.45,.4),new T.MeshStandardMaterial({color:0x3a6b8a}));bag.position.y=.23;g.add(bag);
   const mk=new T.Mesh(new T.OctahedronGeometry(.2),new T.MeshBasicMaterial({color:0xffd166,toneMapped:false}));mk.position.y=1.1;g.add(mk);BAG.mesh=g;BAG.mk=mk;const area=S.area;
@@ -428,40 +428,55 @@ function rushHour(){const n=18;for(let i=0;i<n;i++){let c=null;
   else if(ZONE_ID==='port'){c=npc({body:0xf28b0f,legs:0x2c3150,skin:pick(SKINS),hair:0x111111,cap:0xf5d000,capPeak:0xd9b000},pick([-31,-12,8,27])+rnd(-1,1),rnd(-26,22),'platform');c.worker=true;}
   if(c)c.walk=rnd(.9,1.2);}
   toast('Rush hour! The place is packed. Blend in.','info');}
+/* ---- arrival: a story card that says how you got here and what this zone is for ---- */
+async function arrivalCard(){if(!RUN)return false;const how=RUN.from&&ARRIVE[ZONE_ID]&&ARRIVE[ZONE_ID][RUN.from];
+  const goal={airport:'Mission ka kaam karo, phir apne gate se Goa ki flight pakdo. Alert hua to airport lockdown: sirf taxi.',train:'Apne coach mein chadho, kaam karo. Saaf raho to Madgaon (Goa) pe utro; garbar hui to kood jao.',
+    bus:'Goa wali bus pakdo. Dhabe pe passport, aage police naka.',port:'Dock office se crew pass lo aur gangway se jahaz pe chadho. Yahi aakhri padaav hai.',plane:'Overhead bin mein drive badlo, landing tak shaant raho, immigration paar karo.'}[ZONE_ID];
+  await new Promise(res=>{const c=sheet(`<div class="eyebrow">ESCAPE · LEG ${RUN.leg} · ${esc(ZONES[ZONE_ID].name.toUpperCase())}</div><h2>${RUN.leg===1?'Mumbai se bhaago':esc(ZONES[ZONE_ID].name)}</h2>
+    ${RUN.leg===1?`<p>${esc(GOAL)}</p>`:''}${how?`<p style="font-style:italic">${esc(how)}</p>`:''}<div class="dossier"><h3>Is jagah ka kaam</h3><p style="margin:4px 0 0;color:#1b1b1b">${esc(goal)}</p></div>
+    <div class="route">${['Airport','Train / Bus / Flight','Goa Docks','Jahaz 🚢'].map((x,i)=>`<span style="opacity:${i<=({airport:0,train:1,bus:1,plane:1,port:2})[ZONE_ID]?1:.45}">${x}</span>`).join(' → ')}</div>
+    <button class="btn" id="go2" type="button">Chalo</button>`);c.querySelector('#go2').onclick=()=>{auInit&&auInit();AU.ctx&&AU.ctx.resume();closeSheet();res();};});return true;}
 /* ---- news ---- */
 function newsFlash(text,sec){const d=document.createElement('div');d.style.cssText='position:fixed;left:16px;right:16px;top:calc(180px + env(safe-area-inset-top));z-index:31;background:#f1ece1;color:#111;border:3px solid #111;box-shadow:5px 5px 0 #111;padding:10px 12px;font-family:var(--type,monospace);transform:rotate(-1.2deg);pointer-events:none;max-width:460px;margin:0 auto';
   d.innerHTML=`<div style="font:800 11px 'Space Grotesk',sans-serif;letter-spacing:2px;border-bottom:2px solid #111;padding-bottom:3px;margin-bottom:6px;display:flex;justify-content:space-between"><span>BREAKING NEWS</span><span style="color:#e0242b">SECURITY: ${SEC_NAMES[sec].toUpperCase()}</span></div>${text?`<div style="font:700 17px/1.2 'Space Grotesk',sans-serif">${esc(text)}</div>`:''}${sec?`<div style="font-size:12px;margin-top:5px">Guards here are sharper${sec>=2?' and faster':''}${sec>=3?'. Police shoot at 2★':''}.</div>`:''}`;
   document.body.appendChild(d);setTimeout(()=>{d.style.transition='opacity .5s';d.style.opacity=0;setTimeout(()=>d.remove(),600);},5200);}
 function recordWorld(win){const z=ZONE_ID;const kills=W.kills,shots=W.shots;const delta=kills*3+(shots?1.5:0)+S.alerts*.8+(RT.body?1:0);
   if(delta<=0)return;WORLD.zones[z]=(WORLD.zones[z]||0)+delta;const place={airport:'Airport',train:'Night Express',bus:'Highway',port:'Docks',plane:'Flight'}[z];
-  const t=kills?`${place} pe goli-baari: ${kills===1?'ek jawan maara gaya':kills+' jawan maare gaye'}, hamlawar mahila faraar`:shots?`${place} pe goli chali, kai ghante tak sab band`:RT.body?`${place} pe guard behosh mila, police ko sazish ka shak`:S.alerts>=2?`${place} pe sandigdh mahila CCTV mein, talaash jaari`:null;
+  const t=kills?`${place} pe goli-baari: ${kills===1?'ek jawan maara gaya':kills+' jawan maare gaye'}, hamlawar faraar`:shots?`${place} pe goli chali, kai ghante tak sab band`:RT.body?`${place} pe guard behosh mila, police ko sazish ka shak`:S.alerts>=2?`${place} pe ek sandigdh CCTV mein, talaash jaari`:null;
   if(t){WORLD.news.push({zone:z,text:t,at:Date.now()});WORLD.news=WORLD.news.slice(-8);}wjson(WKEY,WORLD);}
 /* ---- how you left a zone decides where you can go next ---- */
-const EXITS={flight:{title:'Boarding! ✈',text:'Clean exit from the airport: wanted cleared, double cash, +1 dart. But the cabin has its own eyes.',cash:2,next:['plane'],via:{plane:'Board your flight →'}},
-  landed:{title:'Landed',text:'Through immigration with a stamp and a straight face. New city, cold trail. +50% cash, wanted cleared.',cash:1.5,next:['train','bus','port','airport'],via:{train:'Metro to the station →',bus:'Cab to the bus stand →',port:'Taxi to the docks →',airport:'Another airport, another gate →'}},
-  jump:{title:'Jumped the train!',text:'You roll into the dark fields by the highway. Ground route only.',cash:1,next:['bus','port'],via:{bus:'Hitch to the bus stand →',port:'Hitch a truck to the docks →'}},
-  station:{title:'Walked out with the crowd',text:'Clean exit at the station. Nobody looked twice. +50% cash, wanted cleared.',cash:1.5,next:['airport','bus','port'],via:{airport:'Cab to the airport →',bus:'Walk to the bus stand →',port:'Local train to the docks →'}},
-  truck:{title:'Hid in a truck',text:'You skipped the police checkpost in the back of a cargo truck. It is heading for the coast.',cash:.8,next:['port','train'],via:{port:'Ride to the docks →',train:'Jump off near a station →'}},
-  city:{title:'Through the checkpost',text:'The bus rolls into the city. Clean pass: +50% cash, wanted cleared.',cash:1.5,next:['airport','train','port'],via:{airport:'Auto to the airport →',train:'Walk to the station →',port:'Bus to the docks →'}},
-  ship:{title:'Aboard the cargo ship',text:'The ship slips out at 4 AM. You step off two days later on a quiet coast. +50% cash, wanted cleared.',cash:1.5,next:['airport','train','bus'],via:{airport:'Land in Kochi → airport',train:'Land in Kochi → station',bus:'Land in Kochi → bus stand'}},
-  boat:{title:'Stole a speedboat!',text:'Loud, fast and messy. You beach it up the coast with the police boats far behind.',cash:.8,next:['bus','train'],via:{bus:'Run to the highway →',train:'Run to a small station →'}},
-  taxi:{title:'Out by taxi',text:'The airport is behind you, but every flight is watched now. Ground route only.',cash:1,next:['train','bus'],via:{train:'Taxi to the station →',bus:'Taxi to the bus stand →'}}};
+/* ---- one run = one journey: Mumbai airport → (flight to Goa | train | bus) → Goa docks → ship. How you leave a zone decides the next one ---- */
+const EXITS={flight:{title:'Boarding the Goa flight ✈',text:'Clean exit: nobody stopped you. Wanted cleared, double cash, +1 dart. But there is an air marshal on board.',cash:2,next:['plane'],via:{plane:'Board the Goa flight →'}},
+  taxi:{title:'Out by taxi',text:'The airport is locked down and every flight is watched. Only the ground route to Goa is left.',cash:1,next:['train','bus'],via:{train:'Taxi to Mumbai Central → night train to Goa',bus:'Taxi to the bus stand → highway bus to Goa'}},
+  landed:{title:'Landed in Goa',text:'Through immigration with a straight face. The cargo ship leaves from Mormugao docks tonight. +50% cash, wanted cleared.',cash:1.5,next:['port'],via:{port:'Taxi to Mormugao docks →'}},
+  station:{title:'Walked out at Madgaon',text:'Clean exit with the crowd at Madgaon station, Goa. +50% cash, wanted cleared.',cash:1.5,next:['port'],via:{port:'Auto to the docks →'}},
+  jump:{title:'Jumped the train!',text:'You rolled into the fields near the highway, still short of Goa. Hitch the rest of the way.',cash:1,next:['bus'],via:{bus:'Walk to the highway bus stand →'}},
+  city:{title:'Through the checkpost',text:'The bus rolls into Goa. Clean pass: +50% cash, wanted cleared.',cash:1.5,next:['port'],via:{port:'Walk to the docks →'}},
+  truck:{title:'Hid in a cargo truck',text:'You skipped the police checkpost under a tarpaulin. The truck is going straight to the docks.',cash:.8,next:['port'],via:{port:'Ride into the docks →'}}};
+/* where you came from, said in one line at the start of each zone */
+const ARRIVE={plane:{flight:'Gate se seedha jahaz mein. Ab 2 ghante ki flight, aur cabin mein ek air marshal.'},
+  train:{taxi:'Airport lockdown ke baad taxi se Mumbai Central. Goa ki raat ki gaadi platform pe khadi hai.'},
+  bus:{taxi:'Airport lockdown ke baad taxi se bus adda. Goa ki highway bus pakdo.',jump:'Chalti train se koodi, khet paar karke highway ke bus adde tak pahunchi.'},
+  port:{landed:'Goa airport se taxi. Mormugao docks pe jahaz raat 4 baje nikalta hai.',station:'Madgaon station se auto. Docks saamne hain, jahaz raat 4 baje.',city:'Bus Goa pahunch gayi. Docks tak paidal.',truck:'Truck ne seedha docks ke andar utaara. Tarpaulin se bahar niklo.'}};
+const GOAL='Cover leak ho gaya. Mumbai se nikal ke Goa ke Mormugao docks pahuncho aur jahaz pakdo. Inspector Rana peeche hai.';
 /* ---- end of a zone: next leg or run over ---- */
 function runEnd(win,who,why){if(!RT.on)return false;RT.on=false;S.phase='over';locked=true;if(dartBtn){dartBtn.sw.remove();dartBtn.remove();}if(PH.ring)endCall('missed');['#wantedHud','#phoneBtn','#phone','#callBar'].forEach(q=>{const e=document.querySelector(q);if(e)e.remove();});RUN.wanted=Math.max(0,W.stars-1);RUN.kills=(RUN.kills||0)+W.kills;
   ['#hud','#pads','#joy','#map'].forEach(s=>{const e=$(s);if(e)e.hidden=true;});banner(null);
   const nCam=S.camsSeen?S.camsSeen.size:0;RUN.lh.cams+=nCam;recordWorld(win);addEvidence(win);
   const legScore=win?Math.round(100+RUN.leg*40+(S.alerts?0:60)+Math.max(0,S.timeLeft)|0):0;const cash=win?40000+RUN.leg*15000:0;
   RUN.legs.push({zone:ZONE_ID,win,traces:S.traces.length,alerts:S.alerts});
+  if(win&&!RT.exit)RT.exit={airport:'taxi',train:'station',bus:'city',plane:'landed'}[ZONE_ID]||null;
   const EX=RT.exit&&EXITS[RT.exit];if(EX&&win){RUN.cash+=cash*(EX.cash-1);if(RT.exit==='flight'){RUN.lh.flight++;W.stars=0;RUN.wanted=0;RUN.darts++;}if(RT.exit==='station'||RT.exit==='city'||RT.exit==='ship'||RT.exit==='landed'){W.stars=0;RUN.wanted=0;}}
+  if(win&&ZONE_ID==='port'){RUN.score+=legScore+500;RUN.cash+=cash*2;RUN.legs.push({zone:ZONE_ID,win:true,traces:S.traces.length,alerts:S.alerts});RUN.escaped=RT.exit==='boat'?'boat':'ship';saveRun(RUN);runOver(true);return true;}
   if(win&&RUN.raid&&RUN.leg===1){RUN.raid=false;const B=getBoard();B.strength=0;B.photos=[];B.notes=[];B.cleared=(B.cleared||0)+1;wjson(BKEY,B);RUN.cash+=500000;
     WORLD.news.push({zone:ZONE_ID,text:'Inspector Rana ka case gira: saboot nakaafi, suspect faraar',at:Date.now()});wjson(WKEY,WORLD);toast('RAID SURVIVED! Rana\'s case board is wiped. +₹5,00,000','good');}
-  if(win){RUN.score+=legScore;RUN.cash+=cash;const nOpt=RUN.char==='driver'?3:2;const opts=(EX?shuffle(EX.next).slice(0,nOpt):shuffle(GROUND.filter(z=>z!==ZONE_ID)).slice(0,nOpt)).map(z=>({z,mods:rollMods(RUN.leg+1)}));RUN.offer=opts;saveRun(RUN);
+  if(win){RUN.score+=legScore;RUN.cash+=cash;RUN.from=RT.exit||null;const opts=(EX?EX.next:['port']).map(z=>({z,mods:rollMods(RUN.leg+1)}));RUN.offer=opts;saveRun(RUN);
     const c=sheet(`<div class="eyebrow">ESCAPE · LEG ${RUN.leg} CLEARED</div><h2>${EX?EX.title:'Escaped!'}</h2>${EX?`<p>${EX.text}</p>`:''}
       <div class="stats"><div class="stat"><span>Score</span><b>${RUN.score}</b></div><div class="stat"><span>Run cash</span><b>${inr(RUN.cash)}</b></div><div class="stat"><span>Darts / Ammo</span><b>${RUN.darts} / ${RUN.ammo}</b></div></div>${RUN.wanted?`<p class="eyebrow" style="color:#ffd166">WANTED ${'★'.repeat(RUN.wanted)} carries into the next zone</p>`:''}
-      <p>${RT.exit==='flight'?'Where to?':'Rana is right behind you. Pick your next route:'}</p>
+      <p>${opts.length>1?'Rana is right behind you. Pick your route to Goa:':'Next stop:'}</p>
       ${opts.map((o,i)=>`<button class="btn" type="button" data-i="${i}" style="background:${ZONES[o.z].col};text-align:left;line-height:1.25">${secLevel(o.z)?`<span style="float:right;font:700 11px 'Space Grotesk',sans-serif;background:#111;color:#ffd166;padding:2px 6px;border-radius:6px">SECURITY: ${SEC_NAMES[secLevel(o.z)].toUpperCase()}</span>`:''}${EX&&EX.via[o.z]?EX.via[o.z]:ZONES[o.z].name+' →'}<br><span style="font:500 12px var(--type,monospace);opacity:.9">${EX&&EX.via[o.z]?ZONES[o.z].name:ZONES[o.z].sub}${o.mods.length?' · ⚠ '+o.mods.map(k=>MODS[k].name).join(', '):' · no hazards'}</span></button>`).join('')}
-      <button class="btn alt" type="button" id="bank">Lie low here (bank the cash)</button>`);
-    c.querySelectorAll('[data-i]').forEach(b=>b.onclick=()=>{const o=opts[+b.dataset.i];RUN.leg++;RUN.zone=o.z;RUN.mods=o.mods;if(RUN.leg%3===0)RUN.darts++;RUN.ammo=(RUN.ammo||0)+2;saveRun(RUN);location.href=ZONES[o.z].url;if(o.z==='airport'&&ZONE_ID==='airport')location.reload();});
+      <button class="btn alt" type="button" id="bank">Give up the escape (bank the cash)</button>`);
+    c.querySelectorAll('[data-i]').forEach(b=>b.onclick=()=>{const o=opts[+b.dataset.i];RUN.leg++;RUN.zone=o.z;RUN.mods=o.mods;RUN.from=RT.exit||RUN.from;if(RUN.leg%3===0)RUN.darts++;RUN.ammo=(RUN.ammo||0)+2;saveRun(RUN);location.href=ZONES[o.z].url;if(o.z==='airport'&&ZONE_ID==='airport')location.reload();});
     c.querySelector('#bank').onclick=()=>runOver(true);}
   else{RUN.dead={who:who||null,why:why||null};caughtChoice();}
   return true;}
@@ -483,8 +498,8 @@ function runOver(banked){const r=RUN;r.active=false;saveRun(r);
   const top=Object.keys(habitNorm).map(k=>[k,(r.lh[k]||0)/habitNorm[k]]).sort((a,b)=>b[1]-a[1])[0];
   const learned=top&&top[1]>=.5?top[0]:null;wjson(HKEY,HUNTER);
   const kept=banked?r.cash:Math.round(r.cash*.25);CAREER.money+=kept;CAREER.bestRun=Math.max(CAREER.bestRun||0,legsDone);CAREER.missions=(CAREER.missions||0)+1;saveCareer();
-  const c=sheet(`<div class="eyebrow">ESCAPE · RUN OVER</div><h2 style="color:${banked?'var(--good)':'var(--red)'}">${banked?'Vanished!':(r.dead&&/^Shot by/.test(r.dead.why||'')?'Shot down':'Caught')}</h2>
-    <p>${banked?'You slipped out of the city. Rana came up empty.':esc(r.dead&&r.dead.who?'Caught by '+r.dead.who+'.':(r.dead&&r.dead.why)||'Rana wins. This time.')}</p>
+  const c=sheet(`<div class="eyebrow">ESCAPE · RUN OVER</div><h2 style="color:${banked?'var(--good)':'var(--red)'}">${r.escaped?'Escaped India! 🚢':banked?'Vanished!':(r.dead&&/^Shot by/.test(r.dead.why||'')?'Shot down':'Caught')}</h2>
+    <p>${r.escaped?(r.escaped==='boat'?'A stolen speedboat into the dark sea. Rana watched from the quay.':'The cargo ship slipped out of Mormugao at 4 AM with you on board. Rana came up empty.'):banked?'You slipped out of the city. Rana came up empty.':esc(r.dead&&r.dead.who?'Caught by '+r.dead.who+'.':(r.dead&&r.dead.why)||'Rana wins. This time.')}</p>
     <div class="stats"><div class="stat"><span>Legs cleared</span><b>${legsDone}</b></div>${r.records?`<div class="stat"><span>Police record</span><b>${r.records}</b></div>`:''}<div class="stat"><span>Score</span><b>${r.score}</b></div><div class="stat"><span>Cash earned</span><b>${inr(kept)}</b></div></div>
     <p class="eyebrow">BEST RUN: ${HUNTER.best} LEGS · RANA HAS SEEN ${HUNTER.runs} RUNS</p>
     ${learned?`<div class="dossier"><h3>Inspector Rana's notes</h3><p style="margin:6px 0 0;color:#1b1b1b">"Wo ${HABITS[learned].t}. Agli baar taiyaar rahunga."</p><span class="stampx">NOTED</span></div>`:''}
@@ -881,7 +896,7 @@ async function title(){
     <dt>Tip</dt><dd>Neeche-left ke locker shed se dock worker ki jacket lo. Containers ke beech chhupo.</dd></dl><span class="stampx">TOP SECRET</span></div>
     <button class="btn" id="go" type="button">Enter the docks</button><a class="btn alt" href="index.html">Safehouse</a>`);
     c.querySelector('#go').onclick=()=>{auInit();AU.ctx&&AU.ctx.resume();closeSheet();res();};});
-  await comic('start');startPlatform();}
+  if(!(RUN&&await arrivalCard()))await comic('start');startPlatform();}
 function startPlatform(){addBoat();S.phase='platform';S.area='platform';S.timeLeft=300;buildPlayer(new T.Vector3(-46,0,-28),0);ui(true);locked=false;sfx.horn();runStart();
   toast('Neeche-left gole se chalo. Searchlight ki roshni aur guards ki peeli nazar se bacho.','info');}
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));

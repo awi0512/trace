@@ -124,7 +124,7 @@ async function title(){
     <dt>Danger</dt><dd>Ek <b>air marshal</b> peeche galley se aisle dekhta hai. Aisle mein khade raho to woh notice karega. Seatbelt sign on ho to sab baithte hain.</dd><dt>Tip</dt><dd>Aage ki galley mein spare crew jacket latki hai. Crew bankar aisle mein chalna normal lagta hai. Marshal kabhi kabhi lavatory jaata hai.</dd></dl><span class="stampx">TOP SECRET</span></div>
     <button class="btn" id="go" type="button">Go to the gate</button><a class="btn alt" href="index.html">Safehouse</a>`);
     c.querySelector('#go').onclick=()=>{auInit();AU.ctx&&AU.ctx.resume();closeSheet();res();};});
-  await comic('start');startPlatform();}
+  if(!(RUN&&await arrivalCard()))await comic('start');startPlatform();}
 function startPlatform(){S.phase='platform';S.area='platform';S.timeLeft=120;buildPlayer(new T.Vector3(-12,0,-1.6),Math.PI/2);ui(true);locked=false;sfx.chime();runStart();
   if(RUN&&RUN.fcode){S.phase='boarding';startTrain();return;}
   toast('Boarding is closing. Walk to the jet bridge (east end).','info');}
